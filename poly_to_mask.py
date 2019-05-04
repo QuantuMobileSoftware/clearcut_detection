@@ -45,7 +45,6 @@ def markup_to_separate_polygons(poly_pieces_path,
 
     geojson_markup = gp.read_file(markup_path)
     geojson_markup = geojson_markup.to_crs(CRS)
-
     original_image = rs.open(original_image_path)
 
     pieces_info = pd.read_csv(pieces_info_path)
