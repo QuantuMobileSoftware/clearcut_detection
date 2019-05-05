@@ -1,7 +1,6 @@
 import numpy as np
 import argparse
 import pandas as pd
-import imageio
 from tqdm import tqdm
 import os
 import cv2 as cv
@@ -21,41 +20,6 @@ def parse_args():
         required=True, help='Path to the image pieces info')
 
     return parser.parse_args()
-
-
-def compute_dice(true_positives, false_negatives, false_positives):
-    return 1. * true_positives / (true_positives + false_negatives + false_positives)
-
-
-def compute_iou(prediction, ground_truth):
-    intersection = np.dot(prediction, ground_truth).sum()
-    union = (prediction + ground_truth).sum() - intersection
-    return intersection / union
-
-
-def compute_metric(prediction, ground_truth, threshold):
-    labels = np.unique(prediction)
-
-    prediction_found = np.zeros(len(labels), dtype=bool)
-    ground_truth_found = np.zeros(len(ground_truth), dtype=bool)
-
-    for idx, label in tqdm(enumerate(labels)):
-        if 0 < label < 255:
-            prediction_instance = (prediction == label).astype(int)
-
-            instance_ground_truth_iou = []
-            for ground_truth_instance in ground_truth:
-                iou = compute_iou(prediction_instance, ground_truth_instance)
-                instance_ground_truth_iou.append(iou)
-            max_iou = max(instance_ground_truth_iou)
-            if max_iou > threshold:
-                prediction_found[idx] = True
-                ground_truth_found[np.argmax(instance_ground_truth_iou)] = True
-
-    true_positives = prediction_found.sum()
-    false_positives = np.logical_not(prediction_found).sum()
-    false_negatives = np.logical_not(ground_truth_found).sum()
-    return compute_dice(true_positives, false_negatives, false_positives)
 
 
 def watershed_transformation(prediction):
@@ -88,25 +52,54 @@ def watershed_transformation(prediction):
     cv.circle(markers, (5, 5), 3, (255, 255, 255), -1)
     cv.watershed(imgResult, markers)
 
-    mark = markers.astype('uint8')
-    mark = cv.bitwise_not(mark)
-
-    return mark
+    return markers
 
 
 def post_processing(prediction):
     return watershed_transformation(prediction)
 
 
-def merge_adjacent_polygons(geoseries):
-    return
+def dice_coef(true_positives, false_positives, false_negatives):
+    if true_positives + false_negatives + false_positives == 0:
+        return 1
+    return (2. * true_positives) / (2. * true_positives + false_positives + false_negatives)
 
 
-def compute_average_metric(prediction, ground_truth):
-    iou_at_thresholds = []
-    for i in np.arange(0.5, 1, 0.05):
-        iou_at_thresholds.append(compute_metric(prediction, ground_truth, i))
-    return np.average(iou_at_thresholds)
+def iou(y_true, y_pred, smooth=1.0):
+    y_true_f = y_true.flatten()
+    y_pred_f = y_pred.flatten()
+    intersection = np.sum(y_true_f * y_pred_f)
+    return (2. * intersection + smooth) / (np.sum(y_true_f) + np.sum(y_pred_f) + smooth)
+
+
+def compute_iou_matrix(markers, instances):
+    labels = np.unique(markers)
+
+    labels = labels[labels < 255]
+    labels = labels[labels > 0]
+
+    iou_matrix = np.zeros((len(labels), len(instances)), dtype=np.float32)
+
+    for i, label in enumerate(labels):
+        prediction_instance = (markers == label).astype(int)
+
+        for j, ground_truth_instance in enumerate(instances):
+            iou_value = iou(prediction_instance, ground_truth_instance)
+            iou_matrix[i, j] = iou_value
+
+    return iou_matrix
+
+
+def compute_metric_at_thresholds(iou_matrix):
+    dices = []
+    if iou_matrix.shape == (0, 0):
+        return 1
+    for threshold in np.arange(0.5, 1, 0.05):
+        true_positives = (iou_matrix.max(axis=1) > threshold).sum()
+        false_positives = (iou_matrix.max(axis=1) <= threshold).sum()
+        false_negatives = (iou_matrix.max(axis=0) <= threshold).sum()
+        dices.append(dice_coef(true_positives, false_positives, false_negatives))
+    return np.average(dices)
 
 
 def evaluate(ground_truth_path, predictions_path, pieces_info_path):
@@ -114,30 +107,27 @@ def evaluate(ground_truth_path, predictions_path, pieces_info_path):
 
     metrics = []
 
-    # for i in tqdm(range(len(pieces_info))):
-    #     piece_name = pieces_info['piece_image'][i]
-    #     extract from piece_name filename
-    #     instances = []
-    #     for instance_path in os.listdir(os.path.join(ground_truth_path, piece_name)):
-    #         instances.append(imageio.imread(os.path.join(ground_truth_path, piece_name, instance_path)))
+    for i in tqdm(range(len(pieces_info))):
+        piece_name = pieces_info['piece_image'][i]
+        filename, file_extension = os.path.splitext(piece_name)
 
-    piece_name = '20160103_66979721-be1b-4451-84e0-4a573236defd_rgb_13_21'
+        prediction = cv.imread(os.path.join(predictions_path, filename) + ".png")
+        instances = []
 
-    instances = []
-    for instance_path in os.listdir(os.path.join(ground_truth_path, piece_name)):
-        if ".png" in instance_path and ".xml" not in instance_path:
-            rgb_instance = cv.imread(os.path.join(ground_truth_path, piece_name, instance_path))
-            bw_instance = cv.cvtColor(rgb_instance, cv.COLOR_BGR2GRAY)
-            instances.append(bw_instance)
+        for instance_path in os.listdir(os.path.join(ground_truth_path, filename)):
+            if ".png" in instance_path and ".xml" not in instance_path:
+                rgb_instance = cv.imread(os.path.join(ground_truth_path, filename, instance_path))
+                bw_instance = cv.cvtColor(rgb_instance, cv.COLOR_BGR2GRAY)
+                instances.append(bw_instance)
 
-    prediction = cv.imread(os.path.join(predictions_path, f"{piece_name}.png"))
-    post_processed_prediction = post_processing(prediction)
-    metric = compute_average_metric(post_processed_prediction, instances)
-    metrics.append(metric)
+        markers = post_processing(prediction)
+        iou_matrix = compute_iou_matrix(markers, instances)
+        metric = compute_metric_at_thresholds(iou_matrix)
+        metrics.append(metric)
 
     return np.average(metrics)
 
 
 if __name__ == "__main__":
     args = parse_args()
-    print(evaluate(args.ground_truth_path, args.prediction_path, args.pieces_info_path))
+    print(f"Metrics value - {round(evaluate(args.ground_truth_path, args.prediction_path, args.pieces_info_path), 4)}")

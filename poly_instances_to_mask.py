@@ -1,4 +1,3 @@
-import re
 import imageio
 from rasterio import features
 import os
