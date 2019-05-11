@@ -1,5 +1,6 @@
 import argparse
 
+
 def parse_args():
     parser = argparse.ArgumentParser(
         description='Script for creating binary mask from geojson.')
@@ -8,7 +9,7 @@ def parse_args():
         required=True, help='Path to the polygons')
     parser.add_argument(
         '--tiff_path', '-tp', dest='tiff_path',
-        required=True, help='Path to source tiff file')
+        required=True, help='Path to directory with source tiff files')
     parser.add_argument(
         '--save_path', '-sp', dest='save_path', 
         default='../output',
@@ -21,5 +22,6 @@ def parse_args():
         type=int, help='Height of a piece')
 
     return parser.parse_args()
+
 
 args = parse_args()
