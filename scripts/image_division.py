@@ -31,7 +31,6 @@ def divide_into_pieces(image_path, save_path, width, height):
 
     os.makedirs("{0}/images".format(save_path), exist_ok=True)
     os.makedirs("{0}/geojson_polygons".format(save_path), exist_ok=True)
-
     with rasterio.open(image_path) as src, open('{0}/image_pieces.csv'.format(save_path), 'w') as csvFile:
         writer = csv.writer(csvFile)
         writer.writerow(['original_image', 'piece_image', 'piece_geojson', 'start_x', 'start_y', 'width', 'height'])

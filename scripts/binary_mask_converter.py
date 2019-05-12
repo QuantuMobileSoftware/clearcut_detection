@@ -19,7 +19,7 @@ def parse_args():
         '--image_path', '-ip', dest='image_path',
         required=True, help='Path to source image')
     parser.add_argument(
-        '--save_path', '-sp', dest='save_path', 
+        '--save_path', '-sp', dest='save_path',
         default='../output',
         help='Path to directory where mask will be stored')
     parser.add_argument(
@@ -49,31 +49,31 @@ def poly2mask(polys_path, image_path, save_path):
             shapes=polys,
             out_shape=(image.width, image.height),
             transform=image.transform)
-        
+
     filename = '{}/{}.png'.format(
         save_path,
         re.split(r'[/.]', image_path)[-2])
     imageio.imwrite(filename, mask)
-    
+
     image.close()
     return filename
-    
+
 
 def split_mask(mask_path, save_path, image_pieces_path):
     if not os.path.exists(save_path):
         os.mkdir(save_path)
         print("Ouput directory created.")
-        
+
     pieces_info = pd.read_csv(
         image_pieces_path, dtype={
-        'start_x': np.int64, 'start_y': np.int64,
-        'width': np.int64, 'height': np.int64,})
+            'start_x': np.int64, 'start_y': np.int64,
+            'width': np.int64, 'height': np.int64})
     mask = imageio.imread(mask_path)
     for i in range(pieces_info.shape[0]):
         piece = pieces_info.loc[i]
         piece_mask = mask[
-            piece['start_y']: piece['start_y'] + piece['height'],
-            piece['start_x']: piece['start_x'] + piece['width']]
+                     piece['start_y']: piece['start_y'] + piece['height'],
+                     piece['start_x']: piece['start_x'] + piece['width']]
         filename = '{}/{}.png'.format(
             save_path,
             re.split(r'[/.]', piece['piece_image'])[-2])
