@@ -1,14 +1,15 @@
-from rasterio import features
 import os
+import imageio
+import argparse
+import pandas as pd
 import rasterio as rs
 import geopandas as gp
-import argparse
+
 from tqdm import tqdm
-import pandas as pd
-from shapely.geometry import MultiPolygon
-from itertools import combinations
+from rasterio import features
 from geopandas import GeoSeries
-import imageio
+from itertools import combinations
+from shapely.geometry import MultiPolygon
 
 
 def parse_args():
@@ -29,16 +30,23 @@ def parse_args():
     parser.add_argument(
         '--original_image', '-oi', dest='original_image',
         required=True, help='Path to the source tif image')
+    parser.add_argument(
+        '--image_pieces_path', '-ip', dest='image_pieces_path',
+        required=False, help='Image pieces without markup that will be removed')
+    parser.add_argument(
+        '--mask_pieces_path', '-mp', dest='mask_pieces_path',
+        required=False, help='Mask pieces without markup that will be removed')
     return parser.parse_args()
 
 
-def markup_to_separate_polygons(poly_pieces_path,
-                                markup_path,
-                                save_path,
-                                pieces_info_path,
-                                original_image_path):
+def markup_to_separate_polygons(
+    poly_pieces_path, markup_path, save_path,
+    pieces_info_path, original_image_path,
+    image_pieces_path=None, mask_pieces_path=None
+    ):
+
     if not os.path.exists(save_path):
-        os.mkdir(save_path)
+        os.makedirs(save_path)
         print("Output directory created.")
 
     original_image = rs.open(original_image_path)
@@ -59,9 +67,9 @@ def markup_to_separate_polygons(poly_pieces_path,
         poly_piece = gp.read_file(os.path.join(poly_pieces_path, poly_piece_name))
         intersection = gp.overlay(geojson_markup, poly_piece, how='intersection')
 
-        filename, file_extension = os.path.splitext(poly_piece_name)
+        filename, _ = os.path.splitext(poly_piece_name)
         if not os.path.exists(os.path.join(save_path, filename)):
-            os.mkdir(os.path.join(save_path, filename))
+            os.makedirs(os.path.join(save_path, filename))
 
         adjacency_list = compose_adjacency_list(intersection["geometry"])
         components = get_components(intersection["geometry"], adjacency_list)
@@ -70,21 +78,34 @@ def markup_to_separate_polygons(poly_pieces_path,
         for component in components:
             multi_polys.append(MultiPolygon(poly for poly in component))
 
-        if len(multi_polys) > 0:
-            gs = GeoSeries(multi_polys)
-            gs.crs = original_image.crs
-            piece_geojson_name = "{0}.geojson".format(filename)
-            gs.to_file("{0}/{1}/{2}".format(save_path, filename, piece_geojson_name), driver='GeoJSON')
+        if len(multi_polys) == 0:
+            os.removedirs(os.path.join(save_path, filename))
+            os.remove(os.path.join(os.path.join(poly_pieces_path, filename + '.geojson')))
+            if image_pieces_path is not None:
+                os.remove(os.path.join(os.path.join(image_pieces_path, filename + '.jpeg')))
+            if image_pieces_path is not None: 
+                os.remove(os.path.join(os.path.join(mask_pieces_path, filename + '.png')))
+            continue
+
+        gs = GeoSeries(multi_polys)
+        gs.crs = original_image.crs
+        piece_geojson_name = "{0}.geojson".format(filename)
+        gs.to_file(
+            "{}/{}/{}".format(save_path, filename, piece_geojson_name),
+            driver='GeoJSON')            
 
         original_transform = original_image.transform
         for idx, component in enumerate(components):
             mask = features.rasterize(
                 shapes=component,
                 out_shape=(width, height),
-                transform=[original_transform[0], original_transform[1], x,
-                           original_transform[3], original_transform[4], y])
+                transform=[
+                    original_transform[0], original_transform[1], x,
+                    original_transform[3], original_transform[4], y])
 
-            imageio.imwrite("{0}/{1}/{2}.png".format(save_path, filename, idx), mask)
+            imageio.imwrite(
+                "{}/{}/{}.png".format(save_path, filename, idx),
+                mask)
 
 
 def compose_adjacency_list(polys):
@@ -125,8 +146,8 @@ def get_components(polys, adjacency_list):
 
 if __name__ == "__main__":
     args = parse_args()
-    markup_to_separate_polygons(args.geojson_pieces,
-                                args.geojson_markup,
-                                args.save_path,
-                                args.pieces_info_path,
-                                args.original_image)
+    markup_to_separate_polygons(
+        args.geojson_pieces, args.geojson_markup, args.save_path,
+        args.pieces_info_path, args.original_image,
+        image_pieces_path=args.image_pieces_path,
+        mask_pieces_path=args.mask_pieces_path)

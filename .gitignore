@@ -1,6 +1,6 @@
 
 venv/
-
 \.idea/
-
 scripts/__pycache__/
+\.vscode/
+data/

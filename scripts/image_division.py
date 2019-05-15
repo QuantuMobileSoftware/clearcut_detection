@@ -33,16 +33,19 @@ def divide_into_pieces(image_path, save_path, width, height):
     os.makedirs("{0}/geojson_polygons".format(save_path), exist_ok=True)
     with rasterio.open(image_path) as src, open('{0}/image_pieces.csv'.format(save_path), 'w') as csvFile:
         writer = csv.writer(csvFile)
-        writer.writerow(['original_image', 'piece_image', 'piece_geojson', 'start_x', 'start_y', 'width', 'height'])
+        writer.writerow([
+            'original_image', 'piece_image', 'piece_geojson',
+            'start_x', 'start_y', 'width', 'height'])
 
         for j in tqdm(range(0, src.height // height)):
             for i in range(0,  src.width // width):
-                raster_window = src.read(window=Window(i * width, j * height, width, height))
+                raster_window = src.read(
+                    window=Window(i * width, j * height, width, height))
 
                 filename_w_ext = os.path.basename(image_path)
-                filename, file_extension = os.path.splitext(filename_w_ext)
+                filename, _ = os.path.splitext(filename_w_ext)
                 image_format = "jpeg"
-                piece_name = "{0}_{1}_{2}.{3}".format(filename, j, i, image_format)
+                piece_name = "{}_{}_{}.{}".format(filename, j, i, image_format)
 
                 poly = Polygon([
                     src.xy(j * height, i * width),
@@ -54,14 +57,18 @@ def divide_into_pieces(image_path, save_path, width, height):
                 ])
                 gs = GeoSeries([poly])
                 gs.crs = src.crs
-                piece_geojson_name = "{0}_{1}_{2}.geojson".format(filename, j, i)
-                gs.to_file("{0}/geojson_polygons/{1}".format(save_path, piece_geojson_name), driver='GeoJSON')
+                piece_geojson_name = "{}_{}_{}.geojson".format(filename, j, i)
+                gs.to_file("{}/geojson_polygons/{}".format(
+                    save_path, piece_geojson_name),
+                    driver='GeoJSON')
 
                 image_array = reshape_as_image(raster_window)
                 image = Image.fromarray(image_array)
-                image.save("{0}/images/{1}".format(save_path, piece_name))
+                image.save("{}/images/{}".format(save_path, piece_name))
 
-                writer.writerow([filename_w_ext, piece_name, piece_geojson_name, i * width, j * height, width, height])
+                writer.writerow([
+                    filename_w_ext, piece_name, piece_geojson_name,
+                    i * width, j * height, width, height])
 
     csvFile.close()
 
