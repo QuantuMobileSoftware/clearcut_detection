@@ -52,10 +52,6 @@ def preprocess(tiff_path, save_path, width, height, polys_path):
                 image_pieces_path=os.path.join(image_path, 'images'),
                 mask_pieces_path=pieces_path)
 
-
-def stratify():
-    pass
-
     
 if __name__ == '__main__':
     args = parse_args()
