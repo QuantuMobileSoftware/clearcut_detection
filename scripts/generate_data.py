@@ -56,7 +56,7 @@ def get_labels(distr):
     return res
 
 
-def stratify(datasets_path, test_size=0.2):
+def stratify(datasets_path, test_size):
     datasets = get_data_pathes(datasets_path)
     images_path, masks_path, instances_path = datasets[0]
     instances = list(os.walk(instances_path))[0][1]
@@ -71,8 +71,8 @@ def stratify(datasets_path, test_size=0.2):
     return sss.split(X, labels)
 
 
-def build_generator(datasets_path, train=True):
-    stratified_ix = stratify(datasets_path)
+def build_stratified_generator(datasets_path, test_size=0.2, train=True):
+    stratified_ix = stratify(datasets_path, test_size)
     datasets = get_data_pathes(datasets_path) 
     for i, (train_ix, test_ix) in enumerate(stratified_ix):
         images_path, masks_path, instances_path = datasets[i]
