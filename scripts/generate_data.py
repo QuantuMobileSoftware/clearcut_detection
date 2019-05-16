@@ -56,7 +56,7 @@ def get_labels(distr):
     return res
 
 
-def stratify(datasets_path, test_size):
+def stratify(datasets_path, test_size, random_state=42):
     datasets = get_data_pathes(datasets_path)
     images_path, masks_path, instances_path = datasets[0]
     instances = list(os.walk(instances_path))[0][1]
@@ -66,19 +66,17 @@ def stratify(datasets_path, test_size):
     labels = get_labels(areas)
 
     sss = StratifiedShuffleSplit(
-        n_splits=len(datasets), test_size=test_size, random_state=42)
+        n_splits=len(datasets), test_size=test_size, random_state=random_state)
     
     return sss.split(X, labels)
 
 
-def build_stratified_generator(datasets_path, test_size=0.2, train=True):
+def build_stratified_generator(datasets_path, test_size=0.2):
     stratified_ix = stratify(datasets_path, test_size)
     datasets = get_data_pathes(datasets_path) 
     for i, (train_ix, test_ix) in enumerate(stratified_ix):
         images_path, masks_path, instances_path = datasets[i]
         instances = list(os.walk(instances_path))[0][1]
         X, y = get_data(images_path, masks_path, instances)
-        if train:
-            yield X[train_ix], y[train_ix]
-        else:
-            yield X[test_ix], y[test_ix]
+        
+        yield X[train_ix], y[train_ix], X[test_ix], y[test_ix]
