@@ -1,4 +1,5 @@
 import os
+import re
 import imageio
 import argparse
 import numpy as np
@@ -34,7 +35,7 @@ def image2mask(image_path, image_type):
 
 def get_data(
     images_path, masks_path, instances,
-    img_type='jpeg', msk_type='png'
+    img_type='tiff', msk_type='png'
     ):
 
     X = np.array([
@@ -58,11 +59,8 @@ def get_labels(distr):
     return res
 
 
-def stratify(datasets_path, test_size, random_state):
-    datasets = get_data_pathes(datasets_path)
-
-    images_path, masks_path, instances_path = datasets[0]
-
+def stratify(datasets_path, test_size=0.2, random_state=42):
+    images_path, masks_path, instances_path = get_data_pathes(datasets_path)[0]
     instances = list(os.walk(instances_path))[0][1]
 
     X, _ = get_data(images_path, masks_path, instances)
@@ -71,78 +69,99 @@ def stratify(datasets_path, test_size, random_state):
     labels = get_labels(areas)
 
     sss = StratifiedShuffleSplit(
-        n_splits=len(datasets), test_size=test_size, random_state=random_state)
+        n_splits=1, test_size=test_size, random_state=random_state)
     
     return sss.split(X, labels)
 
 
-def stratified_split(datasets_path, test_size=0.2, random_state=42):
+def get_data_info(dataset_path):
     cols = [
-        'name',
+        'name', 'channel', 'position',
         'image_path', 'mask_path', 'instance_path',
         'image_type', 'mask_type'
     ]
-    stratified_ix = stratify(datasets_path, test_size, random_state)
-    train_df = pd.DataFrame(columns=cols)
-    test_df = pd.DataFrame(columns=cols)
-    datasets = get_data_pathes(datasets_path)
-
-    for i, (train_ix, test_ix) in enumerate(stratified_ix):
-        images_path, masks_path, instances_path = datasets[i]
+    data_info = pd.DataFrame(columns=cols)
+    dataset = get_data_pathes(dataset_path)
+    for subset in dataset:
+        images_path, masks_path, instances_path = subset
         instances = list(os.walk(instances_path))[0][1]
         image_type = list(os.walk(images_path))[0][2][0].split('.')[-1]
         mask_type = list(os.walk(masks_path))[0][2][0].split('.')[-1]
 
-        # print(i, (train_ix, test_ix))
+        for i, instance in enumerate(instances):
+            instance = instance.split('_')
+            name = '_'.join(instance[:2])
+            channel = '_'.join(instance[2:-2])
+            position = '_'.join(instance[-2:])
 
-        # train_df = train_df.append(pd.DataFrame({
-        #     'name': np.array(instances)[train_ix],
-        #     'image_path': images_path,
-        #     'mask_path': masks_path,
-        #     'instance_path': instances_path,
-        #     'image_type': image_type,
-        #     'mask_type': mask_type
-        # }), sort=False, ignore_index=True)
-        #
-        # test_df = test_df.append(pd.DataFrame({
-        #     'name': np.array(instances)[test_ix],
-        #     'image_path': images_path,
-        #     'mask_path': masks_path,
-        #     'instance_path': instances_path,
-        #     'image_type': image_type,
-        #     'mask_type': mask_type
-        # }), sort=False, ignore_index=True)
+            data_info = data_info.append(
+                pd.DataFrame({
+                    'name': name,
+                    'channel': channel,
+                    'position': position,
+                    'image_path': images_path,
+                    'mask_path': masks_path,
+                    'instance_path': instances_path,
+                    'image_type': image_type,
+                    'mask_type': mask_type
+                }, index=[0]),
+                sort=True, ignore_index=True)
     
-    return train_df, test_df
+    return data_info
 
 
-def build_batch_generator(files_df, batch_size=4):
-    while True:
-        for start in range(0, files_df.shape[0], batch_size):
-            images = []
-            masks = []
-            end = min(start + batch_size, files_df.shape[0])
-            train_batch = files_df.iloc[start:end]
+def filter_by_channel(data_info, channel_name):
+    return data_info[data_info['channel'] == channel_name] \
+        .sort_values(by=['position']) \
+        .reset_index(drop=True)
 
-            for _, file in train_batch.iterrows():
+
+def build_batch_generator(
+    data_info, indexes, batch_size=4,
+    channels=['rgb', 'ndvi', 'ndvi_color', 'b2']
+    ):
+    
+    if len(channels) == 0:
+        raise Exception('You have to set at least 1 channel.')
+        
+    for i in indexes:
+        images = []
+        masks = []            
+        for _ in range(batch_size):
+            res_image = []
+            for channel in channels:
+                channel_data = filter_by_channel(data_info, channel)
+                filename = '_'.join([
+                    channel_data['name'].values[i],
+                    channel,
+                    channel_data['position'].values[i]])
                 image_path = os.path.join(
-                    file['image_path'],
-                    '{}.{}'.format(file['name'], file['image_type']))
+                    channel_data['image_path'].values[i],
+                    '{}.{}'.format(
+                        filename,
+                        channel_data['image_type'].values[i]))
                 mask_path = os.path.join(
-                    file['mask_path'],
-                    '{}.{}'.format(file['name'], file['mask_type']))
+                    channel_data['mask_path'].values[i],
+                    '{}.{}'.format(
+                        filename,
+                        channel_data['mask_type'].values[i]))
+                
+                image = imageio.imread(image_path)
+                if image.ndim == 2:
+                    image= image.reshape(*image.shape, 1)
+                
+                res_image.append(image)
 
-                img = imageio.imread(image_path)
-                mask = imageio.imread(mask_path)
+            images.append(np.concatenate(res_image, axis=2))
+            mask = imageio.imread(mask_path)
+            mask = mask.reshape(*mask.shape, 1)
+            masks.append(mask)
+            
+        masks = np.array(masks, np.float32)
+        images = np.array(images, np.float32)
 
-                images.append(img)
-                masks.append(mask)
+        yield images, masks
 
-            images = np.array(images, np.float32)
-            masks = np.array(masks, np.float32)
-            masks = masks.reshape(*masks.shape, 1)
-
-            yield images, masks
 
 
 def parse_args():
