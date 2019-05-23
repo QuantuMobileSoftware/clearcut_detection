@@ -11,8 +11,9 @@ def get_data_pathes(
     datasets_path, images_path_name='images',
     masks_path_name='masks', instances_path_name='instance_masks'
     ):
-    
+
     datasets = list(os.walk(datasets_path))[0][1]
+    print(datasets)
     data_pathes = []
     for dataset in datasets:
         data_pathes.append((
@@ -59,8 +60,11 @@ def get_labels(distr):
 
 def stratify(datasets_path, test_size, random_state):
     datasets = get_data_pathes(datasets_path)
+
     images_path, masks_path, instances_path = datasets[0]
+
     instances = list(os.walk(instances_path))[0][1]
+
     X, _ = get_data(images_path, masks_path, instances)
     areas = np.array([
         get_area(os.path.join(instances_path, i, i + '.geojson')) for i in instances])
@@ -82,29 +86,32 @@ def stratified_split(datasets_path, test_size=0.2, random_state=42):
     train_df = pd.DataFrame(columns=cols)
     test_df = pd.DataFrame(columns=cols)
     datasets = get_data_pathes(datasets_path)
+
     for i, (train_ix, test_ix) in enumerate(stratified_ix):
         images_path, masks_path, instances_path = datasets[i]
         instances = list(os.walk(instances_path))[0][1]
         image_type = list(os.walk(images_path))[0][2][0].split('.')[-1]
         mask_type = list(os.walk(masks_path))[0][2][0].split('.')[-1]
-    
-        train_df = train_df.append(pd.DataFrame({
-            'name': np.array(instances)[train_ix],
-            'image_path': images_path,
-            'mask_path': masks_path,
-            'instance_path': instances_path,
-            'image_type': image_type,
-            'mask_type': mask_type
-        }), sort=False, ignore_index=True)
-        
-        test_df = test_df.append(pd.DataFrame({
-            'name': np.array(instances)[test_ix],
-            'image_path': images_path,
-            'mask_path': masks_path,
-            'instance_path': instances_path,
-            'image_type': image_type,
-            'mask_type': mask_type
-        }), sort=False, ignore_index=True)
+
+        # print(i, (train_ix, test_ix))
+
+        # train_df = train_df.append(pd.DataFrame({
+        #     'name': np.array(instances)[train_ix],
+        #     'image_path': images_path,
+        #     'mask_path': masks_path,
+        #     'instance_path': instances_path,
+        #     'image_type': image_type,
+        #     'mask_type': mask_type
+        # }), sort=False, ignore_index=True)
+        #
+        # test_df = test_df.append(pd.DataFrame({
+        #     'name': np.array(instances)[test_ix],
+        #     'image_path': images_path,
+        #     'mask_path': masks_path,
+        #     'instance_path': instances_path,
+        #     'image_type': image_type,
+        #     'mask_type': mask_type
+        # }), sort=False, ignore_index=True)
     
     return train_df, test_df
 

@@ -16,7 +16,7 @@ def parse_args():
                         help='Path to source image')
     parser.add_argument('--save_path', '-sp', dest='save_path', default='data',
                         help='Path to directory where pieces will be stored')
-    parser.add_argument('--width', '-w',  dest='width', default=224, type=int,
+    parser.add_argument('--width', '-w', dest='width', default=224, type=int,
                         help='Width of a piece')
     parser.add_argument('--height', '-hgt', dest='height', default=224, type=int,
                         help='Height of a piece')
@@ -38,13 +38,13 @@ def divide_into_pieces(image_path, save_path, width, height):
             'start_x', 'start_y', 'width', 'height'])
 
         for j in tqdm(range(0, src.height // height)):
-            for i in range(0,  src.width // width):
+            for i in range(0, src.width // width):
                 raster_window = src.read(
                     window=Window(i * width, j * height, width, height))
 
                 filename_w_ext = os.path.basename(image_path)
                 filename, _ = os.path.splitext(filename_w_ext)
-                image_format = "jpeg"
+                image_format = "tiff"
                 piece_name = "{}_{}_{}.{}".format(filename, j, i, image_format)
 
                 poly = Polygon([
@@ -63,7 +63,22 @@ def divide_into_pieces(image_path, save_path, width, height):
                     driver='GeoJSON')
 
                 image_array = reshape_as_image(raster_window)
-                image = Image.fromarray(image_array)
+
+                channels = image_array.shape[2]
+
+                if channels == 1:
+                    if image_array.dtype == 'float32':
+                        image = Image.fromarray(image_array.reshape((224, 224)), mode='F')
+                    elif image_array.dtype == 'uint16':
+                        image = Image.fromarray(image_array.reshape((224, 224)), mode='I;16')
+                elif channels == 3:
+                    image = Image.fromarray(image_array, mode='RGB')
+                elif channels == 4:
+                    image = Image.fromarray(image_array, mode='RGBA')
+                else:
+                    print("Wrong format")
+                    continue
+
                 image.save("{}/images/{}".format(save_path, piece_name))
 
                 writer.writerow([
