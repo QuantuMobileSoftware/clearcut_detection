@@ -80,11 +80,11 @@ def markup_to_separate_polygons(
 
         if len(multi_polys) == 0:
             os.removedirs(os.path.join(save_path, filename))
-            os.remove(os.path.join(os.path.join(poly_pieces_path, filename + '.geojson')))
+            os.remove(os.path.join(poly_pieces_path, filename + '.geojson'))
             if image_pieces_path is not None:
-                os.remove(os.path.join(os.path.join(image_pieces_path, filename + '.jpeg')))
+                os.remove(os.path.join(image_pieces_path, filename + '.tiff'))
             if image_pieces_path is not None: 
-                os.remove(os.path.join(os.path.join(mask_pieces_path, filename + '.png')))
+                os.remove(os.path.join(mask_pieces_path, filename + '.png'))
             continue
 
         gs = GeoSeries(multi_polys)
