@@ -41,7 +41,7 @@ def main():
         loaders=loaders,
         callbacks=[
             DiceCallback(),
-            EarlyStoppingCallback(patience=2, min_delta=0.01)
+            EarlyStoppingCallback(patience=5, min_delta=0.01)
         ],
         logdir=args.logdir,
         num_epochs=args.epochs,

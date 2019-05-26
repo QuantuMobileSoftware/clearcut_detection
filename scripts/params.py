@@ -11,13 +11,9 @@ arg('--num_workers', type=int, default=4)
 arg('--epochs', type=int, default=30)
 
 arg('--logdir', default='../logs')
-arg('--train_df',
-    default='../../preprocessed_2016/20160103_66979721-be1b-4451-84e0-4a573236defd_rgb/'
-            '20160103_66979721-be1b-4451-84e0-4a573236defd_rgb_train.csv')
-arg('--val_df',
-    default='../../preprocessed_2016/20160103_66979721-be1b-4451-84e0-4a573236defd_rgb/'
-            '20160103_66979721-be1b-4451-84e0-4a573236defd_rgb_test.csv')
-arg('--dataset_path', default='../../preprocessed_2016/20160103_66979721-be1b-4451-84e0-4a573236defd_rgb')
+arg('--train_df', default='../../preprocessed_2016/train.csv')
+arg('--val_df', default='../../preprocessed_2016/test.csv')
+arg('--dataset_path', default='../../preprocessed_2016/')
 
 arg('--img_width', type=int, default=224)
 arg('--img_height', type=int, default=224)

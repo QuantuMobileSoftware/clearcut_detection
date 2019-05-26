@@ -1,7 +1,7 @@
-import torch.nn as nn
 import torch
-from torch.nn import functional as F
+import torch.nn as nn
 from catalyst.dl.metrics import dice
+from torch.nn import functional as F
 
 
 class BCE_Dice_Loss(torch.nn.Module):

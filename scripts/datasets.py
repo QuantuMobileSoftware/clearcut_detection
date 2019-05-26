@@ -14,11 +14,8 @@ from params import args
 
 def get_image(image_info):
     dataset_path = args.dataset_path
-    # img_path = os.path.join(dataset_path, image_info["dataset_folder"], "images", image_info["image_name"] + ".tiff")
-    # mask_path = os.path.join(dataset_path, image_info["dataset_folder"], "masks", image_info["image_name"] + ".png")
-
-    img_path = os.path.join(dataset_path, "images", image_info["image_name"] + ".tiff")
-    mask_path = os.path.join(dataset_path, "masks", image_info["image_name"] + ".png")
+    img_path = os.path.join(dataset_path, image_info["dataset_folder"], "images", image_info["image_name"] + ".tiff")
+    mask_path = os.path.join(dataset_path, image_info["dataset_folder"], "masks", image_info["image_name"] + ".png")
 
     img = Image.open(img_path)
     mask = Image.open(mask_path)
