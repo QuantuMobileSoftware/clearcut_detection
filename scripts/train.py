@@ -1,18 +1,21 @@
-from catalyst.dl.utils import UtilsFactory
-from params import args
-from PIL import Image
 import os
-import pandas as pd
 import collections
+import pandas as pd
+
 import torch
 import torch.nn as nn
+import torchvision.transforms as transforms
+
+from catalyst.dl.utils import UtilsFactory
 from catalyst.dl.experiments import SupervisedRunner
 from catalyst.dl.callbacks import InferCallback, CheckpointCallback
-from unet_models import AlbuNet, UNetWithResnet50Encoder
-import torchvision.transforms as transforms
-from torch.utils.data import Dataset
-from torch.nn import functional as F
-from losses import dice_loss
+
+from PIL import Image
+from torch.nn import functional
+
+from .params import args
+from .losses import dice_loss
+from .unet_models import UNetWithResnet50Encoder
 
 
 def bce_dice(input, target, weight=0.5):
@@ -22,8 +25,8 @@ def bce_dice(input, target, weight=0.5):
 
 def get_image(image_name):
     dataset_path = args.dataset_path
-    img_path = os.path.join(dataset_path, "images", image_name + ".png")
-    mask_path = os.path.join(dataset_path, "masks", image_name + ".png")
+    img_path = os.path.join(dataset_path, 'images', image_name + '.png')
+    mask_path = os.path.join(dataset_path, 'masks', image_name + '.png')
 
     img = Image.open(img_path)
     mask = Image.open(mask_path)
@@ -36,20 +39,20 @@ def get_image(image_name):
     img_tensor = data_transform(img)
     mask_tensor = transforms.ToTensor()(mask)
 
-    return {"features": img_tensor, "targets": mask_tensor}
+    return {'features': img_tensor, 'targets': mask_tensor}
 
 
-class BCE_Dice_Loss(torch.nn.Module):
+class BCEDiceLoss(torch.nn.Module):
 
     def __init__(self):
-        super(BCE_Dice_Loss, self).__init__()
+        super(BCEDiceLoss, self).__init__()
 
     @staticmethod
-    def calc_loss(pred, target, bce_weight=0.5):
-        bce = F.binary_cross_entropy_with_logits(pred, target)
+    def calc_loss(prediction, target, bce_weight=0.5):
+        bce = functional.binary_cross_entropy_with_logits(prediction, target)
 
-        pred = torch.sigmoid(pred)
-        dice = dice_loss(pred, target)
+        prediction = torch.sigmoid(prediction)
+        dice = dice_loss(prediction, target)
 
         loss = bce * bce_weight + dice * (1 - bce_weight)
 
@@ -68,24 +71,24 @@ def main():
     val_df = pd.read_csv(args.val_df)
 
     train_loader = UtilsFactory.create_loader(
-        train_df["image_name"],
+        train_df['image_name'],
         open_fn=get_image,
         batch_size=args.batch_size,
         num_workers=args.num_workers,
         shuffle=True)
 
     valid_loader = UtilsFactory.create_loader(
-        val_df["image_name"],
+        val_df['image_name'],
         open_fn=get_image,
         batch_size=args.batch_size,
         num_workers=args.num_workers,
         shuffle=True)
 
     loaders = collections.OrderedDict()
-    loaders["train"] = train_loader
-    loaders["valid"] = valid_loader
+    loaders['train'] = train_loader
+    loaders['valid'] = valid_loader
 
-    criterion = BCE_Dice_Loss()
+    criterion = BCEDiceLoss()
     optimizer = torch.optim.Adam(model.parameters(), lr=1e-3)
     scheduler = torch.optim.lr_scheduler.MultiStepLR(optimizer, milestones=[10, 20, 40], gamma=0.3)
 
@@ -104,13 +107,13 @@ def main():
         verbose=True
     )
 
-    infer_loader = collections.OrderedDict([("infer", loaders["valid"])])
+    infer_loader = collections.OrderedDict([('infer', loaders['valid'])])
     runner.infer(
         model=model,
         loaders=infer_loader,
         callbacks=[
             CheckpointCallback(
-                resume=f"{args.logdir}/checkpoints/best.pth"),
+                resume=f'{args.logdir}/checkpoints/best.pth'),
             InferCallback()
         ],
     )

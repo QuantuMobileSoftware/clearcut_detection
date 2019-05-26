@@ -1,5 +1,5 @@
 from torch import nn
-from torch.nn import functional as F
+from torch.nn import functional
 import torch
 from torchvision import models
 import torchvision
@@ -38,7 +38,6 @@ class DecoderBlock(nn.Module):
 class UNet11(nn.Module):
     def __init__(self, num_filters=32, pretrained=False):
         """
-        :param num_classes:
         :param num_filters:
         :param pretrained:
             False - no pre-trained network is used
@@ -217,7 +216,7 @@ class AlbuNet(nn.Module):
         dec0 = self.dec0(dec1)
 
         if self.num_classes > 1:
-            x_out = F.log_softmax(self.final(dec0), dim=1)
+            x_out = functional.log_softmax(self.final(dec0), dim=1)
         else:
             x_out = self.final(dec0)
 
@@ -302,7 +301,7 @@ class UNet16(nn.Module):
         dec1 = self.dec1(torch.cat([dec2, conv1], 1))
 
         if self.num_classes > 1:
-            x_out = F.log_softmax(self.final(dec1), dim=1)
+            x_out = functional.log_softmax(self.final(dec1), dim=1)
         else:
             x_out = self.final(dec1)
 
@@ -354,9 +353,9 @@ class UpBlockForUNetWithResNet50(nn.Module):
                  upsampling_method="conv_transpose"):
         super().__init__()
 
-        if up_conv_in_channels == None:
+        if up_conv_in_channels is None:
             up_conv_in_channels = in_channels
-        if up_conv_out_channels == None:
+        if up_conv_out_channels is None:
             up_conv_out_channels = out_channels
 
         if upsampling_method == "conv_transpose":
