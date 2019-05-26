@@ -16,6 +16,7 @@ from torch.nn import functional
 from .params import args
 from .losses import dice_loss
 from .unet_models import UNetWithResnet50Encoder
+from .preprocessing import generate_data
 
 
 def bce_dice(input, target, weight=0.5):
