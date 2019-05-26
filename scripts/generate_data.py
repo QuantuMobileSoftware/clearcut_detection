@@ -1,5 +1,4 @@
 import os
-import re
 import imageio
 import argparse
 import numpy as np
@@ -9,10 +8,9 @@ from sklearn.model_selection import StratifiedShuffleSplit
 
 
 def get_data_pathes(
-    datasets_path, images_path_name='images',
-    masks_path_name='masks', instances_path_name='instance_masks'
-    ):
-
+        datasets_path, images_path_name='images',
+        masks_path_name='masks', instances_path_name='instance_masks'
+):
     datasets = list(os.walk(datasets_path))[0][1]
     print(datasets)
     data_pathes = []
@@ -21,7 +19,7 @@ def get_data_pathes(
             os.path.join(datasets_path, dataset, images_path_name),
             os.path.join(datasets_path, dataset, masks_path_name),
             os.path.join(datasets_path, dataset, instances_path_name)))
-    
+
     return data_pathes
 
 
@@ -34,23 +32,22 @@ def image2mask(image_path, image_type):
 
 
 def get_data(
-    images_path, masks_path, instances,
-    img_type='tiff', msk_type='png'
-    ):
-
+        images_path, masks_path, instances,
+        img_type='tiff', msk_type='png'
+):
     X = np.array([
         image2mask(os.path.join(images_path, i), img_type) for i in instances])
     y = np.array([
-        image2mask(os.path.join(masks_path, i), msk_type)for i in instances])
+        image2mask(os.path.join(masks_path, i), msk_type) for i in instances])
     y = y.reshape([*y.shape, 1])
-    
+
     return X, y
 
 
 def get_area(instance_path):
     return (gp.read_file(instance_path)['geometry'].area / 100).median()
 
-    
+
 def get_labels(distr):
     res = np.full(distr.shape, 3)
     res[distr < np.quantile(distr, 0.75)] = 2
@@ -70,7 +67,7 @@ def stratify(datasets_path, test_size=0.2, random_state=42):
 
     sss = StratifiedShuffleSplit(
         n_splits=1, test_size=test_size, random_state=random_state)
-    
+
     return sss.split(X, labels)
 
 
@@ -106,7 +103,7 @@ def get_data_info(dataset_path):
                     'mask_type': mask_type
                 }, index=[0]),
                 sort=True, ignore_index=True)
-    
+
     return data_info
 
 
@@ -117,16 +114,15 @@ def filter_by_channel(data_info, channel_name):
 
 
 def build_batch_generator(
-    data_info, indexes, batch_size=4,
-    channels=['rgb', 'ndvi', 'ndvi_color', 'b2']
-    ):
-    
+        data_info, indexes, batch_size=4,
+        channels=('rgb', 'ndvi', 'ndvi_color', 'b2')
+):
     if len(channels) == 0:
         raise Exception('You have to set at least 1 channel.')
-        
+
     for i in indexes:
         images = []
-        masks = []            
+        masks = []
         for _ in range(batch_size):
             res_image = []
             for channel in channels:
@@ -145,23 +141,22 @@ def build_batch_generator(
                     '{}.{}'.format(
                         filename,
                         channel_data['mask_type'].values[i]))
-                
+
                 image = imageio.imread(image_path)
                 if image.ndim == 2:
-                    image= image.reshape(*image.shape, 1)
-                
+                    image = image.reshape(*image.shape, 1)
+
                 res_image.append(image)
 
-            images.append(np.concatenate(res_image, axis=2))
             mask = imageio.imread(mask_path)
             mask = mask.reshape(*mask.shape, 1)
             masks.append(mask)
-            
+            images.append(np.concatenate(res_image, axis=2))
+
         masks = np.array(masks, np.float32)
         images = np.array(images, np.float32)
 
         yield images, masks
-
 
 
 def parse_args():
@@ -172,25 +167,15 @@ def parse_args():
         '--data_path', '-dp', dest='data_path',
         required=True, help='Path to the data')
     parser.add_argument(
-        '--save_path', '-sp', dest='save_path', 
+        '--save_path', '-sp', dest='save_path',
         default='../data',
         help='Path to directory where data will be stored')
-    parser.add_argument(
-        '--test_size', '-ts',  dest='test_size', default=0.2,
-        type=float, help='Percent of data that will be used for testing/validating')
-    parser.add_argument(
-        '--random_state', '-rs', dest='random_state', default=42,
-        type=int, help='Random seed')
 
     return parser.parse_args()
 
 
 if __name__ == '__main__':
     args = parse_args()
-    train_df, test_df = stratified_split(
-        datasets_path=args.data_path,
-        test_size=args.test_size,
-        random_state=args.random_state)
 
-    train_df.to_csv(os.path.join(args.save_path, 'train_df.csv'))
-    test_df.to_csv(os.path.join(args.save_path, 'test_df.csv'))
+    data_info = get_data_info(args.data_path)
+    data_info.to_csv(os.path.join(args.save_path, 'data_info.csv'))
