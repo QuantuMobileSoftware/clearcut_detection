@@ -71,14 +71,14 @@ def main():
     val_df = pd.read_csv(args.val_df)
 
     train_loader = UtilsFactory.create_loader(
-        train_df['image_name'],
+        data_source=train_df['image_name'],
         open_fn=get_image,
         batch_size=args.batch_size,
         num_workers=args.num_workers,
         shuffle=True)
 
     valid_loader = UtilsFactory.create_loader(
-        val_df['image_name'],
+        data_source=val_df['image_name'],
         open_fn=get_image,
         batch_size=args.batch_size,
         num_workers=args.num_workers,
