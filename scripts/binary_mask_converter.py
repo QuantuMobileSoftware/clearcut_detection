@@ -40,7 +40,7 @@ def parse_args():
 def poly2mask(polys_path, image_path, save_path):
     if not os.path.exists(save_path):
         os.mkdir(save_path)
-        print("Ouput directory created.")
+        print("Output directory created.")
 
     polys = gp.read_file(polys_path).loc[:, 'geometry']
     with rs.open(image_path) as image:
@@ -48,7 +48,8 @@ def poly2mask(polys_path, image_path, save_path):
         mask = features.rasterize(
             shapes=polys,
             out_shape=(image.width, image.height),
-            transform=image.transform)
+            transform=image.transform,
+            default_value=255)
 
     filename = '{}/{}.png'.format(
         save_path,
@@ -62,7 +63,7 @@ def poly2mask(polys_path, image_path, save_path):
 def split_mask(mask_path, save_path, image_pieces_path):
     if not os.path.exists(save_path):
         os.mkdir(save_path)
-        print("Ouput directory created.")
+        print("Output directory created.")
 
     pieces_info = pd.read_csv(
         image_pieces_path, dtype={
