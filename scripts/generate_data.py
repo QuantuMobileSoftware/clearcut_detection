@@ -12,7 +12,6 @@ def get_data_pathes(
         masks_path_name='masks', instances_path_name='instance_masks'
 ):
     datasets = list(os.walk(datasets_path))[0][1]
-    print(datasets)
     data_pathes = []
     for dataset in datasets:
         data_pathes.append((
@@ -178,4 +177,13 @@ if __name__ == '__main__':
     args = parse_args()
 
     data_info = get_data_info(args.data_path)
+    rgb_data_info = filter_by_channel(data_info, 'rgb')
+
+    train_ix, test_ix = tuple(stratify(args.data_path))[0]
+
+    train_df = rgb_data_info.iloc[train_ix].reset_index(drop=True)
+    test_df = rgb_data_info.iloc[test_ix].reset_index(drop=True)
+
     data_info.to_csv(os.path.join(args.save_path, 'data_info.csv'))
+    train_df.to_csv(os.path.join(args.save_path, 'train_df.csv'))
+    test_df.to_csv(os.path.join(args.save_path, 'test_df.csv'))
