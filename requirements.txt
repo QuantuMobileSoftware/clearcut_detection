@@ -1,3 +1,6 @@
+torchvision
+torch
+catalyst
 scikit-learn
 affine==2.2.2
 attrs==19.1.0

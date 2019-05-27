@@ -13,10 +13,9 @@ from catalyst.dl.callbacks import InferCallback, CheckpointCallback
 from PIL import Image
 from torch.nn import functional
 
-from .params import args
-from .losses import dice_loss
-from .unet_models import UNetWithResnet50Encoder
-from .preprocessing import generate_data
+from params import args
+from losses import dice_loss
+from unet_models import UNetWithResnet50Encoder
 
 
 def bce_dice(input, target, weight=0.5):
@@ -24,12 +23,26 @@ def bce_dice(input, target, weight=0.5):
     return bce_loss(input, target) * weight + dice_loss(input, target) * (1 - weight)
 
 
-def get_image(image_name):
-    dataset_path = args.dataset_path
-    img_path = os.path.join(dataset_path, 'images', image_name + '.png')
-    mask_path = os.path.join(dataset_path, 'masks', image_name + '.png')
+def get_image(data_position):
+    data_info = pd.read_csv(args.train_df, index_col=0)
+    data_info = data_info[data_info['position'] == data_position]
 
-    img = Image.open(img_path)
+    filename = '_'.join([
+        data_info['name'].values[0],
+        data_info['channel'].values[0],
+        data_info['position'].values[0]])
+    image_path = os.path.join(
+        data_info['image_path'].values[0],
+        '{}.{}'.format(
+            filename,
+            data_info['image_type'].values[0]))
+    mask_path = os.path.join(
+        data_info['mask_path'].values[0],
+        '{}.{}'.format(
+            filename,
+            data_info['mask_type'].values[0]))
+
+    img = Image.open(image_path)
     mask = Image.open(mask_path)
 
     data_transform = transforms.Compose([
@@ -66,20 +79,21 @@ class BCEDiceLoss(torch.nn.Module):
 def main():
     model = UNetWithResnet50Encoder(n_classes=1)
 
-    model, device = UtilsFactory.prepare_model(model)
+    # model, device = UtilsFactory.prepare_model(model)
+    # model.to(torch.device('cpu'))
 
     train_df = pd.read_csv(args.train_df)
     val_df = pd.read_csv(args.val_df)
 
     train_loader = UtilsFactory.create_loader(
-        data_source=train_df['image_name'],
+        data_source=train_df['position'],
         open_fn=get_image,
         batch_size=args.batch_size,
         num_workers=args.num_workers,
         shuffle=True)
 
     valid_loader = UtilsFactory.create_loader(
-        data_source=val_df['image_name'],
+        data_source=val_df['position'],
         open_fn=get_image,
         batch_size=args.batch_size,
         num_workers=args.num_workers,
