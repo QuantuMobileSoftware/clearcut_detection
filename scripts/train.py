@@ -1,6 +1,5 @@
 import collections
 
-import pandas as pd
 import torch
 from catalyst.dl.callbacks import InferCallback, CheckpointCallback, EarlyStoppingCallback, DiceCallback
 from catalyst.dl.experiments import SupervisedRunner
@@ -13,17 +12,12 @@ from params import args
 
 
 def main():
-    model = get_model('resnet50')
+    model = get_model(args.network)
+
     print("Loading model")
     model, device = UtilsFactory.prepare_model(model)
 
-    train_df = pd.read_csv(args.train_df)
-    val_df = pd.read_csv(args.val_df)
-
-    train_df = train_df.to_dict('records')
-    val_df = val_df.to_dict('records')
-
-    loaders = create_loaders(train_df, val_df)
+    loaders = create_loaders()
 
     criterion = BCE_Dice_Loss()
     optimizer = torch.optim.Adam(model.parameters(), lr=1e-3)
@@ -41,7 +35,7 @@ def main():
         loaders=loaders,
         callbacks=[
             DiceCallback(),
-            EarlyStoppingCallback(patience=5, min_delta=0.01)
+            EarlyStoppingCallback(patience=10, min_delta=0.01)
         ],
         logdir=args.logdir,
         num_epochs=args.epochs,
@@ -54,7 +48,7 @@ def main():
         loaders=infer_loader,
         callbacks=[
             CheckpointCallback(
-                resume=f"{args.logdir}/checkpoints/best.pth"),
+                resume=f"{args.logdir}/checkpoints_{args.network}/best.pth"),
             InferCallback()
         ],
     )

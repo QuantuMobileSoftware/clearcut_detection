@@ -1,15 +1,18 @@
-from .resnet34_unet import ResNet34Unet
-from .resnet50_unet import ResNet50Unet
-from .vgg11_unet import UNet11
+import segmentation_models_pytorch as smp
+
 from .linknet import LinkNet
 
 
-def get_model(name='resnet34'):
-    if name == 'resnet34':
-        return ResNet34Unet()
-    elif name == 'resnet50':
-        return ResNet50Unet()
+def get_model(name='unet34'):
+    if name == 'unet34':
+        return smp.Unet('resnet34', encoder_weights='imagenet')
+    elif name == 'unet50':
+        return smp.Unet('resnet50', encoder_weights='imagenet')
     elif name == 'linknet':
         return LinkNet()
-    elif name == 'vgg11':
-        return UNet11()
+    # elif name == 'linknet34':
+    #     return smp.Linknet('resnet34', encoder_weights='imagenet')
+    # elif name == 'linknet50':
+    #     return smp.Linknet('resnet50', encoder_weights='imagenet')
+    else:
+        raise ValueError("Unknown network")

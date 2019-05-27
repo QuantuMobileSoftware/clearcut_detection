@@ -1,6 +1,6 @@
 import collections
 import os
-
+import pandas as pd
 import numpy as np
 from PIL import Image
 from albumentations import (
@@ -43,7 +43,13 @@ def get_image(image_info):
     return {"features": augmented_img, "targets": augmented_mask}
 
 
-def create_loaders(train_df, val_df):
+def create_loaders():
+    train_df = pd.read_csv(args.train_df)
+    val_df = pd.read_csv(args.val_df)
+
+    train_df = train_df.to_dict('records')
+    val_df = val_df.to_dict('records')
+
     train_loader = UtilsFactory.create_loader(
         train_df,
         open_fn=get_image,

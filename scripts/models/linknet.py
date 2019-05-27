@@ -133,13 +133,3 @@ class LinkNet(nn.Module):
         d1 = self.decoder1(d2)
 
         return self.final(d1)
-
-
-# if __name__ == "__main__":
-#     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-#
-#     model = LinkNet(1).to(device)
-#     images = torch.randn(4, 3, 256, 256).to(device)
-#
-#     out = model.forward(images)
-#     print(out.size())

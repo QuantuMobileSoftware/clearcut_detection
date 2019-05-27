@@ -32,7 +32,7 @@ def split(datasets_path, markup_path, save_path):
 
     train_ratio = 0.7
 
-    train_list = {"dataset_folder": [], "image_name": []}
+    train_list = {"dataset_folder": [], "image_name": []}   
     test_list = {"dataset_folder": [], "image_name": []}
 
     for dataset_dir in datasets:
