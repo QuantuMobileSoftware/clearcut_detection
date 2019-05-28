@@ -13,7 +13,7 @@ def parse_args():
     parser = argparse.ArgumentParser(
         description='Script for evaluating performance of the model.')
     parser.add_argument(
-        '--dataset_path', '-dp', dest='dataset_path',
+        '--datasets_path', '-dp', dest='datasets_path',
         required=True, help='Path to the directory all the data')
     parser.add_argument(
         '--prediction_path', '-pp', dest='prediction_path',
@@ -89,7 +89,6 @@ def compute_iou_matrix(markers, instances):
 
     labels = labels[labels < 255]
     labels = labels[labels > 0]
-
     iou_matrix = np.zeros((len(labels), len(instances)), dtype=np.float32)
 
     for i, label in enumerate(labels):
@@ -106,6 +105,8 @@ def compute_metric_at_thresholds(iou_matrix):
     dices = []
     if iou_matrix.shape == (0, 0):
         return 1
+    elif iou_matrix.shape[0] == 0:
+        return 0
     for threshold in np.arange(0.5, 1, 0.05):
         true_positives = (iou_matrix.max(axis=1) > threshold).sum()
         false_positives = (iou_matrix.max(axis=1) <= threshold).sum()
@@ -114,7 +115,7 @@ def compute_metric_at_thresholds(iou_matrix):
     return np.average(dices)
 
 
-def evaluate(dataset_path, predictions_path, test_df_path, output_name):
+def evaluate(datasets_path, predictions_path, test_df_path, output_name):
     filenames = pd.read_csv(test_df_path)
 
     metrics = []
@@ -127,13 +128,16 @@ def evaluate(dataset_path, predictions_path, test_df_path, output_name):
     for ind, filename in tqdm(filenames.iterrows()):
 
         prediction = cv.imread(os.path.join(predictions_path, filename["image_name"]) + ".png")
-        image = cv.imread(os.path.join(dataset_path, "images", filename["image_name"]) + ".tiff")
-        mask = cv.imread(os.path.join(dataset_path, "masks", filename["image_name"]) + ".png")
+        image = cv.imread(
+            os.path.join(datasets_path, filename["dataset_folder"], "images", filename["image_name"]) + ".tiff")
+        mask = cv.imread(
+            os.path.join(datasets_path, filename["dataset_folder"], "masks", filename["image_name"]) + ".png")
 
         img_size = image.shape
         instances = []
 
-        image_instances_path = os.path.join(dataset_path, "instance_masks", filename["image_name"])
+        image_instances_path = os.path.join(datasets_path, filename["dataset_folder"], "instance_masks",
+                                            filename["image_name"])
 
         for instance_name in os.listdir(image_instances_path):
             if ".png" in instance_name and ".xml" not in instance_name:
@@ -142,6 +146,7 @@ def evaluate(dataset_path, predictions_path, test_df_path, output_name):
                 instances.append(bw_instance)
 
         markers = post_processing(prediction)
+
         iou_matrix = compute_iou_matrix(markers, instances)
         metric = compute_metric_at_thresholds(iou_matrix)
         metrics.append(metric)
@@ -176,4 +181,4 @@ def evaluate(dataset_path, predictions_path, test_df_path, output_name):
 
 if __name__ == "__main__":
     args = parse_args()
-    evaluate(args.dataset_path, args.prediction_path, args.test_df_path, args.output_name)
+    evaluate(args.datasets_path, args.prediction_path, args.test_df_path, args.output_name)

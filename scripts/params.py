@@ -18,6 +18,6 @@ arg('--dataset_path', default='../../preprocessed_2016/')
 arg('--img_width', type=int, default=224)
 arg('--img_height', type=int, default=224)
 
-arg('--network', default='resnet34')
+arg('--network', default='linknet')
 
 args = parser.parse_args()

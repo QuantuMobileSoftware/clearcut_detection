@@ -35,7 +35,7 @@ def main():
         loaders=loaders,
         callbacks=[
             DiceCallback(),
-            EarlyStoppingCallback(patience=10, min_delta=0.01)
+            EarlyStoppingCallback(patience=20, min_delta=0.01)
         ],
         logdir=args.logdir,
         num_epochs=args.epochs,
@@ -48,7 +48,7 @@ def main():
         loaders=infer_loader,
         callbacks=[
             CheckpointCallback(
-                resume=f"{args.logdir}/checkpoints_{args.network}/best.pth"),
+                resume=f"{args.logdir}/checkpoints/best.pth"),
             InferCallback()
         ],
     )
