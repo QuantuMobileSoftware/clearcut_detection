@@ -70,7 +70,7 @@ def get_predictions_masks(network, model_weights_path, data_info_path):
         filename = get_filename(info_record)
 
         predictions[filename] = predict(model, data['features'])
-        masks[filename] = data['targets']
+        masks[filename] = data['targets'].numpy()[0]
         
     return predictions, masks
 
@@ -82,12 +82,12 @@ def save_predictions(predictions, save_path):
         os.mkdir(predictions_path)
         print('Pediction directory created.')
         
-    for filename, image in predictions.items():
+    for filename, tensor in predictions.items():
         cv.imwrite(
             os.path.join(
                 predictions_path,
                 filename + '.png'),
-            image * 255)
+            tensor * 255)
     
     print('Predictions saved.')
 
