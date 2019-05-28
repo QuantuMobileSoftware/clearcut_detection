@@ -14,7 +14,7 @@ def parse_args():
     parser = argparse.ArgumentParser(description='Script for dividing images into smaller pieces.')
     parser.add_argument('--image_path', '-ip', dest='image_path', required=True,
                         help='Path to source image')
-    parser.add_argument('--save_path', '-sp', dest='save_path', default='data',
+    parser.add_argument('--save_path', '-sp', dest='save_path', default='../../data',
                         help='Path to directory where pieces will be stored')
     parser.add_argument('--width', '-w', dest='width', default=224, type=int,
                         help='Width of a piece')

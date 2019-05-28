@@ -9,3 +9,5 @@ venv/
 data/
 
 \.vscode/
+
+logs/
