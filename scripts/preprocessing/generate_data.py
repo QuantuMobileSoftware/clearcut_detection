@@ -8,19 +8,18 @@ from sklearn.model_selection import StratifiedShuffleSplit
 
 
 def get_data_pathes(
-        datasets_path, images_path_name='images',
-        masks_path_name='masks', instances_path_name='instance_masks'
+    root_path, image_name, channel_name, images_path_name='images',
+    masks_path_name='masks', instances_path_name='instance_masks'
 ):
-    datasets = list(os.walk(datasets_path))[0][1]
+    dataset = list(os.walk(datasets_path))[0][1][0]
+    dataset_name = '{}_{}'.format(image_name, channel_name)
     data_pathes = []
-    for dataset in datasets:
-        data_pathes.append((
-            os.path.join(datasets_path, dataset, images_path_name),
-            os.path.join(datasets_path, dataset, masks_path_name),
-            os.path.join(datasets_path, dataset, instances_path_name)))
+    data_pathes.append((
+        os.path.join(root_path, dataset_name, images_path_name),
+        os.path.join(datasets_path, dataset_name, masks_path_name),
+        os.path.join(datasets_path, dataset_name, instances_path_name)))
 
     return data_pathes
-
 
 def get_instances(instances_path):
     return list(os.walk(instances_path))[0][1]
@@ -72,7 +71,7 @@ def stratify(datasets_path, test_size=0.2, random_state=42):
 
 def get_data_info(dataset_path):
     cols = [
-        'name', 'channel', 'position',
+        'name', 'channel', 'position', 'root_path',
         'image_path', 'mask_path', 'instance_path',
         'image_type', 'mask_type'
     ]
