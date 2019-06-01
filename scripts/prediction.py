@@ -13,18 +13,12 @@ from models.utils import get_model
 
 def parse_args():
     parser = argparse.ArgumentParser(
-        description='Script for evaluating performance of the model.')
-    parser.add_argument(
-        '--network', '-n', dest='network', default='unet50')
-    parser.add_argument(
-        '--datasets_path', '-dp', dest='datasets_path', required=True, help='Path to directory with datasets')
-    parser.add_argument(
-        '--model_weights_path', '-mwp', dest='model_weights_path', required=True,
-        help='Path to file with model weights')
-    parser.add_argument(
-        '--test_df', '-td', dest='test_df', required=True, help='Path to test dataframe')
-    parser.add_argument(
-        '--save_path', '-sp', dest='save_path', required=True, help='Path to save predictions')
+        description='Script for making predictions on test images of dataset.')
+    parser.add_argument('--network', '-n', default='unet50')
+    parser.add_argument('--datasets_path', '-dp', required=True, help='Path to directory with datasets')
+    parser.add_argument('--model_weights_path', '-mwp', required=True, help='Path to file with model weights')
+    parser.add_argument('--test_df', '-td', required=True, help='Path to test dataframe')
+    parser.add_argument('--save_path', '-sp', required=True, help='Path to save predictions')
 
     return parser.parse_args()
 

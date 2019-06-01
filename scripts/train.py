@@ -19,7 +19,7 @@ def main():
 
     loaders = create_loaders()
 
-    criterion = BCE_Dice_Loss()
+    criterion = BCE_Dice_Loss(bce_weight=0.2)
     optimizer = torch.optim.Adam(model.parameters(), lr=1e-3)
     scheduler = torch.optim.lr_scheduler.MultiStepLR(optimizer, milestones=[10, 20, 40], gamma=0.3)
 
@@ -34,8 +34,8 @@ def main():
         scheduler=scheduler,
         loaders=loaders,
         callbacks=[
-            DiceCallback(),
-            EarlyStoppingCallback(patience=20, min_delta=0.01)
+            DiceCallback()
+            # EarlyStoppingCallback(patience=20, min_delta=0.01)
         ],
         logdir=args.logdir,
         num_epochs=args.epochs,

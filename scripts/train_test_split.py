@@ -1,28 +1,23 @@
 import argparse
 import os
-import pandas as pd
+from os.path import basename, normpath
+
 import geopandas as gp
+import pandas as pd
+import sklearn
 
 
 def parse_args():
     parser = argparse.ArgumentParser(
-        description='Script for creating binary mask from geojson.')
-    parser.add_argument(
-        '--datasets_path', '-dp', dest='datasets_path',
-        default='../../test_data/preprocessed_2016/',
-        help='Path to the directory with all datasets')
-    parser.add_argument(
-        '--markup_path', '-mp', dest='markup_path',
-        default='../../test_data/geojson/clearcuts_backup_2016-01-03.geojson',
-        help='Path to the original markup')
-    parser.add_argument(
-        '--save_path', '-sp', dest='save_path',
-        default='.',
-        help='Path to the save path')
+        description='Script for splitting data into train/test dataframes.')
+
+    parser.add_argument('--datasets_path', '-dp', required=True, help='Path to the directory with all datasets')
+    parser.add_argument('--markup_path', '-mp', required=True, help='Path to the original markup')
+    parser.add_argument('--save_path', '-sp', required=True, help='Path to the save path')
     return parser.parse_args()
 
 
-def split(datasets_path, markup_path, save_path):
+def season_split(datasets_path, markup_path, save_path):
     datasets = list(os.walk(datasets_path))[0][1]
     geojson_markup = gp.read_file(markup_path).to_crs({'init': 'epsg:32637'})
 
@@ -32,7 +27,7 @@ def split(datasets_path, markup_path, save_path):
 
     train_ratio = 0.7
 
-    train_list = {"dataset_folder": [], "image_name": []}   
+    train_list = {"dataset_folder": [], "image_name": []}
     test_list = {"dataset_folder": [], "image_name": []}
 
     for dataset_dir in datasets:
@@ -65,6 +60,39 @@ def split(datasets_path, markup_path, save_path):
     test_df.to_csv(os.path.join(save_path, 'test.csv'), index=None, header=True)
 
 
+def train_test_split(dataset_path, save_path, train_test_ratio=0.8):
+    masks_path = os.path.join(dataset_path, "masks")
+    image_names = []
+    for file in os.listdir(masks_path):
+        if ".png" in file and ".xml" not in file:
+            filename, file_extension = os.path.splitext(file)
+            image_names.append(filename)
+
+    filenames = sklearn.utils.shuffle(image_names, random_state=42)
+
+    dataset_size = len(filenames)
+
+    train_size = int(dataset_size * train_test_ratio)
+    test_size = dataset_size - train_size
+
+    print("Dataset size: {0}".format(dataset_size))
+    print("Train size: {0}".format(train_size))
+    print("Test size: {0}".format(test_size))
+
+    output_name = basename(normpath(dataset_path))
+
+    folder_names_train = [output_name] * train_size
+    folder_names_test = [output_name] * test_size
+
+    train_df = pd.DataFrame(zip(folder_names_train, filenames[:train_size]), columns=["dataset_folder", "image_name"])
+    test_df = pd.DataFrame(zip(folder_names_test, filenames[train_size:]), columns=["dataset_folder", "image_name"])
+
+    train_df.to_csv(os.path.join(save_path, '{0}_train.csv'.format(output_name)), index=None, header=True)
+    test_df.to_csv(os.path.join(save_path, '{0}_test.csv'.format(output_name)), index=None, header=True)
+
+
 if __name__ == "__main__":
     args = parse_args()
-    split(args.datasets_path, args.markup_path, args.save_path)
+    # season_split(args.datasets_path, args.markup_path, args.save_path)
+    train_test_split('../../test_data/preprocessed_2016/20160621_1f07dc89-dcb6-4d10-b630-9950a9f1404c_rgb', './')
+
