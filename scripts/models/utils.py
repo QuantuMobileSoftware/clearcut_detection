@@ -6,6 +6,8 @@ def get_model(name='unet34'):
         return smp.Unet('resnet34', encoder_weights='imagenet')
     elif name == 'unet50':
         return smp.Unet('resnet50', encoder_weights='imagenet')
+    elif name == 'unet101':
+        return smp.Unet('resnet101', encoder_weights='imagenet')
     elif name == 'linknet34':
         return smp.Linknet('resnet34', encoder_weights='imagenet')
     elif name == 'linknet50':
@@ -14,6 +16,8 @@ def get_model(name='unet34'):
         return smp.FPN('resnet34', encoder_weights='imagenet')
     elif name == 'fpn50':
         return smp.FPN('resnet50', encoder_weights='imagenet')
+    elif name == 'fpn101':
+        return smp.FPN('resnet101', encoder_weights='imagenet')
     elif name == 'pspnet34':
         return smp.PSPNet('resnet34', encoder_weights='imagenet')
     elif name == 'pspnet50':

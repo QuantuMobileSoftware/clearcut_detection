@@ -1,10 +1,11 @@
 import collections
 import os
-import pandas as pd
+
 import numpy as np
+import pandas as pd
 from PIL import Image
 from albumentations import (
-    CLAHE, RandomRotate90, Flip, OneOf, Compose, RandomSizedCrop, RGBShift
+    CLAHE, RandomRotate90, Flip, OneOf, Compose, RandomSizedCrop, RGBShift, RandomCrop
 )
 from albumentations.pytorch.transforms import ToTensor
 from catalyst.dl.utils import UtilsFactory
@@ -24,16 +25,20 @@ def get_image(image_info):
     mask_array = np.array(mask)
 
     aug = Compose([
-        RandomRotate90(),
-        Flip(),
+        OneOf([
+            RandomRotate90(),
+            Flip()
+        ], p=0.9),
         OneOf([
             RGBShift(),
             CLAHE(clip_limit=2)
         ], p=0.4),
-        RandomSizedCrop(min_max_height=(int(args.img_height * 0.7), args.img_height), height=args.img_height,
-                        width=args.img_width),
+        OneOf([
+            RandomSizedCrop(min_max_height=(int(args.img_size * 0.7), args.img_size), height=args.img_size,
+                            width=args.img_size)
+        ], p=0.4),
         ToTensor()
-    ], p=0.9)
+    ], p=1)
 
     augmented = aug(image=img_array, mask=mask_array)
 

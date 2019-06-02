@@ -70,18 +70,18 @@ def dice_coef_logical(true_positives, false_positives, false_negatives):
     return (2. * true_positives) / (2. * true_positives + false_positives + false_negatives)
 
 
-def dice_coef(y_true, y_pred, smooth=1.0):
+def dice_coef(y_true, y_pred, eps=1e-7):
     y_true_f = y_true.flatten()
     y_pred_f = y_pred.flatten()
     intersection = np.sum(y_true_f * y_pred_f)
-    return (2. * intersection + smooth) / (np.sum(y_true_f) + np.sum(y_pred_f) + smooth)
+    return (2. * intersection + eps) / (np.sum(y_true_f) + np.sum(y_pred_f))
 
 
 def iou(y_true, y_pred, smooth=1.0):
     y_true_f = y_true.flatten()
     y_pred_f = y_pred.flatten()
     intersection = np.sum(y_true_f * y_pred_f)
-    return (2. * intersection + smooth) / (np.sum(y_true_f) + np.sum(y_pred_f) + smooth)
+    return (1. * intersection + smooth) / (np.sum(y_true_f) + np.sum(y_pred_f) + smooth)
 
 
 def compute_iou_matrix(markers, instances):
@@ -175,7 +175,7 @@ def evaluate(datasets_path, predictions_path, test_df_path, output_name):
         }))
         writer.write(example.SerializeToString())
 
-    print("Metrics value - {0}".format(round(np.average(metrics), 4)))
+    # print("Metrics value - {0}".format(round(np.average(metrics), 4)))
     print("Average dice score - {0}".format(round(np.average(dices), 4)))
 
 

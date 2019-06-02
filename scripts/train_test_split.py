@@ -93,6 +93,5 @@ def train_test_split(dataset_path, save_path, train_test_ratio=0.8):
 
 if __name__ == "__main__":
     args = parse_args()
-    # season_split(args.datasets_path, args.markup_path, args.save_path)
-    train_test_split('../../test_data/preprocessed_2016/20160621_1f07dc89-dcb6-4d10-b630-9950a9f1404c_rgb', './')
+    season_split(args.datasets_path, args.markup_path, args.save_path)
 

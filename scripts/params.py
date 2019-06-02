@@ -15,8 +15,7 @@ arg('--train_df', default='../../preprocessed_2016/train.csv')
 arg('--val_df', default='../../preprocessed_2016/test.csv')
 arg('--dataset_path', default='../../preprocessed_2016/')
 
-arg('--img_width', type=int, default=224)
-arg('--img_height', type=int, default=224)
+arg('--img_size', type=int, default=224)
 
 arg('--network', default='linknet')
 
