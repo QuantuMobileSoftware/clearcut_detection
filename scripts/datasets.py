@@ -5,7 +5,7 @@ import numpy as np
 import pandas as pd
 from PIL import Image
 from albumentations import (
-    CLAHE, RandomRotate90, Flip, OneOf, Compose, RandomSizedCrop, RGBShift, RandomCrop
+    CLAHE, RandomRotate90, Flip, OneOf, Compose, RGBShift, RandomCrop
 )
 from albumentations.pytorch.transforms import ToTensor
 from catalyst.dl.utils import UtilsFactory
@@ -15,8 +15,12 @@ from params import args
 
 def get_image(image_info):
     dataset_path = args.dataset_path
-    img_path = os.path.join(dataset_path, image_info["dataset_folder"], "images", image_info["image_name"] + ".tiff")
-    mask_path = os.path.join(dataset_path, image_info["dataset_folder"], "masks", image_info["image_name"] + ".png")
+    img_path = os.path.join(dataset_path, image_info["dataset_folder"], "images",
+                            image_info["name"] + '_' + image_info["channel"] + '_' + image_info["position"] + '.' +
+                            image_info["image_type"])
+    mask_path = os.path.join(dataset_path, image_info["dataset_folder"], "masks",
+                             image_info["name"] + '_' + image_info["channel"] + '_' + image_info["position"] + '.' +
+                             image_info["mask_type"])
 
     img = Image.open(img_path)
     mask = Image.open(mask_path)
@@ -25,6 +29,7 @@ def get_image(image_info):
     mask_array = np.array(mask)
 
     aug = Compose([
+        RandomCrop(height=224, width=224),
         OneOf([
             RandomRotate90(),
             Flip()
@@ -33,10 +38,10 @@ def get_image(image_info):
             RGBShift(),
             CLAHE(clip_limit=2)
         ], p=0.4),
-        OneOf([
-            RandomSizedCrop(min_max_height=(int(args.img_size * 0.7), args.img_size), height=args.img_size,
-                            width=args.img_size)
-        ], p=0.4),
+        # OneOf([
+        #     RandomSizedCrop(min_max_height=(int(args.img_size * 0.7), args.img_size), height=args.img_size,
+        #                     width=args.img_size)
+        # ], p=0.4),
         ToTensor()
     ], p=1)
 

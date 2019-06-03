@@ -81,7 +81,7 @@ def iou(y_true, y_pred, smooth=1.0):
     y_true_f = y_true.flatten()
     y_pred_f = y_pred.flatten()
     intersection = np.sum(y_true_f * y_pred_f)
-    return (1. * intersection + smooth) / (np.sum(y_true_f) + np.sum(y_pred_f) + smooth)
+    return (1. * intersection + smooth) / (np.sum(y_true_f) + np.sum(y_pred_f) - intersection + smooth)
 
 
 def compute_iou_matrix(markers, instances):
@@ -125,19 +125,22 @@ def evaluate(datasets_path, predictions_path, test_df_path, output_name):
 
     dices = []
 
-    for ind, filename in tqdm(filenames.iterrows()):
+    for ind, image_info in tqdm(filenames.iterrows()):
 
-        prediction = cv.imread(os.path.join(predictions_path, filename["image_name"]) + ".png")
+        name = image_info["name"] + '_' + image_info["channel"] + '_' + image_info["position"]
+
+        prediction = cv.imread(os.path.join(predictions_path, name) + ".png")
+
         image = cv.imread(
-            os.path.join(datasets_path, filename["dataset_folder"], "images", filename["image_name"]) + ".tiff")
+            os.path.join(datasets_path, image_info["dataset_folder"], "images", name+ '.' + image_info["image_type"]))
         mask = cv.imread(
-            os.path.join(datasets_path, filename["dataset_folder"], "masks", filename["image_name"]) + ".png")
+            os.path.join(datasets_path, image_info["dataset_folder"], "masks", name+ '.' + image_info["mask_type"]))
 
         img_size = image.shape
         instances = []
 
-        image_instances_path = os.path.join(datasets_path, filename["dataset_folder"], "instance_masks",
-                                            filename["image_name"])
+        image_instances_path = os.path.join(datasets_path, image_info["dataset_folder"], "instance_masks",
+                                            name)
 
         for instance_name in os.listdir(image_instances_path):
             if ".png" in instance_name and ".xml" not in instance_name:
@@ -167,11 +170,11 @@ def evaluate(datasets_path, predictions_path, test_df_path, output_name):
             "pred_raw": tf.train.Feature(bytes_list=tf.train.BytesList(value=[pred_raw])),
             "metric": tf.train.Feature(float_list=tf.train.FloatList(value=[metric])),
             "img_name": tf.train.Feature(
-                bytes_list=tf.train.BytesList(value=[tf.compat.as_bytes(filename["image_name"])])),
+                bytes_list=tf.train.BytesList(value=[tf.compat.as_bytes(name)])),
             "msk_name": tf.train.Feature(
-                bytes_list=tf.train.BytesList(value=[tf.compat.as_bytes(filename["image_name"])])),
+                bytes_list=tf.train.BytesList(value=[tf.compat.as_bytes(name)])),
             "pred_name": tf.train.Feature(
-                bytes_list=tf.train.BytesList(value=[tf.compat.as_bytes(filename["image_name"])])),
+                bytes_list=tf.train.BytesList(value=[tf.compat.as_bytes(name)])),
         }))
         writer.write(example.SerializeToString())
 

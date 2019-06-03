@@ -36,17 +36,20 @@ def predict(datasets_path, model_weights_path, network, test_df_path, save_path)
         os.mkdir(predictions_path)
         print("Prediction directory created.")
 
-    for ind, filename in tqdm(test_df.iterrows()):
-        img_path = os.path.join(datasets_path, filename["dataset_folder"], "images", filename['image_name'] + ".tiff")
+    for ind, image_info in tqdm(test_df.iterrows()):
+        img_path = os.path.join(datasets_path, image_info["dataset_folder"], "images",
+                                image_info["name"] + '_' + image_info["channel"] + '_' + image_info["position"] + '.' +
+                                image_info["image_type"])
         img = Image.open(img_path)
 
         img_tensor = transforms.ToTensor()(img)
 
-        prediction = model.predict(img_tensor.view(1, 3, 224, 224))
+        prediction = model.predict(img_tensor.view(1, 3, image_info["image_size"], image_info["image_size"]))
 
-        result = prediction.view(224, 224).detach().numpy()
+        result = prediction.view(image_info["image_size"], image_info["image_size"]).detach().numpy()
 
-        cv.imwrite(os.path.join(predictions_path, filename['image_name'] + ".png"), result * 255)
+        cv.imwrite(os.path.join(predictions_path, image_info["name"] + '_' + image_info["channel"] + '_' + image_info[
+                                    "position"] + '.png'), result * 255)
 
 
 if __name__ == '__main__':
