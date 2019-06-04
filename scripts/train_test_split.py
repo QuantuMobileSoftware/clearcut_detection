@@ -3,8 +3,10 @@ import os
 from os.path import basename, normpath
 
 import geopandas as gp
+import numpy as np
 import pandas as pd
 import sklearn
+from PIL import Image
 
 
 def parse_args():
@@ -35,11 +37,11 @@ def season_split(datasets_path, markup_path, save_path, img_size=224, mask_type=
 
     for dataset_dir in datasets:
         instances_path = os.path.join(datasets_path, dataset_dir, "instance_masks")
+
         print(dataset_dir)
 
         train = 0
         test = 0
-
         for instances_dir in os.listdir(instances_path):
             instance_geojson_path = os.path.join(instances_path, instances_dir, instances_dir + ".geojson")
             instance_geojson = gp.read_file(instance_geojson_path)
@@ -51,24 +53,33 @@ def season_split(datasets_path, markup_path, save_path, img_size=224, mask_type=
             channel = '_'.join(instance[2:-2])
             position = '_'.join(instance[-2:])
 
-            if instance_minY > minY + height * (1 - train_ratio):
-                train += 1
-                train_list["dataset_folder"].append(dataset_dir)
-                train_list["name"].append(name)
-                train_list["channel"].append(channel)
-                train_list["position"].append(position)
-                train_list["image_size"].append(img_size)
-                train_list["mask_type"].append(mask_type)
-                train_list["image_type"].append(img_type)
-            else:
-                test += 1
-                test_list["dataset_folder"].append(dataset_dir)
-                test_list["name"].append(name)
-                test_list["channel"].append(channel)
-                test_list["position"].append(position)
-                test_list["image_size"].append(img_size)
-                test_list["mask_type"].append(mask_type)
-                test_list["image_type"].append(img_type)
+            masks_path = os.path.join(datasets_path, dataset_dir, "masks")
+
+            mask_path = os.path.join(masks_path, name + '_' + channel + '_' + position + '.' + mask_type)
+
+            mask = Image.open(mask_path)
+
+            mask_array = np.array(mask)
+
+            if np.count_nonzero(mask_array) > mask_array.size * 0.001:
+                if instance_minY > minY + height * (1 - train_ratio):
+                    train += 1
+                    train_list["dataset_folder"].append(dataset_dir)
+                    train_list["name"].append(name)
+                    train_list["channel"].append(channel)
+                    train_list["position"].append(position)
+                    train_list["image_size"].append(img_size)
+                    train_list["mask_type"].append(mask_type)
+                    train_list["image_type"].append(img_type)
+                else:
+                    test += 1
+                    test_list["dataset_folder"].append(dataset_dir)
+                    test_list["name"].append(name)
+                    test_list["channel"].append(channel)
+                    test_list["position"].append(position)
+                    test_list["image_size"].append(img_size)
+                    test_list["mask_type"].append(mask_type)
+                    test_list["image_type"].append(img_type)
 
         print("Train size", train)
         print("Test size", test)
