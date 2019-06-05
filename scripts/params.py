@@ -8,15 +8,15 @@ arg = parser.add_argument
 
 arg('--batch_size', type=int, default=8)
 arg('--num_workers', type=int, default=4)
-arg('--epochs', type=int, default=30)
+arg('--epochs', '-e', type=int, default=100)
 
 arg('--logdir', default='../logs')
-arg('--train_df', default='../../preprocessed_2016/train.csv')
-arg('--val_df', default='../../preprocessed_2016/test.csv')
-arg('--dataset_path', default='../../preprocessed_2016/')
+arg('--train_df', '-td', default='../../preprocessed_2016/filtered_4_seasons_train.csv')
+arg('--val_df', '-vd', default='../../preprocessed_2016/filtered_4_seasons_test.csv')
+arg('--dataset_path', '-dp', default='../../preprocessed_2016/')
 
-arg('--img_size', type=int, default=224)
+arg('--img_size', '-is', type=int, default=224)
 
-arg('--network', default='linknet')
+arg('--network', '-n', default='fpn50')
 
 args = parser.parse_args()
