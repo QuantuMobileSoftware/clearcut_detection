@@ -17,8 +17,8 @@ def main():
     print('Loading model')
     model, device = UtilsFactory.prepare_model(model)
 
-    train_df = pd.read_csv(args.train_df, index_col=0).to_dict('records')
-    val_df = pd.read_csv(args.val_df, index_col=0).to_dict('records')
+    train_df = pd.read_csv(args.train_df).to_dict('records')
+    val_df = pd.read_csv(args.val_df).to_dict('records')
 
     loaders = create_loaders(train_df, val_df)
 

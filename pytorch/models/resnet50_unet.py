@@ -2,6 +2,7 @@ import torchvision
 import torch.nn as nn
 import torch
 
+CHANNELS_COUNT = 9
 
 class ResNet50Unet(nn.Module):
     DEPTH = 6
@@ -11,6 +12,7 @@ class ResNet50Unet(nn.Module):
         resnet = torchvision.models.resnet.resnet50(pretrained=True)
         down_blocks = []
         up_blocks = []
+        resnet.conv1 = nn.Conv2d(CHANNELS_COUNT, 64, kernel_size=(7, 7), stride=(2, 2), padding=(3, 3), bias=False)
         self.input_block = nn.Sequential(*list(resnet.children()))[:3]
         self.input_pool = list(resnet.children())[3]
         for bottleneck in list(resnet.children()):
@@ -23,7 +25,7 @@ class ResNet50Unet(nn.Module):
         up_blocks.append(UpBlockForUNetWithResNet50(512, 256))
         up_blocks.append(UpBlockForUNetWithResNet50(in_channels=128 + 64, out_channels=128,
                                                     up_conv_in_channels=256, up_conv_out_channels=128))
-        up_blocks.append(UpBlockForUNetWithResNet50(in_channels=64 + 3, out_channels=64,
+        up_blocks.append(UpBlockForUNetWithResNet50(in_channels=64 + CHANNELS_COUNT, out_channels=64,
                                                     up_conv_in_channels=128, up_conv_out_channels=64))
 
         self.up_blocks = nn.ModuleList(up_blocks)
