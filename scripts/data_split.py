@@ -20,33 +20,59 @@ def parse_args():
     return parser.parse_args()
 
 
-def season_split(datasets_path, markup_path, save_path, img_size=224, mask_type="png", img_type="tiff"):
+def add_record(dataframe, dataset_dir, name, channel, position, img_size, mask_type, img_type):
+    return dataframe.append(
+        pd.DataFrame({
+            'dataset_folder': dataset_dir,
+            'name': name,
+            'channel': channel,
+            'position': position,
+            'image_size': img_size,
+            'mask_type': mask_type,
+            'image_type': img_type
+        }, index=[0]),
+        sort=True, ignore_index=True)
+
+
+def season_split(datasets_path, markup_path, save_path, img_size=224, mask_type="png", img_type="tiff",
+                 test_height_threshold=0.3, val_height_threshold=0.4):
     datasets = list(os.walk(datasets_path))[0][1]
-    geojson_markup = gp.read_file(markup_path).to_crs({'init': 'epsg:32637'})
+    geojson_markup = gp.read_file(markup_path)
 
     maxY = geojson_markup.total_bounds[3]
     minY = geojson_markup.total_bounds[1]
+
     height = maxY - minY
 
-    train_ratio = 0.7
+    cols = ["dataset_folder", "name", "channel", "image_size", "mask_type", "image_type", "position"]
+    train_df = pd.DataFrame(columns=cols)
+    val_df = pd.DataFrame(columns=cols)
+    test_df = pd.DataFrame(columns=cols)
 
-    train_list = {"dataset_folder": [], "name": [], "channel": [], "image_size": [], "mask_type": [],
-                  "image_type": [], "position": []}
-    test_list = {"dataset_folder": [], "name": [], "channel": [], "image_size": [], "mask_type": [],
-                 "image_type": [], "position": []}
+    overall_sizes = {"test": 0, "train": 0, "val": 0, "deleted": 0}
 
     for dataset_dir in datasets:
         instances_path = os.path.join(datasets_path, dataset_dir, "instance_masks")
 
         print(dataset_dir)
 
+        deleted = 0
         train = 0
         test = 0
+        val = 0
+
         for instances_dir in os.listdir(instances_path):
             instance_geojson_path = os.path.join(instances_path, instances_dir, instances_dir + ".geojson")
             instance_geojson = gp.read_file(instance_geojson_path)
 
-            instance_minY = instance_geojson.total_bounds[1]
+            if geojson_markup.crs != instance_geojson.crs:
+                geojson_markup = geojson_markup.to_crs(instance_geojson.crs)
+
+                maxY = geojson_markup.total_bounds[3]
+                minY = geojson_markup.total_bounds[1]
+                height = maxY - minY
+
+            instance_maxY = instance_geojson.total_bounds[3]
 
             instance = instances_dir.split('_')
             name = '_'.join(instance[:2])
@@ -61,37 +87,36 @@ def season_split(datasets_path, markup_path, save_path, img_size=224, mask_type=
 
             mask_array = np.array(mask)
 
-            if np.count_nonzero(mask_array) > mask_array.size * 0.001:
-                if instance_minY > minY + height * (1 - train_ratio):
-                    train += 1
-                    train_list["dataset_folder"].append(dataset_dir)
-                    train_list["name"].append(name)
-                    train_list["channel"].append(channel)
-                    train_list["position"].append(position)
-                    train_list["image_size"].append(img_size)
-                    train_list["mask_type"].append(mask_type)
-                    train_list["image_type"].append(img_type)
-                else:
+            mask_pixels = np.count_nonzero(mask_array)
+            center_pixels = np.count_nonzero(mask_array[10:-10, 10:-10])
+            border_pixels = mask_pixels - center_pixels
+
+            if mask_pixels > mask_array.size * 0.001 and center_pixels > border_pixels:
+                if instance_maxY < minY + height * test_height_threshold:
                     test += 1
-                    test_list["dataset_folder"].append(dataset_dir)
-                    test_list["name"].append(name)
-                    test_list["channel"].append(channel)
-                    test_list["position"].append(position)
-                    test_list["image_size"].append(img_size)
-                    test_list["mask_type"].append(mask_type)
-                    test_list["image_type"].append(img_type)
+                    test_df = add_record(test_df, dataset_dir, name, channel, position, img_size, mask_type, img_type)
+                elif instance_maxY < minY + height * val_height_threshold:
+                    val += 1
+                    val_df = add_record(val_df, dataset_dir, name, channel, position, img_size, mask_type, img_type)
+                else:
+                    train += 1
+                    train_df = add_record(train_df, dataset_dir, name, channel, position, img_size, mask_type, img_type)
+            else:
+                deleted += 1
 
         print("Train size", train)
+        print("Validation size", val)
         print("Test size", test)
+        print(f"{deleted} images was deleted")
+        overall_sizes["test"] += test
+        overall_sizes["train"] += train
+        overall_sizes["val"] += val
+        overall_sizes["deleted"] += deleted
 
-    train_df = pd.DataFrame(train_list,
-                            columns=["dataset_folder", "name", "channel", "image_size", "mask_type", "image_type",
-                                     "position"])
-    test_df = pd.DataFrame(test_list,
-                           columns=["dataset_folder", "name", "channel", "image_size", "mask_type", "image_type",
-                                    "position"])
+    print("Overall sizes", overall_sizes)
 
     train_df.to_csv(os.path.join(save_path, 'train.csv'), index=None, header=True)
+    val_df.to_csv(os.path.join(save_path, 'val.csv'), index=None, header=True)
     test_df.to_csv(os.path.join(save_path, 'test.csv'), index=None, header=True)
 
 
