@@ -1,6 +1,7 @@
 import sys
 sys.path.append('..')
 
+import torch
 import collections
 import numpy as np
 
@@ -39,7 +40,8 @@ def get_input_pair(
         if image_tensor.ndim == 2:
             image_tensor = image_tensor.reshape(*image_tensor.shape, 1)
 
-        image_tensors.append(image_tensor)
+        image_tensor = image_tensor / image_tensor.max() * 255
+        image_tensors.append(image_tensor.astype(np.uint8))
 
     mask_path = get_filepath(
         data_path,
