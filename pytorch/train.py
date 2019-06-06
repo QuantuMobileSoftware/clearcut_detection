@@ -2,19 +2,24 @@ import collections
 
 import pandas as pd
 import torch
+from torch import nn
 from catalyst.dl.callbacks import InferCallback, CheckpointCallback, EarlyStoppingCallback, DiceCallback
 from catalyst.dl.experiments import SupervisedRunner
 from catalyst.dl.utils import UtilsFactory
 
 from datasets import create_loaders
 from losses import BCE_Dice_Loss
-from models.utils import get_model
+from utils import get_model
 from params import args
 
 
+CHANNELS_COUNT = 9
+
+
 def main():
-    model = get_model('resnet50')
+    model = get_model('fpn50')
     print('Loading model')
+    model.encoder.conv1 = nn.Conv2d(CHANNELS_COUNT, 64, kernel_size=(7, 7), stride=(2, 2), padding=(3, 3), bias=False)
     model, device = UtilsFactory.prepare_model(model)
 
     train_df = pd.read_csv(args.train_df).to_dict('records')
@@ -37,8 +42,7 @@ def main():
         scheduler=scheduler,
         loaders=loaders,
         callbacks=[
-            DiceCallback(),
-            EarlyStoppingCallback(patience=2, min_delta=0.01)
+            DiceCallback()
         ],
         logdir=args.logdir,
         num_epochs=args.epochs,

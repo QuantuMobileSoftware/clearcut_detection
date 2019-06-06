@@ -205,10 +205,12 @@ def get_labels(distr):
     return res
 
 
-def stratified_split(data_info, data_path=args.data_path, 
-                     test_size=0.2, random_state=42,
-                     channel=args.channels[0], instance_type=args.instance_type,
-                     instances_folder=args.instances_folder):
+def stratified_split(
+    data_info, data_path=args.data_path,
+    test_size=0.2, random_state=42,
+    channel=args.channels[0], instance_type=args.instance_type,
+    instances_folder=args.instances_folder
+):
     
     stratified_indexes = stratify(
         data_info, data_path,

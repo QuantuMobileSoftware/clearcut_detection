@@ -1,14 +1,29 @@
 import sys
 sys.path.append('..')
 
-import torch
+import os
+import imageio
 import collections
 import numpy as np
 
 from torchvision import transforms
 from catalyst.dl.utils import UtilsFactory
-from preprocessing.generate_data import get_filepath, get_fullname, read_tensor
 from params import args
+
+
+def get_fullname(*name_parts):
+    return '_'.join(tuple(map(str, name_parts)))
+
+def join_pathes(*pathes):
+    return os.path.join(*pathes)
+
+
+def get_filepath(*path_parts, file_type):
+    return '{}.{}'.format(join_pathes(*path_parts), file_type)
+
+
+def read_tensor(filepath):
+    return imageio.imread(filepath)
 
 
 def get_input_pair(
