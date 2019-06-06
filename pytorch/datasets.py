@@ -11,6 +11,23 @@ from catalyst.dl.utils import UtilsFactory
 from params import args
 
 
+def count_channels(channels):
+    count = 0
+    for ch in channels:
+        if ch == 'rgb':
+            count += 3
+        elif ch == 'ndvi':
+            count += 1
+        elif ch == 'ndvi_color':
+            count += 4
+        elif ch == 'b2':
+            count += 1
+        else:
+            raise Exception('{} channel is unknown!'.format(ch))
+
+    return count
+
+
 def get_fullname(*name_parts):
     return '_'.join(tuple(map(str, name_parts)))
 

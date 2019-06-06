@@ -7,19 +7,16 @@ from catalyst.dl.callbacks import InferCallback, CheckpointCallback, EarlyStoppi
 from catalyst.dl.experiments import SupervisedRunner
 from catalyst.dl.utils import UtilsFactory
 
-from datasets import create_loaders
+from datasets import create_loaders, count_channels
 from losses import BCE_Dice_Loss
 from utils import get_model
 from params import args
 
 
-CHANNELS_COUNT = 9
-
-
 def main():
-    model = get_model('fpn50')
+    model = get_model(args.network)
     print('Loading model')
-    model.encoder.conv1 = nn.Conv2d(CHANNELS_COUNT, 64, kernel_size=(7, 7), stride=(2, 2), padding=(3, 3), bias=False)
+    model.encoder.conv1 = nn.Conv2d(count_channels(args.channels), 64, kernel_size=(7, 7), stride=(2, 2), padding=(3, 3), bias=False)
     model, device = UtilsFactory.prepare_model(model)
 
     train_df = pd.read_csv(args.train_df).to_dict('records')
@@ -27,7 +24,7 @@ def main():
 
     loaders = create_loaders(train_df, val_df)
 
-    criterion = BCE_Dice_Loss()
+    criterion = BCE_Dice_Loss(bce_weight=0.2)
     optimizer = torch.optim.Adam(model.parameters(), lr=1e-3)
     scheduler = torch.optim.lr_scheduler.MultiStepLR(optimizer, milestones=[10, 20, 40], gamma=0.3)
 

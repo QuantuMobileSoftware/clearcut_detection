@@ -6,9 +6,9 @@ arg = parser.add_argument
 # arg('--loss_function', default='bce_dice')
 # arg('--learning_rate', type=float, default=0.0001)
 
-arg('--batch_size', type=int, default=4)
+arg('--batch_size', type=int, default=8)
 arg('--num_workers', type=int, default=4)
-arg('--epochs', type=int, default=30)
+arg('--epochs', type=int, default=100)
 
 arg('--logdir', default='../logs')
 arg('--train_df', default='../data/train_df.csv')
@@ -18,7 +18,7 @@ arg('--dataset_path', default='../data')
 arg('--img_width', type=int, default=224)
 arg('--img_height', type=int, default=224)
 
-arg('--network', default='resnet50')
+arg('--network', default='fpn50')
 
 arg(
     '--data_path', '-dp', dest='data_path',
