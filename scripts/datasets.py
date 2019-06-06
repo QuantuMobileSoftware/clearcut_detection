@@ -40,7 +40,7 @@ def get_image(image_info):
                             width=args.img_size)
         ], p=0.4),
         ToTensor()
-    ], p=0.9)
+    ], p=1)
 
     augmented = aug(image=img_array, mask=mask_array)
 

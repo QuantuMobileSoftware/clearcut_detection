@@ -1,7 +1,7 @@
 import torch
 from catalyst.dl.metrics import dice
-from torch.nn import functional as F
 from torch.nn import Module
+from torch.nn import functional as F
 
 
 class BCE_Dice_Loss(Module):
@@ -25,47 +25,22 @@ def dice_loss(pred, target, eps=1.):
 
 
 class SoftBootstrappingLoss(Module):
-    """
-    Loss(t, p) = - (beta * t + (1 - beta) * p) * log(p)
-    """
     def __init__(self, beta=0.95, reduce=True):
         super(SoftBootstrappingLoss, self).__init__()
         self.beta = beta
         self.reduce = reduce
 
     def forward(self, input, target):
-        # cross_entropy = - t * log(p)
-        beta_xentropy = self.beta * F.cross_entropy(input, target, reduce=False)
+        target_tensor = target
+        prediction_tensor = input
 
-        # second term = - (1 - beta) * p * log(p)
-        bootstrap = - (1.0 - self.beta) * torch.sum(F.softmax(input, dim=1) * F.log_softmax(input, dim=1), dim=1)
+        epsilon = 1e-7
 
-        if self.reduce:
-            return torch.mean(beta_xentropy + bootstrap)
-        return beta_xentropy + bootstrap
+        prediction_tensor = torch.clamp(prediction_tensor, min=epsilon, max=1 - epsilon)
 
+        pred_tensor = torch.log(prediction_tensor / (
+                    torch.ones(prediction_tensor.shape, device=torch.device('cuda:0')) - prediction_tensor))
 
-class HardBootstrappingLoss(Module):
-    """
-    Loss(t, p) = - (beta * t + (1 - beta) * z) * log(p)
-    where z = argmax(p)
-    """
-    def __init__(self, beta=0.8, reduce=True):
-        super(HardBootstrappingLoss, self).__init__()
-        self.beta = beta
-        self.reduce = reduce
+        bootstrap_target_tensor = self.beta * target_tensor + (1.0 - self.beta) * torch.nn.Sigmoid()(pred_tensor)
 
-    def forward(self, input, target):
-        # cross_entropy = - t * log(p)
-        beta_xentropy = self.beta * F.cross_entropy(input, target, reduce=False)
-
-        # z = argmax(p)
-        _, z = torch.max(F.softmax(input, dim=1), dim=1)
-        z = z.view(-1, 1)
-        bootstrap = F.log_softmax(input, dim=1).gather(1, z).view(-1)
-        # second term = (1 - beta) * z * log(p)
-        bootstrap = - (1.0 - self.beta) * bootstrap
-
-        if self.reduce:
-            return torch.mean(beta_xentropy + bootstrap)
-        return beta_xentropy + bootstrap
+        return torch.mean(F.binary_cross_entropy_with_logits(input=pred_tensor, target=bootstrap_target_tensor))

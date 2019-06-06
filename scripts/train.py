@@ -19,7 +19,7 @@ def main():
 
     loaders = create_loaders()
 
-    criterion = BCE_Dice_Loss(bce_weight=0.2)
+    criterion = BCE_Dice_Loss()
     optimizer = torch.optim.Adam(model.parameters(), lr=1e-3)
     scheduler = torch.optim.lr_scheduler.MultiStepLR(optimizer, milestones=[10, 20, 40], gamma=0.3)
 
