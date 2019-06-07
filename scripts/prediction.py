@@ -49,7 +49,7 @@ def predict(datasets_path, model_weights_path, network, test_df_path, save_path)
         result = prediction.view(image_info["image_size"], image_info["image_size"]).detach().numpy()
 
         cv.imwrite(os.path.join(predictions_path, image_info["name"] + '_' + image_info["channel"] + '_' + image_info[
-                                    "position"] + '.png'), result * 255)
+            "position"] + '.png'), result * 255)
 
 
 if __name__ == '__main__':

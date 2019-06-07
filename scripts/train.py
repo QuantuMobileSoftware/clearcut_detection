@@ -6,7 +6,7 @@ from catalyst.dl.experiments import SupervisedRunner
 from catalyst.dl.utils import UtilsFactory
 
 from datasets import create_loaders
-from losses import BCE_Dice_Loss
+from losses import BCE_Dice_Loss, Bootstrapped_BCE_Dice_Loss
 from models.utils import get_model
 from params import args
 
@@ -19,7 +19,8 @@ def main():
 
     loaders = create_loaders()
 
-    criterion = BCE_Dice_Loss()
+    criterion = BCE_Dice_Loss(bce_weight=0.2)
+
     optimizer = torch.optim.Adam(model.parameters(), lr=1e-3)
     scheduler = torch.optim.lr_scheduler.MultiStepLR(optimizer, milestones=[10, 20, 40], gamma=0.3)
 
