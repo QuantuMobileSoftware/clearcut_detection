@@ -14,9 +14,11 @@ arg('--logdir', default='../logs')
 arg('--train_df', '-td', default='../../preprocessed_2016/filtered_4_seasons_train.csv')
 arg('--val_df', '-vd', default='../../preprocessed_2016/filtered_4_seasons_test.csv')
 arg('--dataset_path', '-dp', default='../../preprocessed_2016/')
+arg('--weights_path', '-wp', default='../weights/resnet50-19c8e357.pth')
 
 arg('--img_size', '-is', type=int, default=224)
 
 arg('--network', '-n', default='fpn50')
+
 
 args = parser.parse_args()
