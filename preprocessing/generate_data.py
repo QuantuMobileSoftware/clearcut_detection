@@ -228,10 +228,15 @@ def stratified_split(
 
 if __name__ == '__main__':
     data_info = get_data_info()
-    train_df, test_df = stratified_split(data_info)
-    
+    train_val_df, test_df = stratified_split(data_info, test_size=0.2)
+    train_df, val_df = stratified_split(train_val_df, test_size=0.15)
+
     train_df.to_csv(
         get_filepath(args.save_path, 'train_df', file_type='csv'),
+        index=False
+    )
+    val_df.to_csv(
+        get_filepath(args.save_path, 'val_df', file_type='csv'),
         index=False
     )
     test_df.to_csv(

@@ -6,10 +6,11 @@ import imageio
 import collections
 import numpy as np
 
-from torchvision import transforms
 from catalyst.dl.utils import UtilsFactory
 from params import args
-
+from albumentations import (
+    CLAHE, RandomRotate90, Flip, OneOf, Compose, RGBShift, RandomSizedCrop)
+from albumentations.pytorch.transforms import ToTensor
 
 def count_channels(channels):
     count = 0
@@ -31,6 +32,7 @@ def count_channels(channels):
 def get_fullname(*name_parts):
     return '_'.join(tuple(map(str, name_parts)))
 
+
 def join_pathes(*pathes):
     return os.path.join(*pathes)
 
@@ -48,6 +50,8 @@ def get_input_pair(
     image_folder=args.images_folder, mask_folder=args.masks_folder,
     image_type=args.image_type, mask_type=args.mask_type
 ):
+    if len(channels) == 0:
+        raise Exception('You have to specify at least one channel.')
 
     image_tensors = []
     for channel in channels:
@@ -83,13 +87,37 @@ def get_input_pair(
         file_type=mask_type
     )
 
-    image = transforms.ToTensor()(np.concatenate(image_tensors, axis=2))
-    mask = transforms.ToTensor()(read_tensor(mask_path))
+    rgb_tensor = image_tensors[0]
+    masks_array = read_tensor(mask_path)
 
-    return {'features': image, 'targets': mask}
+    rgb_aug = Compose([
+        OneOf([
+            RGBShift(),
+            CLAHE(clip_limit=2)
+        ], p=0.4)
+    ], p=0.9)
+
+    aug = Compose([
+        RandomRotate90(),
+        Flip(),
+        OneOf([
+            RandomSizedCrop(
+                min_max_height=(int(args.image_size * 0.7), args.image_size),
+                height=args.image_size, width=args.image_size)
+        ], p=0.4),
+        ToTensor()
+    ])
+
+    augmented_rgb = rgb_aug(image=rgb_tensor, mask=masks_array)
+    images_array = np.concatenate([augmented_rgb['image'], *image_tensors[1:]], axis=2)
+    augmented = aug(image=images_array, mask=augmented_rgb['mask'])
+    augmented_images = augmented['image']
+    augmented_masks = augmented['mask']
+
+    return {'features': augmented_images, 'targets': augmented_masks}
 
 
-def create_loaders(train_df, val_df):
+def create_loaders(train_df, val_df, test_df):
     train_loader = UtilsFactory.create_loader(
         train_df,
         open_fn=get_input_pair,
@@ -104,8 +132,16 @@ def create_loaders(train_df, val_df):
         num_workers=args.num_workers,
         shuffle=True)
 
+    test_loader = UtilsFactory.create_loader(
+        test_df,
+        open_fn=get_input_pair,
+        batch_size=args.batch_size,
+        num_workers=args.num_workers,
+        shuffle=True)
+
     loaders = collections.OrderedDict()
-    loaders["train"] = train_loader
-    loaders["valid"] = valid_loader
+    loaders['train'] = train_loader
+    loaders['valid'] = valid_loader
+    loaders['test'] = test_loader
 
     return loaders

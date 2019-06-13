@@ -12,13 +12,13 @@ arg('--epochs', type=int, default=100)
 
 arg('--logdir', default='../logs')
 arg('--train_df', default='../data/train_df.csv')
-arg('--val_df', default='../data/test_df.csv')
+arg('--val_df', default='../data/val_df.csv')
+arg('--test_df', default='../data/test_df.csv')
 arg('--dataset_path', default='../data')
 
-arg('--img_width', type=int, default=224)
-arg('--img_height', type=int, default=224)
+arg('--image_size', type=int, default=224)
 
-arg('--network', default='fpn50')
+arg('--network', default='unet50')
 
 arg(
     '--data_path', '-dp', dest='data_path',
