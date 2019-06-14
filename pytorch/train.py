@@ -76,7 +76,7 @@ def main():
         model=model,
         loaders=infer_loader,
         callbacks=[
-            CheckpointCallback(resume=f'{save_path}/checkpoints/best.pth'),
+            CheckpointCallback(resume='{}/checkpoints/best.pth'.format(save_path)),
             InferCallback()
         ],
     )
