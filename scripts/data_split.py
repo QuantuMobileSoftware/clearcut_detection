@@ -163,7 +163,7 @@ def autoencoder_split(datasets_path, markup_path, save_path, img_size=224, mask_
             instance = instances_dir.split('_')
             name = '_'.join(instance[:2])
             channel = '_'.join(instance[2:-2])
-            position = '_'.join(instance[-2:])
+            position = '_'.join(instance[-2:]).split('.')[0]
 
             if instance_maxY < minY + height * test_height_threshold:
                 test += 1
