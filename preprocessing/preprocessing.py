@@ -1,9 +1,62 @@
 import os
 import argparse
+import numpy as np
+import rasterio
 
+from tqdm import tqdm
 from image_division import divide_into_pieces
 from binary_mask_converter import poly2mask, split_mask
 from poly_instances_to_mask import markup_to_separate_polygons
+
+
+def merge_bands(tiff_path, save_path, channels):
+    for root, _, files in os.walk(tiff_path):
+        tiff_file = [file for file in files if file[-4:] == '.tif'][0]
+        image_name = '_'.join(tiff_file.split('_')[:2])
+        image_path = os.path.join(
+            save_path,
+            f'{image_name}.tif'
+        )
+        file_list = []
+        for i, channel in enumerate(channels):
+            file_list.append(os.path.join(root, f"{'_'.join([image_name, channel])}.tif"))
+            with rasterio.open(file_list[i]) as src:
+                if i == 0:
+                    meta = src.meta
+                else:
+                    meta['count'] += src.meta['count']
+                src.close()
+
+        with rasterio.open(image_path, 'w', **meta) as dst:
+            i = 1
+            for layer in tqdm(file_list):
+                with rasterio.open(layer) as src:
+                    for j in range(1, src.meta['count'] + 1):
+                        dst.write_band(i, src.read(j).astype(np.uint8))
+                        i += 1
+                    src.close()
+            dst.close()
+
+        return image_path
+
+
+def preprocess(tiff_file, save_path, width, height, polys_path):
+    data_path = os.path.join(save_path, tiff_file[:-4].split('/')[-1])
+    divide_into_pieces(tiff_file, data_path, width, height)
+
+    pieces_path = os.path.join(data_path, "masks")
+    pieces_info = os.path.join(data_path, "image_pieces.csv")
+    mask_path = poly2mask(polys_path, tiff_file, data_path)
+    split_mask(mask_path, pieces_path, pieces_info)
+
+    geojson_polygons = os.path.join(data_path, "geojson_polygons")
+    instance_masks_path = os.path.join(data_path, "instance_masks")
+    markup_to_separate_polygons(
+        poly_pieces_path=geojson_polygons, markup_path=polys_path,
+        save_path=instance_masks_path, pieces_info_path=pieces_info,
+        original_image_path=tiff_file,
+        image_pieces_path=os.path.join(data_path, 'images'),
+        mask_pieces_path=pieces_path)
 
 
 def parse_args():
@@ -16,7 +69,7 @@ def parse_args():
         '--tiff_path', '-tp', dest='tiff_path',
         required=True, help='Path to directory with source tiff files')
     parser.add_argument(
-        '--save_path', '-sp', dest='save_path', 
+        '--save_path', '-sp', dest='save_path',
         default='../data',
         help='Path to directory where data will be stored')
     parser.add_argument(
@@ -25,36 +78,17 @@ def parse_args():
     parser.add_argument(
         '--height', '-hgt', dest='height', default=224,
         type=int, help='Height of a piece')
+    parser.add_argument(
+        '--channels', '-ch', dest='channels', required=True,
+        nargs='+', help='Channels list')
 
     return parser.parse_args()
 
 
-def preprocess(tiff_path, save_path, width, height, polys_path):
-    for root, _, files in os.walk(tiff_path):
-        for file in files:
-            if file[-4:] != '.tif':
-                continue
-            tiff = os.path.join(root, file)
-            image_path = os.path.join(save_path, file[:-4])
-            divide_into_pieces(tiff, image_path, width, height)
-
-            pieces_path = os.path.join(image_path, "masks")
-            pieces_info = os.path.join(image_path, "image_pieces.csv")
-            mask_path = poly2mask(polys_path, tiff, image_path)
-            split_mask(mask_path, pieces_path, pieces_info)
-
-            geojson_polygons = os.path.join(image_path, "geojson_polygons")
-            instance_masks_path = os.path.join(image_path, "instance_masks")
-            markup_to_separate_polygons(
-                poly_pieces_path=geojson_polygons, markup_path=polys_path,
-                save_path=instance_masks_path, pieces_info_path=pieces_info,
-                original_image_path=tiff,
-                image_pieces_path=os.path.join(image_path, 'images'),
-                mask_pieces_path=pieces_path)
-
-    
 if __name__ == '__main__':
     args = parse_args()
+    image_path = merge_bands(args.tiff_path, args.save_path, args.channels)
     preprocess(
-        args.tiff_path, args.save_path,
-        args.width, args.height, args.polys_path)
+        image_path, args.save_path,
+        args.width, args.height, args.polys_path
+    )

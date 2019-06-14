@@ -1,3 +1,4 @@
+import imageio
 import rasterio
 from rasterio.windows import Window
 from rasterio.plot import reshape_as_image
@@ -64,22 +65,13 @@ def divide_into_pieces(image_path, save_path, width, height):
 
                 image_array = reshape_as_image(raster_window)
 
-                channels = image_array.shape[2]
-
-                if channels == 1:
-                    if image_array.dtype == 'float32':
-                        image = Image.fromarray(image_array.reshape((224, 224)), mode='F')
-                    elif image_array.dtype == 'uint16':
-                        image = Image.fromarray(image_array.reshape((224, 224)), mode='I;16')
-                elif channels == 3:
-                    image = Image.fromarray(image_array, mode='RGB')
-                elif channels == 4:
-                    image = Image.fromarray(image_array, mode='RGBA')
-                else:
-                    print("Wrong format")
-                    continue
-
-                image.save("{}/images/{}".format(save_path, piece_name))
+                meta = src.meta
+                meta['height'] = image_array.shape[0]
+                meta['width'] = image_array.shape[1]
+                with rasterio.open("{}/images/{}".format(save_path, piece_name), 'w', **meta) as dst:
+                    for ix in range(image_array.shape[2]):
+                        dst.write(image_array[:, :, ix], ix + 1)
+                    dst.close()
 
                 writer.writerow([
                     filename_w_ext, piece_name, piece_geojson_name,

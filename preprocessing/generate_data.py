@@ -54,8 +54,8 @@ def parse_args():
     )
     parser.add_argument(
         '--channels', '-ch', dest='channels',
-        default=['rgb'],
-        help='Channel list', type=list
+        default='rgb', nargs='+',
+        help='Channels list'
     )
 
     return parser.parse_args()
