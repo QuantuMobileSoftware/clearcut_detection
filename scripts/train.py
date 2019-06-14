@@ -1,12 +1,12 @@
 import collections
 
 import torch
-from catalyst.dl.callbacks import InferCallback, CheckpointCallback, EarlyStoppingCallback, DiceCallback
+from catalyst.dl.callbacks import DiceCallback, CheckpointCallback, InferCallback
 from catalyst.dl.experiments import SupervisedRunner
 from catalyst.dl.utils import UtilsFactory
 
 from datasets import create_loaders
-from losses import BCE_Dice_Loss, Bootstrapped_BCE_Dice_Loss
+from losses import BCE_Dice_Loss
 from models.utils import get_model
 from params import args
 

@@ -8,3 +8,5 @@ notebooks/\.ipynb_checkpoints/
 venv/
 
 scripts/models/__pycache__/
+
+scripts/models/season_prediction/__pycache__/
