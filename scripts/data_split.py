@@ -63,6 +63,7 @@ def season_split(datasets_path, markup_path, save_path, img_size=224, mask_type=
 
         for instances_dir in os.listdir(instances_path):
             instance_geojson_path = os.path.join(instances_path, instances_dir, instances_dir + ".geojson")
+
             instance_geojson = gp.read_file(instance_geojson_path)
 
             if geojson_markup.crs != instance_geojson.crs:
@@ -103,6 +104,76 @@ def season_split(datasets_path, markup_path, save_path, img_size=224, mask_type=
                     train_df = add_record(train_df, dataset_dir, name, channel, position, img_size, mask_type, img_type)
             else:
                 deleted += 1
+
+        print("Train size", train)
+        print("Validation size", val)
+        print("Test size", test)
+        print(f"{deleted} images was deleted")
+        overall_sizes["test"] += test
+        overall_sizes["train"] += train
+        overall_sizes["val"] += val
+        overall_sizes["deleted"] += deleted
+
+    print("Overall sizes", overall_sizes)
+
+    train_df.to_csv(os.path.join(save_path, 'train.csv'), index=None, header=True)
+    val_df.to_csv(os.path.join(save_path, 'val.csv'), index=None, header=True)
+    test_df.to_csv(os.path.join(save_path, 'test.csv'), index=None, header=True)
+
+
+def autoencoder_split(datasets_path, markup_path, save_path, img_size=224, mask_type="png", img_type="tiff",
+                      test_height_threshold=0.3, val_height_threshold=0.4):
+    datasets = list(os.walk(datasets_path))[0][1]
+    geojson_markup = gp.read_file(markup_path)
+
+    maxY = geojson_markup.total_bounds[3]
+    minY = geojson_markup.total_bounds[1]
+
+    height = maxY - minY
+
+    cols = ["dataset_folder", "name", "channel", "image_size", "mask_type", "image_type", "position"]
+    train_df = pd.DataFrame(columns=cols)
+    val_df = pd.DataFrame(columns=cols)
+    test_df = pd.DataFrame(columns=cols)
+
+    overall_sizes = {"test": 0, "train": 0, "val": 0, "deleted": 0}
+
+    for dataset_dir in datasets:
+        instances_path = os.path.join(datasets_path, dataset_dir, "geojson_polygons")
+        print(dataset_dir)
+
+        deleted = 0
+        train = 0
+        test = 0
+        val = 0
+
+        for instances_dir in os.listdir(instances_path):
+            instance_geojson_path = os.path.join(instances_path, instances_dir)
+            instance_geojson = gp.read_file(instance_geojson_path)
+
+            if geojson_markup.crs != instance_geojson.crs:
+                geojson_markup = geojson_markup.to_crs(instance_geojson.crs)
+
+                maxY = geojson_markup.total_bounds[3]
+                minY = geojson_markup.total_bounds[1]
+                height = maxY - minY
+
+            instance_maxY = instance_geojson.total_bounds[3]
+
+            instance = instances_dir.split('_')
+            name = '_'.join(instance[:2])
+            channel = '_'.join(instance[2:-2])
+            position = '_'.join(instance[-2:])
+
+            if instance_maxY < minY + height * test_height_threshold:
+                test += 1
+                test_df = add_record(test_df, dataset_dir, name, channel, position, img_size, mask_type, img_type)
+            elif instance_maxY < minY + height * val_height_threshold:
+                val += 1
+                val_df = add_record(val_df, dataset_dir, name, channel, position, img_size, mask_type, img_type)
+            else:
+                train += 1
+                train_df = add_record(train_df, dataset_dir, name, channel, position, img_size, mask_type, img_type)
 
         print("Train size", train)
         print("Validation size", val)

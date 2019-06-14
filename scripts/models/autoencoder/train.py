@@ -1,5 +1,5 @@
 import torch
-from .datasets import create_loaders
+from datasets import create_loaders
 from params import args
 from catalyst.dl.callbacks import InferCallback, CheckpointCallback, EarlyStoppingCallback, AccuracyCallback
 from catalyst.dl.experiments import SupervisedRunner

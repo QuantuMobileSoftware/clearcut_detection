@@ -9,18 +9,7 @@ from PIL import Image
 from tqdm import tqdm
 
 from models.utils import get_model
-
-
-def parse_args():
-    parser = argparse.ArgumentParser(
-        description='Script for making predictions on test images of dataset.')
-    parser.add_argument('--network', '-n', default='unet50')
-    parser.add_argument('--datasets_path', '-dp', required=True, help='Path to directory with datasets')
-    parser.add_argument('--model_weights_path', '-mwp', required=True, help='Path to file with model weights')
-    parser.add_argument('--test_df', '-td', required=True, help='Path to test dataframe')
-    parser.add_argument('--save_path', '-sp', required=True, help='Path to save predictions')
-
-    return parser.parse_args()
+from params import args
 
 
 def predict(datasets_path, model_weights_path, network, test_df_path, save_path):
@@ -53,5 +42,4 @@ def predict(datasets_path, model_weights_path, network, test_df_path, save_path)
 
 
 if __name__ == '__main__':
-    args = parse_args()
     predict(args.datasets_path, args.model_weights_path, args.network, args.test_df, args.save_path)

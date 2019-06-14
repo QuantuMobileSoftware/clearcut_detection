@@ -10,3 +10,5 @@ venv/
 scripts/models/__pycache__/
 
 scripts/models/season_prediction/__pycache__/
+
+scripts/models/autoencoder/__pycache__/
