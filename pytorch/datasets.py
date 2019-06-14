@@ -96,19 +96,22 @@ def get_input_pair(
     if image_tensor.ndim == 2:
         image_tensor = image_tensor.reshape(*image_tensor.shape, 1)
 
-    image_tensor = (image_tensor / image_tensor.max() * 255).astype(np.uint8)
-
-    # if first channel is rgb
-    rgb_tensor = image_tensor[:, :, :3]
-
+    images_array = (image_tensor / image_tensor.max() * 255).astype(np.uint8)
     masks_array = read_tensor(mask_path)
 
-    rgb_aug = Compose([
-        OneOf([
-            RGBShift(),
-            CLAHE(clip_limit=2)
-        ], p=0.4)
-    ], p=0.9)
+    if channels[0] == 'rgb':
+        rgb_tensor = images_array[:, :, :3]
+
+        rgb_aug = Compose([
+            OneOf([
+                RGBShift(),
+                CLAHE(clip_limit=2)
+            ], p=0.4)
+        ], p=0.9)
+
+        augmented_rgb = rgb_aug(image=rgb_tensor, mask=masks_array)
+        images_array = np.concatenate([augmented_rgb['image'], images_array[:, :, 3:]], axis=2)
+        masks_array = augmented_rgb['mask']
 
     aug = Compose([
         RandomRotate90(),
@@ -121,9 +124,7 @@ def get_input_pair(
         ToTensor()
     ])
 
-    augmented_rgb = rgb_aug(image=rgb_tensor, mask=masks_array)
-    images_array = np.concatenate([augmented_rgb['image'], image_tensor[:, :, 3:]], axis=2)
-    augmented = aug(image=images_array, mask=augmented_rgb['mask'])
+    augmented = aug(image=images_array, mask=masks_array)
     augmented_images = augmented['image']
     augmented_masks = augmented['mask']
 
