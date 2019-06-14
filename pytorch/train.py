@@ -6,7 +6,7 @@ import os
 
 from torch import nn, cuda
 from torch.backends import cudnn
-from catalyst.dl.callbacks import InferCallback, CheckpointCallback, EarlyStoppingCallback, DiceCallback
+from catalyst.dl.callbacks import InferCallback, CheckpointCallback, DiceCallback
 from catalyst.dl.experiments import SupervisedRunner
 from catalyst.dl.utils import UtilsFactory
 

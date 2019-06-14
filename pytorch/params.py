@@ -62,7 +62,7 @@ arg(
 arg(
     '--channels', '-ch', dest='channels',
     default=['rgb', 'ndvi', 'ndvi_color', 'b2'],
-    help='Channel list', type=list
+    help='Channel list', nargs='+'
 )
 
 args = parser.parse_args()

@@ -12,6 +12,7 @@ from albumentations import (
     CLAHE, RandomRotate90, Flip, OneOf, Compose, RGBShift, RandomSizedCrop)
 from albumentations.pytorch.transforms import ToTensor
 
+
 def count_channels(channels):
     count = 0
     for ch in channels:
@@ -27,6 +28,23 @@ def count_channels(channels):
             raise Exception('{} channel is unknown!'.format(ch))
 
     return count
+
+
+def filter_by_channels(image_tensor, channels):
+    result = []
+    for ch in channels:
+        if ch == 'rgb':
+            result.append(image_tensor[:, :, :3])
+        elif ch == 'ndvi':
+            result.append(image_tensor[:, :, 3:4])
+        elif ch == 'ndvi_color':
+            result.append(image_tensor[:, :, 4:8])
+        elif ch == 'b2':
+            result.append(image_tensor[:, :, 8:9])
+        else:
+            raise Exception('{} channel is unknown!'.format(ch))
+
+    return np.concatenate(result, axis=2)
 
 
 def get_fullname(*name_parts):
@@ -53,41 +71,36 @@ def get_input_pair(
     if len(channels) == 0:
         raise Exception('You have to specify at least one channel.')
 
-    image_tensors = []
-    for channel in channels:
-        dataset = get_fullname(
-            data_info_row['date'],
-            data_info_row['name'],
-            channel
-        )
-        filename = get_fullname(
-            data_info_row['date'], data_info_row['name'],
-            channel, data_info_row['ix'], data_info_row['iy']
-        )
-        image_path = get_filepath(
-            data_path,
-            dataset,
-            image_folder,
-            filename,
-            file_type=image_type
-        )
-
-        image_tensor = read_tensor(image_path)
-        if image_tensor.ndim == 2:
-            image_tensor = image_tensor.reshape(*image_tensor.shape, 1)
-
-        image_tensor = image_tensor / image_tensor.max() * 255
-        image_tensors.append(image_tensor.astype(np.uint8))
-
+    dataset = get_fullname(
+        data_info_row['date'],
+        data_info_row['name']
+    )
+    filename = get_fullname(
+        data_info_row['date'], data_info_row['name'],
+        data_info_row['ix'], data_info_row['iy']
+    )
+    image_path = get_filepath(
+        data_path, dataset, image_folder,
+        filename, file_type=image_type
+    )
     mask_path = get_filepath(
-        data_path,
-        dataset,
-        mask_folder,
-        filename,
-        file_type=mask_type
+        data_path, dataset, mask_folder,
+        filename, file_type=mask_type
     )
 
-    rgb_tensor = image_tensors[0]
+    image_tensor = filter_by_channels(
+        read_tensor(image_path),
+        channels
+    )
+
+    if image_tensor.ndim == 2:
+        image_tensor = image_tensor.reshape(*image_tensor.shape, 1)
+
+    image_tensor = (image_tensor / image_tensor.max() * 255).astype(np.uint8)
+
+    # if first channel is rgb
+    rgb_tensor = image_tensor[:, :, :3]
+
     masks_array = read_tensor(mask_path)
 
     rgb_aug = Compose([
@@ -109,7 +122,7 @@ def get_input_pair(
     ])
 
     augmented_rgb = rgb_aug(image=rgb_tensor, mask=masks_array)
-    images_array = np.concatenate([augmented_rgb['image'], *image_tensors[1:]], axis=2)
+    images_array = np.concatenate([augmented_rgb['image'], image_tensor[:, :, 3:]], axis=2)
     augmented = aug(image=images_array, mask=augmented_rgb['mask'])
     augmented_images = augmented['image']
     augmented_masks = augmented['mask']
