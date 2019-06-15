@@ -11,9 +11,9 @@ class EncoderDecoder(Model):
         self.encoder = encoder
         self.decoder = decoder
         self.season_model = nn.Sequential(
-            nn.Linear(2048*7*7, 2),
+            nn.Linear(2048*7*7, 200),
             nn.ReLU(),
-            nn.Linear(2, 100),
+            nn.Linear(200, 100),
             nn.ReLU(),
             nn.Linear(100, 1),
             nn.Sigmoid()
