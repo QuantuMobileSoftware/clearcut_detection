@@ -6,7 +6,7 @@ from catalyst.dl.experiments import SupervisedRunner
 from catalyst.dl.utils import UtilsFactory
 import collections
 from torch.nn import MSELoss
-from .model import Autoencoder_Unet
+from model import Autoencoder_Unet
 
 
 def main():
@@ -32,9 +32,6 @@ def main():
         optimizer=optimizer,
         scheduler=scheduler,
         loaders=loaders,
-        callbacks=[
-            AccuracyCallback()
-        ],
         logdir=args.logdir,
         num_epochs=args.epochs,
         verbose=True

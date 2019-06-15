@@ -1,9 +1,8 @@
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-
-from segmentation_models_pytorch.common.blocks import Conv2dReLU
 from segmentation_models_pytorch.base.model import Model
+from segmentation_models_pytorch.common.blocks import Conv2dReLU
 
 
 class DecoderBlock(nn.Module):
@@ -60,12 +59,19 @@ class UnetDecoder(Model):
         self.initialize()
 
     def compute_channels(self, encoder_channels, decoder_channels):
+        # channels = [
+        #     encoder_channels[0] + encoder_channels[1],
+        #     encoder_channels[2] + decoder_channels[0],
+        #     encoder_channels[3] + decoder_channels[1],
+        #     encoder_channels[4] + decoder_channels[2],
+        #     0 + decoder_channels[3],
+        # ]
         channels = [
-            encoder_channels[0] + encoder_channels[1],
-            encoder_channels[2] + decoder_channels[0],
-            encoder_channels[3] + decoder_channels[1],
-            encoder_channels[4] + decoder_channels[2],
-            0 + decoder_channels[3],
+            encoder_channels[0],
+            decoder_channels[0],
+            decoder_channels[1],
+            decoder_channels[2],
+            decoder_channels[3],
         ]
         return channels
 

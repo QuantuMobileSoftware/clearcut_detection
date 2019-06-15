@@ -5,7 +5,7 @@ import numpy as np
 import pandas as pd
 from PIL import Image
 from albumentations import (
-    CLAHE, RandomRotate90, Flip, OneOf, Compose, RGBShift, RandomCrop
+    CLAHE, RandomRotate90, Flip, OneOf, Compose, RGBShift, RandomCrop, RandomSizedCrop
 )
 from albumentations.pytorch.transforms import ToTensor
 from catalyst.dl.utils import UtilsFactory
@@ -24,12 +24,16 @@ def get_image(image_info):
     img_array = np.array(img)
 
     augm = Compose([
-        RandomCrop(224, 224),
         RandomRotate90(),
         Flip(),
         OneOf([
             RGBShift(),
             CLAHE(clip_limit=2)
+        ], p=0.4),
+        OneOf([
+            RandomSizedCrop(min_max_height=(int(image_info['image_size'] * 0.7), image_info['image_size']),
+                            height=image_info['image_size'],
+                            width=image_info['image_size'])
         ], p=0.4),
         ToTensor()
     ], p=1)

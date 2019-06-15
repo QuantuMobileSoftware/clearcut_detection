@@ -1,17 +1,17 @@
 from segmentation_models_pytorch.base import EncoderDecoder
 from segmentation_models_pytorch.encoders import get_encoder
-from .decoder import UnetDecoder
+from decoder import UnetDecoder
 
 
 class Autoencoder_Unet(EncoderDecoder):
 
     def __init__(
             self,
-            encoder_name='resnet34',
+            encoder_name='resnet50',
             encoder_weights='imagenet',
             decoder_use_batchnorm=True,
             decoder_channels=(256, 128, 64, 32, 16),
-            classes=1,
+            classes=3,
             activation='sigmoid',
             center=False,  # usefull for VGG models
     ):
