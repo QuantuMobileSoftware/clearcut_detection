@@ -1,7 +1,9 @@
 import os
+import re
 import cv2
 import torch
 import rasterio
+import argparse
 import numpy as np
 
 from tqdm import tqdm
@@ -169,25 +171,52 @@ def save_polygons(polygons, meta, save_path, filename):
     gc.to_file(os.path.join(save_path, f'{filename}.geojson'), driver='GeoJSON')
 
 
-def main():
-    tiff_file = '../data/20160103_66979721-be1b-4451-84e0-4a573236defd.tif'
-    network = 'unet50'
-    model_weights_path = '../logs/unet50_rgb_ndvi_ndvi_color_b2/checkpoints/best.pth'
-    channels = ['rgb', 'ndvi', 'ndvi_color', 'b2']
-
-    raster_array, meta = predict_raster(tiff_file, channels, network, model_weights_path)
-    save_raster(
-        raster_array, meta, '../data',
-        '20160103_66979721-be1b-4451-84e0-4a573236defd',
+def parse_args():
+    parser = argparse.ArgumentParser(description='Script for predicting masks.')
+    parser.add_argument(
+        '--image_path', '-ip', dest='image_path',
+        required=True, help='Path to source image'
+    )
+    parser.add_argument(
+        '--model_weights_path', '-mwp', dest='model_weights_path',
+        required=True, help='Path to directory where pieces will be stored'
+    )
+    parser.add_argument(
+        '--network', '-net', dest='network', default='unet50',
+        help='Model architecture'
+    )
+    parser.add_argument(
+        '--save_path', '-sp', dest='save_path', default='../data/predicted',
+        help='Path to directory where results will be stored'
+    )
+    parser.add_argument(
+        '--channels', '-ch', dest='channels',
+        default=['rgb', 'ndvi', 'ndvi_color', 'b2'],
+        help='Channel list', nargs='+'
     )
 
-    predicted_filename = 'predicted_20160103_66979721-be1b-4451-84e0-4a573236defd'
-    with rasterio.open(f'../data/{predicted_filename}.tif') as src:
-        raster_array = src.read()
-        raster_array = np.moveaxis(raster_array, 0, -1)
-        meta = src.meta
-        polygons = polygonize(raster_array, meta)
-        save_polygons(polygons, meta, '../data', predicted_filename)
+    return parser.parse_args()
+
+
+def main():
+    args = parse_args()
+
+    raster_array, meta = predict_raster(
+        args.image_path, args.channels,
+        args.network, args.model_weights_path
+    )
+
+    filename = re.split(r'[./]', args.image_path)[-2]
+    predicted_filename = f'predicted_{filename}'
+    save_raster(raster_array, meta, args.save_path, filename)
+
+    # with rasterio.open(os.path.join(args.save_path, f'{predicted_filename}.tif')) as src:
+    #     raster_array = src.read()
+    #     raster_array = np.moveaxis(raster_array, 0, -1)
+    #     meta = src.meta
+    #     src.close()
+    polygons = polygonize(raster_array, meta)
+    save_polygons(polygons, meta, args.save_path, predicted_filename)
 
 
 if __name__ == '__main__':
