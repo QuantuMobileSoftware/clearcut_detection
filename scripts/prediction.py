@@ -15,7 +15,7 @@ from params import args
 def predict(datasets_path, model_weights_path, network, test_df_path, save_path):
     model = get_model(network)
     checkpoint = torch.load(model_weights_path, map_location='cpu')
-    model.load_state_dict(checkpoint)
+    model.load_state_dict(checkpoint['model_state_dict'])
 
     test_df = pd.read_csv(test_df_path)
 
@@ -33,7 +33,7 @@ def predict(datasets_path, model_weights_path, network, test_df_path, save_path)
 
         img_tensor = transforms.ToTensor()(img)
 
-        _, prediction = model.predict(img_tensor.view(1, 3, image_info["image_size"], image_info["image_size"]))
+        prediction = model.predict(img_tensor.view(1, 3, image_info["image_size"], image_info["image_size"]))
 
         result = prediction.view(image_info["image_size"], image_info["image_size"]).detach().numpy()
 
