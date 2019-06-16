@@ -6,6 +6,9 @@ import imageio
 import rasterio
 import numpy as np
 import torchvision.transforms as transforms
+from catalyst.dl.utils import UtilsFactory
+from geojson import Polygon
+from geopandas import GeoDataFrame, GeoSeries
 
 from tqdm import tqdm
 from pytorch.utils import get_model
@@ -72,11 +75,12 @@ def predict_raster(
         window_size=2240, input_size=224
 ):
     model = load_model(network, model_weights_path, channels)
+    model, device = UtilsFactory.prepare_model(model)
+
     with rasterio.open(tiff_file) as src:
         meta = src.meta
         meta['count'] = 1
-        meta['dtype'] = 'float32'
-        raster_array = np.zeros((src.meta['height'], src.meta['width']), np.float32)
+        raster_array = np.zeros((src.meta['height'], src.meta['width']))
         xs = src.bounds.left
         window_size_meters = window_size
         window_size_pixels = window_size / (src.res[0])
@@ -89,21 +93,35 @@ def predict_raster(
                 pbar.set_postfix(Row=f'{row}', Col=f'{col}')
                 step_row = row - int(window_size_pixels)
                 step_col = col + int(window_size_pixels)
+
+                if step_row < 0:
+                    row = int(window_size_pixels)
+                    step_row = 0
+
+                right_bound = src.index(src.bounds.right, 0)[1]
+                if step_col > right_bound:
+                    col = int(right_bound - window_size_pixels)
+                    step_col = right_bound
+
                 res = src.read(
                     window=(
-                        (max(0, step_row), row),
+                        (step_row, row),
                         (col, step_col)
                     )
                 )
-                rect = [[max(0, step_row), row], [col, step_col]]
-                temp = res.copy()
-                res = np.zeros((res.shape[0], input_size, input_size))
-                res[:, -temp.shape[1]:, :temp.shape[2]] = temp
-                res = res.astype(np.uint8)
+                rect = [
+                    [step_row, row],
+                    [col, step_col]
+                ]
+                # padding
+                # temp = res.copy()
+                # res = np.zeros((res.shape[0], input_size, input_size))
+                # res[:, -temp.shape[1]:, :temp.shape[2]] = temp
 
-                for channel in range(res.shape[2]):
-                    res[:, :, channel] = scale(res[:, :, channel], 255)
+                for channel in range(res.shape[0]):
+                    res[channel, :, :] = scale(res[channel, :, :], 255)
 
+                res = np.moveaxis(res, 0, -1).astype(np.uint8)
                 res = transforms.ToTensor()(res)
                 pred = predict(model, res, (1, count_channels(channels), input_size, input_size))
                 stack_arr = np.dstack([
@@ -119,11 +137,13 @@ def predict_raster(
 
         src.close()
 
+    meta['dtype'] = 'uint8'
+
     return raster_array, meta
 
 
 def scale(tensor, max_value):
-    return (tensor / tensor.max() * max_value).astype(np.uint8)
+    return (tensor / tensor.max() * max_value).astype(np.int16)
 
 
 def save_raster(raster_array, meta, save_path, filename, threshold=0.3):
@@ -140,8 +160,37 @@ def save_raster(raster_array, meta, save_path, filename, threshold=0.3):
 
     with rasterio.open(f'{save_path}.tif', 'w', **meta) as dst:
         for i in range(1, meta['count'] + 1):
-            src_array = raster_array[i - 1]
-            dst.write(src_array, i)
+            dst.write(raster_array, i)
+
+
+def polygonize(raster_array, meta, transform=True):
+    contours, _ = cv2.findContours(raster_array, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
+    polygons = []
+    for i in tqdm(range(len(contours))):
+        c = contours[i]
+        n_s = (c.shape[0], c.shape[2])
+        if n_s[0] > 2:
+            if transform:
+                polys = [tuple(i) * meta['transform'] for i in c.reshape(n_s)]
+            else:
+                polys = [tuple(i) for i in c.reshape(n_s)]
+            polygons.append(Polygon(polys))
+
+    return polygons
+
+
+def save_polygons(polygons, meta, save_path, filename):
+    if len(polygons) == 0:
+        print('no_polygons detected')
+        return
+
+    if not os.path.exists(save_path):
+        os.makedirs(save_path, exist_ok=True)
+        print("Data directory created.")
+
+    gc = GeoSeries(polygons)
+    gc.crs = meta['crs']
+    gc.to_file(os.path.join(save_path, f'{filename}.geojson'), driver='GeoJSON')
 
 
 def main():
@@ -155,6 +204,15 @@ def main():
         raster_array, meta, '../data',
         '20160103_66979721-be1b-4451-84e0-4a573236defd',
     )
+
+    predicted_filename = 'predicted_20160103_66979721-be1b-4451-84e0-4a573236defd'
+    with rasterio.open(f'../data/{predicted_filename}.tif') as src:
+        raster_array = src.read()
+        raster_array = np.moveaxis(raster_array, 0, -1)
+        meta = src.meta
+        polygons = polygonize(raster_array, meta)
+        save_polygons(polygons, meta, '../data', predicted_filename)
+
 
 if __name__ == '__main__':
     main()

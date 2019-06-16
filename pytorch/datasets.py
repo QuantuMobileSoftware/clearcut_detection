@@ -96,7 +96,7 @@ def get_input_pair(
     if image_tensor.ndim == 2:
         image_tensor = image_tensor.reshape(*image_tensor.shape, 1)
 
-    images_array = (image_tensor / image_tensor.max() * 255).astype(np.uint8)
+    images_array = (image_tensor / image_tensor.max() * 255).astype(np.uint16)
     masks_array = read_tensor(mask_path)
 
     if channels[0] == 'rgb':

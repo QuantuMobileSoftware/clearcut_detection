@@ -27,12 +27,13 @@ def merge_bands(tiff_path, save_path, channels):
                     meta['count'] += src.meta['count']
                 src.close()
 
+        meta['dtype'] = np.int16
         with rasterio.open(image_path, 'w', **meta) as dst:
             i = 1
             for layer in tqdm(file_list):
                 with rasterio.open(layer) as src:
                     for j in range(1, src.meta['count'] + 1):
-                        dst.write_band(i, src.read(j).astype(np.uint8))
+                        dst.write_band(i, src.read(j).astype(np.int16))
                         i += 1
                     src.close()
             dst.close()
