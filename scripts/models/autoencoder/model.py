@@ -16,7 +16,8 @@ class Autoencoder_Unet(EncoderDecoder):
             center=False,  # usefull for VGG models
     ):
         encoder = get_encoder(
-            encoder_name
+            encoder_name,
+            encoder_weights='imagenet'
         )
 
         decoder = UnetDecoder(

@@ -83,7 +83,7 @@ class UnetDecoder(Model):
             encoder_head = self.center(encoder_head)
 
         # x = self.layer1([encoder_head, skips[0]])
-        # x = self.layer2([x])
+        # x = self.layer2([x, skips[1]])
         # x = self.layer3([x, skips[2]])
         # x = self.layer4([x, skips[3]])
         # x = self.layer5([x, None])
@@ -94,4 +94,4 @@ class UnetDecoder(Model):
         x = self.layer5([x, None])
         x = self.final_conv(x)
 
-        return x
+        return torch.sigmoid(x)
