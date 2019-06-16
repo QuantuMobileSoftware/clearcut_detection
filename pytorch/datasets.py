@@ -100,7 +100,7 @@ def get_input_pair(
     masks_array = read_tensor(mask_path)
 
     if channels[0] == 'rgb':
-        rgb_tensor = images_array[:, :, :3]
+        rgb_tensor = images_array[:, :, :3].astype(np.uint8)
 
         rgb_aug = Compose([
             OneOf([

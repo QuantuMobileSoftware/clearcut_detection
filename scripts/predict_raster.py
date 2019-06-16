@@ -1,37 +1,16 @@
 import os
-
 import cv2
 import torch
-import imageio
 import rasterio
 import numpy as np
-import torchvision.transforms as transforms
-from catalyst.dl.utils import UtilsFactory
-from geojson import Polygon
-from geopandas import GeoDataFrame, GeoSeries
 
 from tqdm import tqdm
+from geopandas import GeoSeries
+from torchvision import transforms
+from shapely.geometry import Polygon
+from catalyst.dl.utils import UtilsFactory
+
 from pytorch.utils import get_model
-
-
-def read_tensor(filepath):
-    return imageio.imread(filepath)
-
-
-def join_name(*name_parts):
-    return '_'.join(tuple(map(str, name_parts)))
-
-
-def join_pathes(*pathes):
-    return os.path.join(*pathes)
-
-
-def get_filepath(*path_parts, file_type):
-    return '{}.{}'.format(join_pathes(*path_parts), file_type)
-
-
-def get_filenames(path):
-    return tuple(os.walk(path))[0][2]
 
 
 def count_channels(channels):
@@ -59,8 +38,9 @@ def load_model(network, model_weights_path, channels):
     )
     checkpoint = torch.load(model_weights_path, map_location='cpu')
     model.load_state_dict(checkpoint['model_state_dict'])
+    model, device = UtilsFactory.prepare_model(model.eval())
 
-    return model.eval()
+    return model
 
 
 def predict(model, image_tensor, input_shape=(1, 3, 224, 224)):
@@ -70,20 +50,16 @@ def predict(model, image_tensor, input_shape=(1, 3, 224, 224)):
         .detach().numpy()
 
 
-def predict_raster(
-        tiff_file, channels, network, model_weights_path,
-        window_size=2240, input_size=224
-):
+def predict_raster(tiff_file, channels, network, model_weights_path, input_size=224):
     model = load_model(network, model_weights_path, channels)
-    model, device = UtilsFactory.prepare_model(model)
 
     with rasterio.open(tiff_file) as src:
         meta = src.meta
         meta['count'] = 1
         raster_array = np.zeros((src.meta['height'], src.meta['width']))
         xs = src.bounds.left
-        window_size_meters = window_size
-        window_size_pixels = window_size / (src.res[0])
+        window_size_meters = input_size * (src.res[0])
+        window_size_pixels = input_size
         cnt = 0
         pbar = tqdm()
         while xs < src.bounds.right:
@@ -113,13 +89,9 @@ def predict_raster(
                     [step_row, row],
                     [col, step_col]
                 ]
-                # padding
-                # temp = res.copy()
-                # res = np.zeros((res.shape[0], input_size, input_size))
-                # res[:, -temp.shape[1]:, :temp.shape[2]] = temp
 
                 for channel in range(res.shape[0]):
-                    res[channel, :, :] = scale(res[channel, :, :], 255)
+                    res[channel] = scale(res[channel], 255)
 
                 res = np.moveaxis(res, 0, -1).astype(np.uint8)
                 res = transforms.ToTensor()(res)
@@ -143,7 +115,11 @@ def predict_raster(
 
 
 def scale(tensor, max_value):
-    return (tensor / tensor.max() * max_value).astype(np.int16)
+    max_ = tensor.max()
+    if max_ > 0:
+        return tensor / max_ * max_value
+
+    return tensor
 
 
 def save_raster(raster_array, meta, save_path, filename, threshold=0.3):
