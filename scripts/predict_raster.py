@@ -101,7 +101,7 @@ def predict_raster(tiff_file, channels, network, model_weights_path, input_size=
                 stack_arr = np.dstack([
                     pred[rect[0][0] - rect[0][1]:, :rect[1][1] - rect[1][0]],
                     raster_array[rect[0][0]:rect[0][1], rect[1][0]:rect[1][1]]])
-                raster_array[rect[0][0]:rect[0][1], rect[1][0]:rect[1][1]] = np.amax(stack_arr, axis=2)
+                raster_array[rect[0][0]:rect[0][1], rect[1][0]:rect[1][1]] = np.mean(stack_arr, axis=2)
 
                 pbar.update(1)
                 cnt += 1
@@ -111,9 +111,9 @@ def predict_raster(tiff_file, channels, network, model_weights_path, input_size=
 
         src.close()
 
-    meta['dtype'] = 'uint8'
+    meta['dtype'] = 'float32'
 
-    return raster_array, meta
+    return raster_array.astype(np.float32), meta
 
 
 def scale(tensor, max_value):
@@ -124,13 +124,10 @@ def scale(tensor, max_value):
     return tensor
 
 
-def save_raster(raster_array, meta, save_path, filename, threshold=0.3):
+def save_raster(raster_array, meta, save_path, filename):
     if not os.path.exists(save_path):
         os.makedirs(save_path, exist_ok=True)
         print("Data directory created.")
-
-    raster_array = raster_array > threshold
-    raster_array = (raster_array * 255).astype(np.uint8)
 
     save_path = os.path.join(save_path, f'predicted_{filename}')
 
@@ -141,8 +138,12 @@ def save_raster(raster_array, meta, save_path, filename, threshold=0.3):
             dst.write(raster_array, i)
 
 
-def polygonize(raster_array, meta, transform=True):
+def polygonize(raster_array, meta, threshold=0.5, transform=True):
+    raster_array = raster_array > threshold
+    raster_array = (raster_array * 255).astype(np.uint8)
+
     contours, _ = cv2.findContours(raster_array, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
+
     polygons = []
     for i in tqdm(range(len(contours))):
         c = contours[i]
