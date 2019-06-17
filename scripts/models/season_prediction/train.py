@@ -29,6 +29,7 @@ def main():
 
     best_valid_dice = -1
     best_epoch = -1
+    best_accuracy = -1
 
     for epoch in range(args.epochs):
 
@@ -36,6 +37,11 @@ def main():
         train_dices = []
         valid_losses = []
         valid_dices = []
+        train_size = 0
+        train_predicted = 0
+
+        valid_size = 0
+        valid_predicted = 0
 
         segmentation_weight = 0.8
 
@@ -61,9 +67,16 @@ def main():
 
             dice_score = dice(mask_prediction, mask).item()
 
-            print("Bce_dice_loss:", round(segmentation_loss.mean().item(), 3),
-                  "Bce_season:", round(season_loss.mean().item(), 3),
-                  "Dice:", round(dice_score, 3), end='\r', flush=True)
+            season_prediction = season_prediction > 0.5
+
+            print("Bce_dice_loss: {:.3f}".format(segmentation_loss.mean().item()), '\t',
+                  "Bce_season: {:.3f}".format(season_loss.mean().item()), '\t',
+                  "Dice: {:.3f}".format(dice_score),
+                  end='\r', flush=True,
+                  )
+
+            train_size += season_prediction.size()[0]
+            train_predicted += torch.sum((season_prediction == season.byte())).item()
 
             loss = segmentation_loss * segmentation_weight + season_loss * (1 - segmentation_weight)
 
@@ -74,8 +87,11 @@ def main():
             train_dices.append(dice_score)
 
         print()
-        print("Train loss:", round(mean(train_losses), 3))
-        print("Train dice:", round(mean(train_dices), 3))
+        train_accuracy = train_predicted / train_size
+
+        print("Train:")
+        print("Loss:", round(mean(train_losses), 3), "Dice:", round(mean(train_dices), 3), "Accuracy:",
+              round(train_accuracy, 3))
 
         with torch.no_grad():
             for valid_idx, valid_data in enumerate(loaders["valid"], 0):
@@ -97,21 +113,29 @@ def main():
 
                 loss = segmentation_loss * segmentation_weight + season_loss * (1 - segmentation_weight)
 
+                season_prediction = season_prediction > 0.5
+
+                valid_size += season_prediction.size()[0]
+                valid_predicted += torch.sum((season_prediction == season.byte())).item()
+
                 valid_losses.append(loss.item())
                 valid_dices.append(dice(mask_prediction, mask).item())
 
             dice_mean = round(mean(valid_dices), 3)
-            print("Valid loss:", round(mean(valid_losses), 3), "Valid dice:", dice_mean)
+            valid_accuracy = valid_predicted / valid_size
+            print("Validation:")
+            print("Loss:", round(mean(valid_losses), 3), "Dice:", dice_mean, "Accuracy:", round(valid_accuracy, 3))
 
             if dice_mean > best_valid_dice:
                 best_valid_dice = dice_mean
                 best_epoch = epoch
+                best_accuracy = valid_accuracy
                 torch.save(model.state_dict(), 'weights/epoch{0}.pth'.format(epoch))
 
         scheduler.step()
         print("Epoch {0} ended".format(epoch))
 
-    print("Best epoch: ", best_epoch, "with dice: ", best_valid_dice)
+    print("Best epoch: ", best_epoch, "with dice ", best_valid_dice, "and season prediction accuracy", best_accuracy)
 
 
 if __name__ == '__main__':
