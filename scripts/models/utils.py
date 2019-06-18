@@ -4,18 +4,15 @@ import torchvision.models as models
 from segmentation_models_pytorch.encoders.resnet import ResNetEncoder, resnet_encoders
 from params import args
 from models.season_prediction.model import FPN_double_output
+from models.autoencoder.model import Autoencoder_Unet
 
 
-def get_satelite_pretrained_resnet(name='resnet50', pretrained=True):
-    Encoder = resnet_encoders[name]['encoder']
-    encoder = Encoder(**resnet_encoders[name]['params'])
-    encoder.out_shapes = resnet_encoders[name]['out_shapes']
+def get_satellite_pretrained_resnet(encoder_name='resnet50'):
+    model = Autoencoder_Unet(encoder_name=encoder_name)
+    checkpoint = torch.load(args.model_weights_path, map_location='cpu')
+    model.load_state_dict(checkpoint['model_state_dict'])
 
-    if pretrained:
-        checkpoint = torch.load(args.weights_path)
-        encoder.load_state_dict(checkpoint)
-
-    return encoder
+    return model.encoder
 
 
 def get_model(name='unet34'):
@@ -41,9 +38,9 @@ def get_model(name='unet34'):
         return smp.PSPNet('resnet50', encoder_weights='imagenet', classes=1)
     elif name == 'fpn50_season':
         return FPN_double_output('resnet50', encoder_weights='imagenet')
-    elif name == 'fpn50_satelite':
-        fpn_resnet50 = smp.FPN('resnet50', encoder_weights='imagenet')
-        fpn_resnet50.encoder = get_satelite_pretrained_resnet()
+    elif name == 'fpn50_satellite':
+        fpn_resnet50 = smp.FPN('resnet50', encoder_weights=None)
+        fpn_resnet50.encoder = get_satellite_pretrained_resnet()
         return fpn_resnet50
     else:
         raise ValueError("Unknown network")
