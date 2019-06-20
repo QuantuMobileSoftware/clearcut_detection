@@ -39,6 +39,12 @@ def filter_by_channels(image_tensor, channels):
             result.append(image_tensor[:, :, 4:8])
         elif ch == 'b2':
             result.append(image_tensor[:, :, 8:9])
+        elif ch == 'b3':
+            result.append(image_tensor[:, :, 9:10])
+        elif ch == 'b4':
+            result.append(image_tensor[:, :, 10:11])
+        elif ch == 'b8':
+            result.append(image_tensor[:, :, 11:12])
         else:
             raise Exception('{} channel is unknown!'.format(ch))
 

@@ -61,7 +61,7 @@ arg(
 )
 arg(
     '--channels', '-ch', dest='channels',
-    default=['rgb', 'ndvi', 'ndvi_color', 'b2'],
+    default=['rgb', 'ndvi', 'ndvi_color', 'b2', 'b3'],
     help='Channel list', nargs='+'
 )
 
