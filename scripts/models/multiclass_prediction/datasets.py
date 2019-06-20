@@ -1,10 +1,8 @@
 import collections
-import datetime
 import os
 
 import numpy as np
 import pandas as pd
-import torch
 from PIL import Image
 from albumentations import (
     CLAHE, RandomRotate90, Flip, OneOf, Compose, RGBShift, RandomCrop
@@ -28,7 +26,7 @@ def get_image(image_info):
     mask = Image.open(mask_path)
 
     img_array = np.array(img)
-    mask_array = np.array(mask)
+    mask_array = np.array(mask).astype(np.float32)
 
     aug = Compose([
         RandomCrop(224, 224),
@@ -51,7 +49,9 @@ def get_image(image_info):
     augmented_img = augmented['image']
     augmented_mask = augmented['mask']
 
-    return {"features": augmented_img, "targets": augmented_mask.squeeze().long()}
+    augmented_mask = augmented_mask.squeeze().long()
+
+    return {"features": augmented_img, "targets": augmented_mask}
 
 
 def create_loaders():
