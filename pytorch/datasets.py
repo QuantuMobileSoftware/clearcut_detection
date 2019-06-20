@@ -18,11 +18,9 @@ def count_channels(channels):
     for ch in channels:
         if ch == 'rgb':
             count += 3
-        elif ch == 'ndvi':
-            count += 1
         elif ch == 'ndvi_color':
             count += 4
-        elif ch == 'b2':
+        elif ch in ['ndvi', 'b2', 'b3', 'b4', 'b8']:
             count += 1
         else:
             raise Exception('{} channel is unknown!'.format(ch))

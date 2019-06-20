@@ -21,6 +21,7 @@ def merge_bands(tiff_path, save_path, channels):
         for i, channel in enumerate(channels):
             file_list.append(os.path.join(root, f"{'_'.join([image_name, channel])}.tif"))
             with rasterio.open(file_list[i]) as src:
+                print(channel, src.meta['count'])
                 if i == 0:
                     meta = src.meta
                 else:

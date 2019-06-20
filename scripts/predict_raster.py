@@ -195,6 +195,14 @@ def parse_args():
         default=['rgb', 'ndvi', 'ndvi_color', 'b2'],
         help='Channel list', nargs='+'
     )
+    parser.add_argument(
+        '--threshold', '-t', dest='threshold',
+        default=0.3, help='Threshold to get binary values in mask', type=float
+    )
+    parser.add_argument(
+        '--polygonize_olny', '-po', dest='polygonize_olny',
+        default=False, help='Flag to skip prediction', type=bool
+    )
 
     return parser.parse_args()
 
@@ -202,21 +210,23 @@ def parse_args():
 def main():
     args = parse_args()
 
-    raster_array, meta = predict_raster(
-        args.image_path, args.channels,
-        args.network, args.model_weights_path
-    )
-
     filename = re.split(r'[./]', args.image_path)[-2]
     predicted_filename = f'predicted_{filename}'
-    save_raster(raster_array, meta, args.save_path, filename)
 
-    # with rasterio.open(os.path.join(args.save_path, f'{predicted_filename}.tif')) as src:
-    #     raster_array = src.read()
-    #     raster_array = np.moveaxis(raster_array, 0, -1)
-    #     meta = src.meta
-    #     src.close()
-    polygons = polygonize(raster_array, meta)
+    if not args.polygonize_olny:
+        raster_array, meta = predict_raster(
+            args.image_path, args.channels,
+            args.network, args.model_weights_path
+        )
+        save_raster(raster_array, meta, args.save_path, filename)
+    else:
+        with rasterio.open(os.path.join(args.save_path, f'{predicted_filename}.tif')) as src:
+            raster_array = src.read()
+            raster_array = np.moveaxis(raster_array, 0, -1)
+            meta = src.meta
+            src.close()
+
+    polygons = polygonize(raster_array, meta, args.threshold)
     save_polygons(polygons, meta, args.save_path, predicted_filename)
 
 
