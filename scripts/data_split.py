@@ -3,10 +3,8 @@ import os
 from os.path import basename, normpath
 
 import geopandas as gp
-import numpy as np
 import pandas as pd
 import sklearn
-from PIL import Image
 
 
 def parse_args():
@@ -16,7 +14,8 @@ def parse_args():
     parser.add_argument('--datasets_path', '-dp', required=True, help='Path to the directory with all datasets')
     parser.add_argument('--markup_path', '-mp', required=True, help='Path to the original markup')
     parser.add_argument('--save_path', '-sp', required=True, help='Path to the save path')
-    parser.add_argument('--image_size', '-is', default=224, type=int, help='Image size')
+    parser.add_argument('--image_size', '-is', default=320, type=int, help='Image size')
+    parser.add_argument('--folds', '-f', default=4, type=int, help='Number of folds')
     return parser.parse_args()
 
 
@@ -34,13 +33,13 @@ def add_record(dataframe, dataset_dir, name, channel, position, img_size, mask_t
         sort=True, ignore_index=True)
 
 
-def season_split(datasets_path, markup_path, save_path, img_size=224, mask_type="png", img_type="tiff",
-                 test_height_threshold=0.3, val_height_threshold=0.4):
+def season_split(datasets_path, markup_path, save_path, img_size=320, mask_type="png", img_type="tiff",
+                 test_height_threshold=0.3, val_height_bottom_threshold=0.3, val_height_top_threshold=0.4, fold=''):
     datasets = list(os.walk(datasets_path))[0][1]
     geojson_markup = gp.read_file(markup_path)
 
-    maxY = geojson_markup.total_bounds[3]
     minY = geojson_markup.total_bounds[1]
+    maxY = geojson_markup.total_bounds[3]
 
     height = maxY - minY
 
@@ -52,8 +51,7 @@ def season_split(datasets_path, markup_path, save_path, img_size=224, mask_type=
     overall_sizes = {"test": 0, "train": 0, "val": 0, "deleted": 0}
 
     for dataset_dir in datasets:
-        instances_path = os.path.join(datasets_path, dataset_dir, "instance_masks")
-
+        instances_path = os.path.join(datasets_path, dataset_dir, "geojson_polygons")
         print(dataset_dir)
 
         deleted = 0
@@ -62,48 +60,34 @@ def season_split(datasets_path, markup_path, save_path, img_size=224, mask_type=
         val = 0
 
         for instances_dir in os.listdir(instances_path):
-            instance_geojson_path = os.path.join(instances_path, instances_dir, instances_dir + ".geojson")
-
+            instance_geojson_path = os.path.join(instances_path, instances_dir)
             instance_geojson = gp.read_file(instance_geojson_path)
 
             if geojson_markup.crs != instance_geojson.crs:
                 geojson_markup = geojson_markup.to_crs(instance_geojson.crs)
 
-                maxY = geojson_markup.total_bounds[3]
                 minY = geojson_markup.total_bounds[1]
+                maxY = geojson_markup.total_bounds[3]
                 height = maxY - minY
 
+            instance_minY = instance_geojson.total_bounds[1]
             instance_maxY = instance_geojson.total_bounds[3]
 
             instance = instances_dir.split('_')
             name = '_'.join(instance[:2])
             channel = '_'.join(instance[2:-2])
-            position = '_'.join(instance[-2:])
+            position = '_'.join(instance[-2:]).split('.')[0]
 
-            masks_path = os.path.join(datasets_path, dataset_dir, "masks")
-
-            mask_path = os.path.join(masks_path, name + '_' + channel + '_' + position + '.' + mask_type)
-
-            mask = Image.open(mask_path)
-
-            mask_array = np.array(mask)
-
-            mask_pixels = np.count_nonzero(mask_array)
-            center_pixels = np.count_nonzero(mask_array[10:-10, 10:-10])
-            border_pixels = mask_pixels - center_pixels
-
-            if mask_pixels > mask_array.size * 0.001 and center_pixels > border_pixels:
-                if instance_maxY < minY + height * test_height_threshold:
-                    test += 1
-                    test_df = add_record(test_df, dataset_dir, name, channel, position, img_size, mask_type, img_type)
-                elif instance_maxY < minY + height * val_height_threshold:
-                    val += 1
-                    val_df = add_record(val_df, dataset_dir, name, channel, position, img_size, mask_type, img_type)
-                else:
-                    train += 1
-                    train_df = add_record(train_df, dataset_dir, name, channel, position, img_size, mask_type, img_type)
+            if instance_maxY < minY + height * test_height_threshold:
+                test += 1
+                test_df = add_record(test_df, dataset_dir, name, channel, position, img_size, mask_type, img_type)
+            elif instance_maxY < minY + height * val_height_top_threshold \
+                    and instance_minY > minY + height * val_height_bottom_threshold:
+                val += 1
+                val_df = add_record(val_df, dataset_dir, name, channel, position, img_size, mask_type, img_type)
             else:
-                deleted += 1
+                train += 1
+                train_df = add_record(train_df, dataset_dir, name, channel, position, img_size, mask_type, img_type)
 
         print("Train size", train)
         print("Validation size", val)
@@ -116,9 +100,17 @@ def season_split(datasets_path, markup_path, save_path, img_size=224, mask_type=
 
     print("Overall sizes", overall_sizes)
 
-    train_df.to_csv(os.path.join(save_path, 'train.csv'), index=None, header=True)
-    val_df.to_csv(os.path.join(save_path, 'val.csv'), index=None, header=True)
-    test_df.to_csv(os.path.join(save_path, 'test.csv'), index=None, header=True)
+    train_df.to_csv(os.path.join(save_path, 'train{0}.csv'.format(fold)), index=None, header=True)
+    val_df.to_csv(os.path.join(save_path, 'val{0}.csv'.format(fold)), index=None, header=True)
+    test_df.to_csv(os.path.join(save_path, 'test{0}.csv'.format(fold)), index=None, header=True)
+
+
+def fold_split(datasets_path, markup_path, save_path, img_size, folds, test_height_threshold=0.3):
+    for fold in range(folds):
+        season_split(datasets_path, markup_path, save_path,
+                     val_height_top_threshold=1 - (1 - test_height_threshold) / folds * fold,
+                     val_height_bottom_threshold=1 - (1 - test_height_threshold) / folds * (fold + 1),
+                     test_height_threshold=test_height_threshold, img_size=img_size, fold=str(fold))
 
 
 def autoencoder_split(datasets_path, markup_path, save_path, img_size=224, mask_type="png", img_type="tiff",
@@ -224,4 +216,4 @@ def train_test_split(dataset_path, save_path, train_test_ratio=0.8):
 
 if __name__ == "__main__":
     args = parse_args()
-    season_split(args.datasets_path, args.markup_path, args.save_path, args.image_size)
+    fold_split(args.datasets_path, args.markup_path, args.save_path, args.image_size, args.folds)
