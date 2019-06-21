@@ -12,7 +12,8 @@ from catalyst.dl.utils import UtilsFactory
 from datasets import create_loaders
 from models.utils import get_model
 from params import args
-from torch.nn import CrossEntropyLoss
+from losses import MultiClass_Dice_Loss
+# from multiclass_dice_callback import MultiClassDiceCallback
 
 
 def main():
@@ -23,7 +24,7 @@ def main():
 
     loaders = create_loaders()
 
-    criterion = CrossEntropyLoss()
+    criterion = MultiClass_Dice_Loss()
     optimizer = torch.optim.Adam(model.parameters(), lr=1e-3)
     scheduler = torch.optim.lr_scheduler.MultiStepLR(optimizer, milestones=[10, 20, 40], gamma=0.3)
 
@@ -38,7 +39,7 @@ def main():
         scheduler=scheduler,
         loaders=loaders,
         callbacks=[
-            # DiceCallback()
+            # MultiClassDiceCallback()
             # EarlyStoppingCallback(patience=20, min_delta=0.01)
         ],
         logdir=args.logdir,

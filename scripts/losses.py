@@ -3,6 +3,7 @@ from catalyst.dl.metrics import dice
 from torch.nn import CrossEntropyLoss
 from torch.nn import Module
 from torch.nn import functional as F
+from metrics import multi_class_dice
 
 
 class BCE_Dice_Loss(Module):
@@ -71,31 +72,18 @@ class MultiClass_Dice_Loss(Module):
         return loss
 
 
-def multi_class_dice_loss(true, logits, eps=1e-7):
+def multi_class_dice_loss(input, target, eps=1e-7):
     """Computes the Sørensen–Dice loss.
     Note that PyTorch optimizers minimize a loss. In this
     case, we would like to maximize the dice so we
     return the negated dice loss.
     Args:
-        true: a tensor of shape [B, 1, H, W].
-        logits: a tensor of shape [B, C, H, W]. Corresponds to
+        target: a tensor of shape [B, 1, H, W].
+        input: a tensor of shape [B, C, H, W]. Corresponds to
             the raw output or logits of the model.
         eps: added to the denominator for numerical stability.
     Returns:
         dice_loss: the Sørensen–Dice loss.
     """
-    return 1 - multi_class_dice(true, logits)
+    return 1 - multi_class_dice(input, target)
 
-
-def multi_class_dice(true, logits, eps=1e-7):
-    num_classes = logits.shape[1]
-    true_1_hot = torch.eye(num_classes)[true]
-    true_1_hot = true_1_hot.permute(0, 3, 1, 2).float()
-    probas = F.softmax(logits, dim=1)
-    true_1_hot = true_1_hot.type(logits.type())
-    dims = (0,) + tuple(range(2, logits.ndimension()))
-
-    intersection = torch.sum(probas * true_1_hot, dims)
-    cardinality = torch.sum(probas + true_1_hot, dims)
-    dice_score = (2. * intersection / (cardinality + eps)).mean().item()
-    return dice_score
