@@ -23,9 +23,9 @@ arg('--img_size', '-is', type=int, default=224)
 arg('--network', '-n', default='fpn50')
 
 # Prediction args
-# arg('--datasets_path', '-dsp', help='Prediction script args: Path to directory with datasets')
-# arg('--model_weights_path', '-mwp', help='Prediction script args: Path to file with model weights')
-# arg('--test_df', '-tdf', help='Prediction script args: Path to test dataframe')
-# arg('--save_path', '-sp', help='Prediction script args: Path to save predictions')
+arg('--datasets_path', '-dsp', help='Prediction script args: Path to directory with datasets')
+arg('--weights_path', '-wp', help='Prediction script args: Path to file with model weights')
+arg('--test_df', '-tdf', help='Prediction script args: Path to test dataframe')
+arg('--save_path', '-sp', help='Prediction script args: Path to save predictions')
 
 args = parser.parse_args()
