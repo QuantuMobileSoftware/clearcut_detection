@@ -6,7 +6,7 @@ arg = parser.add_argument
 # arg('--loss_function', default='bce_dice')
 # arg('--learning_rate', type=float, default=0.0001)
 
-arg('--folds', type=int, default=None)
+arg('--folds', '-f', type=int, default=None)
 
 arg('--batch_size', type=int, default=8)
 arg('--num_workers', type=int, default=4)
