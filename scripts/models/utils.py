@@ -43,6 +43,6 @@ def get_model(name='unet34'):
         fpn_resnet50.encoder = get_satellite_pretrained_resnet()
         return fpn_resnet50
     elif name == 'fpn50_multiclass':
-        return smp.FPN('resnet50', encoder_weights='imagenet', classes=3, activation='sigmoid')
+        return smp.FPN('resnet50', encoder_weights='imagenet', classes=3, activation='softmax')
     else:
         raise ValueError("Unknown network")

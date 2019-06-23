@@ -34,7 +34,7 @@ def parse_args():
 
 def evaluate(datasets_path, test_df_path, model_weights_path):
     filenames = pd.read_csv(test_df_path)
-    model = smp.FPN('resnet50', encoder_weights='imagenet', classes=3, activation='sigmoid')
+    model = smp.FPN('resnet50', encoder_weights='imagenet', classes=3, activation='softmax')
     checkpoint = torch.load(model_weights_path, map_location='cpu')
     model.load_state_dict(checkpoint['model_state_dict'])
     model.eval()

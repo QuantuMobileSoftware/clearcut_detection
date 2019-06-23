@@ -22,7 +22,7 @@ def predict(datasets_path, model_weights_path, network, test_df_path, save_path)
     predictions_path = os.path.join(save_path, "predictions")
 
     if not os.path.exists(predictions_path):
-        os.mkdir(predictions_path)
+        os.makedirs(predictions_path, exist_ok=True)
         print("Prediction directory created.")
 
     for ind, image_info in tqdm(test_df.iterrows()):
@@ -42,4 +42,4 @@ def predict(datasets_path, model_weights_path, network, test_df_path, save_path)
 
 
 if __name__ == '__main__':
-    predict(args.datasets_path, args.model_weights_path, args.network, args.test_df, args.save_path)
+    predict(args.datasets_path, args.weights_path, args.network, args.test_df, args.save_path)
