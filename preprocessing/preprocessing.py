@@ -72,7 +72,7 @@ def parse_args():
         required=True, help='Path to directory with source tiff files')
     parser.add_argument(
         '--save_path', '-sp', dest='save_path',
-        default='../data',
+        default='../data/input',
         help='Path to directory where data will be stored')
     parser.add_argument(
         '--width', '-w',  dest='width', default=224,
@@ -81,8 +81,10 @@ def parse_args():
         '--height', '-hgt', dest='height', default=224,
         type=int, help='Height of a piece')
     parser.add_argument(
-        '--channels', '-ch', dest='channels', required=True,
-        nargs='+', help='Channels list')
+        '--channels', '-ch', dest='channels', default=[
+            'rgb', 'ndvi', 'ndvi_color',
+            'b2', 'b3', 'b4', 'b8'
+        ], nargs='+', help='Channels list')
 
     return parser.parse_args()
 

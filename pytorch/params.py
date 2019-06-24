@@ -45,6 +45,11 @@ arg(
     help='Name of folder where instances are storing'
 )
 arg(
+    '--input_folder', '-inpf', dest='input_folder',
+    default='input',
+    help='Name of folder where datasets are storing'
+)
+arg(
     '--image_type', '-imt', dest='image_type',
     default='tiff',
     help='Type of image file'
@@ -60,9 +65,10 @@ arg(
     help='Type of instance file'
 )
 arg(
-    '--channels', '-ch', dest='channels',
-    default=['rgb', 'ndvi', 'ndvi_color', 'b2', 'b3'],
-    help='Channel list', nargs='+'
-)
+    '--channels', '-ch', dest='channels', 
+    default=[
+        'rgb', 'ndvi_color',
+        'b2', 'b3', 'b4', 'b8'
+    ], nargs='+', help='Channels list')
 
 args = parser.parse_args()
