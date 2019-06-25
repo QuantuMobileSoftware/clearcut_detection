@@ -15,7 +15,7 @@ def parse_args():
     )
     parser.add_argument(
         '--data_path', '-dp', dest='data_path',
-        default='../data', help='Path to the data'
+        default='../data/input', help='Path to the data'
     )
     parser.add_argument(
         '--save_path', '-sp', dest='save_path',
@@ -53,9 +53,9 @@ def parse_args():
         help='Type of instance file'
     )
     parser.add_argument(
-        '--channels', '-ch', dest='channels',
-        default='rgb', nargs='+',
-        help='Channels list'
+        '--split_function', '-sf', dest='split_function',
+        default='geo_split',
+        help='Choose split function between geo_split and stratified_split'
     )
 
     return parser.parse_args()
@@ -64,24 +64,29 @@ def parse_args():
 args = parse_args()
 
 
-def get_data_info(data_path=args.data_path):  
-    
+def get_instance_info(instance):
+    name_parts = instance.split('_')
+    return '_'.join(name_parts[:2]), '_'.join(name_parts[-2:])
+
+
+def add_record(data_info, name, position):
+    return data_info.append(
+        pd.DataFrame({
+            'name': name,
+            'position': position
+        }, index=[0]),
+        sort=True, ignore_index=True
+    )
+
+
+def get_data_info(data_path=args.data_path):
     _, _, insatnces_path = get_data_pathes(data_path)
     instances = get_folders(insatnces_path)
     
-    cols = ['date', 'name', 'ix', 'iy']
+    cols = ['name', 'position']
     data_info = pd.DataFrame(columns=cols)
     for instance in instances:
-        name_parts = split_fullname(instance)
-        data_info = data_info.append(
-            pd.DataFrame({
-                'date': name_parts[0],
-                'name': name_parts[1],
-                'ix': name_parts[3],
-                'iy': name_parts[4]
-            }, index=[0]),
-            sort=True, ignore_index=True
-        )
+        data_info = add_record(data_info, *get_instance_info(instance))
         
     return data_info
 
@@ -123,17 +128,17 @@ def join_pathes(*pathes):
 def stratify(
     data_info, data_path=args.data_path, 
     test_size=0.2, random_state=42,
-    channel=args.channels[0], instance_type=args.instance_type,
+    instance_type=args.instance_type,
     instances_folder=args.instances_folder
 ):
     
     X, _ = get_data(data_info)
     areas = []
     for _, row in data_info.iterrows():
-        instance_name = get_fullname(row['date'], row['name'], channel, row['ix'], row['iy'])
+        instance_name = get_fullname(row['name'], row['position'])
         instance_path = get_filepath(
             data_path,
-            get_fullname(row['date'], row['name'], channel),
+            row['name'],
             instances_folder,
             instance_name,
             instance_name,
@@ -153,7 +158,7 @@ def stratify(
 
 
 def get_data(
-    data_info, channel=args.channels[0], data_path=args.data_path,
+    data_info, data_path=args.data_path,
     image_folder=args.images_folder, mask_folder=args.masks_folder,
     image_type=args.image_type, mask_type=args.mask_type
 ):
@@ -161,19 +166,18 @@ def get_data(
     x = []
     y = []
     for _, row in data_info.iterrows():
-        dataset = get_fullname(row['date'], row['name'], channel)
-        filename = get_fullname(row['date'], row['name'], channel, row['ix'], row['iy'])
+        filename = get_fullname(row['name'], row['position'])
         
         image_path = get_filepath(
             data_path,
-            dataset,
+            row['name'],
             image_folder,
             filename,
             file_type=image_type
         )
         mask_path = get_filepath(
             data_path,
-            dataset,
+            row['name'],
             mask_folder,
             filename,
             file_type=mask_type
@@ -208,14 +212,14 @@ def get_labels(distr):
 def stratified_split(
     data_info, data_path=args.data_path,
     test_size=0.2, random_state=42,
-    channel=args.channels[0], instance_type=args.instance_type,
+    instance_type=args.instance_type,
     instances_folder=args.instances_folder
 ):
     
     stratified_indexes = stratify(
         data_info, data_path,
         test_size, random_state,
-        channel, instance_type,
+        instance_type,
         instances_folder
     )
     
@@ -226,10 +230,99 @@ def stratified_split(
     return train_df, test_df
 
 
+def get_height_bounds(geometry):
+    return geometry.total_bounds[1], geometry.total_bounds[3]
+
+
+def update_overall_sizes(overall_sizes, test, train, val, deleted):
+    overall_sizes["test"] += test
+    overall_sizes["train"] += train
+    overall_sizes["val"] += val
+    overall_sizes["deleted"] += deleted
+    return overall_sizes
+
+
+def geo_split(
+        datasets_path, markup_path, mask_type="png",
+        test_height_threshold=0.3, val_height_bottom_threshold=0.3, val_height_top_threshold=0.4
+):
+    datasets = list(os.walk(datasets_path))[0][1]
+    geojson_markup = gp.read_file(markup_path)
+
+    minY, maxY = get_height_bounds(geojson_markup)
+
+    height = maxY - minY
+
+    cols = ['name', 'position']
+    train_df = pd.DataFrame(columns=cols)
+    val_df = pd.DataFrame(columns=cols)
+    test_df = pd.DataFrame(columns=cols)
+
+    overall_sizes = {"test": 0, "train": 0, "val": 0, "deleted": 0}
+
+    for dataset_dir in datasets:
+        polys_path = os.path.join(datasets_path, dataset_dir, "geojson_polygons")
+        print(dataset_dir)
+
+        deleted = 0
+        train = 0
+        test = 0
+        val = 0
+
+        for poly_name in os.listdir(polys_path):
+            instance_geojson_path = os.path.join(polys_path, poly_name)
+            instance_geojson = gp.read_file(instance_geojson_path)
+
+            if geojson_markup.crs != instance_geojson.crs:
+                geojson_markup = geojson_markup.to_crs(instance_geojson.crs)
+                minY, maxY = get_height_bounds(geojson_markup)
+                height = maxY - minY
+
+            instance_minY, instance_maxY = get_height_bounds(instance_geojson)
+
+            name, channel, position = get_instance_info(poly_name)
+
+            masks_path = os.path.join(datasets_path, dataset_dir, "masks")
+            mask_path = os.path.join(masks_path, name + '_' + channel + '_' + position + '.' + mask_type)
+            mask = Image.open(mask_path)
+            mask_array = np.array(mask)
+
+            mask_pixels = np.count_nonzero(mask_array)
+            center_pixels = np.count_nonzero(mask_array[10:-10, 10:-10])
+            border_pixels = mask_pixels - center_pixels
+
+            if mask_pixels > mask_array.size * 0.001 and center_pixels > border_pixels:
+                if instance_maxY < minY + height * test_height_threshold:
+                    test += 1
+                    test_df = add_record(test_df, name, position)
+                elif instance_maxY < minY + height * val_height_top_threshold \
+                        and instance_minY > minY + height * val_height_bottom_threshold:
+                    val += 1
+                    val_df = add_record(val_df, name, position)
+                else:
+                    train += 1
+                    train_df = add_record(train_df, name, position)
+            else:
+                deleted += 1
+
+        print("Train size", train, "Validation size", val, "Test size", test)
+        print(f"{deleted} images were deleted")
+        overall_sizes = update_overall_sizes(overall_sizes, test, train, val, deleted)
+
+    print("Overall sizes", overall_sizes)
+
+    return train_df, val_df, test_df
+
+
 if __name__ == '__main__':
     data_info = get_data_info()
-    train_val_df, test_df = stratified_split(data_info, test_size=0.2)
-    train_df, val_df = stratified_split(train_val_df, test_size=0.15)
+    if args.split_function == 'stratified_split':
+        train_val_df, test_df = stratified_split(data_info, test_size=0.2)
+        train_df, val_df = stratified_split(train_val_df, test_size=0.15)
+    elif args.split_function == 'geo_split':
+        pass
+    else:
+        raise Exception(f'{args.split_function} is an unknown function!')
 
     train_df.to_csv(
         get_filepath(args.save_path, 'train_df', file_type='csv'),

@@ -1,4 +1,6 @@
 import os
+
+import fiona
 import imageio
 import argparse
 import pandas as pd
@@ -64,7 +66,11 @@ def markup_to_separate_polygons(
 
         x, y = original_image.transform * (start_x + 1, start_y + 1)
 
-        poly_piece = gp.read_file(os.path.join(poly_pieces_path, poly_piece_name))
+        try:
+            poly_piece = gp.read_file(os.path.join(poly_pieces_path, poly_piece_name))
+        except fiona.errors.DriverError:
+            continue
+
         intersection = gp.overlay(geojson_markup, poly_piece, how='intersection')
 
         filename, _ = os.path.splitext(poly_piece_name)
@@ -83,7 +89,7 @@ def markup_to_separate_polygons(
             os.remove(os.path.join(poly_pieces_path, filename + '.geojson'))
             if image_pieces_path is not None:
                 os.remove(os.path.join(image_pieces_path, filename + '.tiff'))
-            if image_pieces_path is not None: 
+            if image_pieces_path is not None:
                 os.remove(os.path.join(mask_pieces_path, filename + '.png'))
             continue
 
@@ -92,7 +98,7 @@ def markup_to_separate_polygons(
         piece_geojson_name = "{0}.geojson".format(filename)
         gs.to_file(
             "{}/{}/{}".format(save_path, filename, piece_geojson_name),
-            driver='GeoJSON')            
+            driver='GeoJSON')
 
         original_transform = original_image.transform
         for idx, component in enumerate(components):

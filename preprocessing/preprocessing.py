@@ -9,6 +9,18 @@ from binary_mask_converter import poly2mask, split_mask
 from poly_instances_to_mask import markup_to_separate_polygons
 
 
+def scale(tensor, value=1):
+    while tensor.ndim < 3:
+        tensor = np.expand_dims(tensor, -1)
+
+    for i in range(tensor.shape[2]):
+        max_value = tensor[:, :, i].max()
+        if max_value not in [0, value]:
+            tensor[:, :, i] = tensor[:, :, i] / max_value * value
+
+    return tensor
+
+
 def merge_bands(tiff_path, save_path, channels):
     for root, _, files in os.walk(tiff_path):
         tiff_file = [file for file in files if file[-4:] == '.tif'][0]
@@ -28,13 +40,14 @@ def merge_bands(tiff_path, save_path, channels):
                     meta['count'] += src.meta['count']
                 src.close()
 
-        meta['dtype'] = np.int16
+        meta['dtype'] = np.uint8
         with rasterio.open(image_path, 'w', **meta) as dst:
             i = 1
             for layer in tqdm(file_list):
                 with rasterio.open(layer) as src:
                     for j in range(1, src.meta['count'] + 1):
-                        dst.write_band(i, src.read(j).astype(np.int16))
+                        tensor = scale(src.read(j), 255)[:, :, 0].astype(np.uint8)
+                        dst.write_band(i, tensor)
                         i += 1
                     src.close()
             dst.close()

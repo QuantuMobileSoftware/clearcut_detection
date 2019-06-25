@@ -10,7 +10,7 @@ from catalyst.dl.callbacks import InferCallback, CheckpointCallback, DiceCallbac
 from catalyst.dl.experiments import SupervisedRunner
 from catalyst.dl.utils import UtilsFactory
 
-from datasets import create_loaders, count_channels, get_fullname
+from datasets import create_loaders, count_channels
 from losses import BCE_Dice_Loss
 from utils import get_model
 from params import args
@@ -50,7 +50,7 @@ def main():
 
     save_path = os.path.join(
         args.logdir,
-        get_fullname(args.network, *args.channels)
+        '_'.join([args.network, *args.channels])
     )
 
     # model runner

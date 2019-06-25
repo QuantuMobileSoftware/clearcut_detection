@@ -22,7 +22,7 @@ arg('--network', default='unet50')
 
 arg(
     '--data_path', '-dp', dest='data_path',
-    default='../data', help='Path to the data'
+    default='../data/input', help='Path to the data'
 )
 arg(
     '--save_path', '-sp', dest='save_path',
@@ -45,11 +45,6 @@ arg(
     help='Name of folder where instances are storing'
 )
 arg(
-    '--input_folder', '-inpf', dest='input_folder',
-    default='input',
-    help='Name of folder where datasets are storing'
-)
-arg(
     '--image_type', '-imt', dest='image_type',
     default='tiff',
     help='Type of image file'
@@ -67,7 +62,7 @@ arg(
 arg(
     '--channels', '-ch', dest='channels', 
     default=[
-        'rgb', 'ndvi_color',
+        'rgb', 'ndvi', 'ndvi_color',
         'b2', 'b3', 'b4', 'b8'
     ], nargs='+', help='Channels list')
 

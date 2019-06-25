@@ -51,10 +51,6 @@ def filter_by_channels(image_tensor, channels):
     return np.concatenate(result, axis=2)
 
 
-def get_fullname(*name_parts):
-    return '_'.join(tuple(map(str, name_parts)))
-
-
 def join_pathes(*pathes):
     return os.path.join(*pathes)
 
@@ -67,53 +63,32 @@ def read_tensor(filepath):
     return imageio.imread(filepath)
 
 
-def scale(tensor, axis):
-    for i in range(tensor.shape[axis]):
-        max_value = tensor[:, :, i].max()
-        if max_value != 0:
-            tensor[:, :, i] = tensor[:, :, i] / max_value
-
-    return tensor * 255
-
-
 def get_input_pair(
-    data_info_row, channels=args.channels,
-    data_path=args.data_path, input_folder=args.input_folder,
+    data_info_row, channels=args.channels, data_path=args.data_path,
     image_folder=args.images_folder, mask_folder=args.masks_folder,
     image_type=args.image_type, mask_type=args.mask_type
 ):
     if len(channels) == 0:
         raise Exception('You have to specify at least one channel.')
 
-    year = str(data_info_row['date'])[:4]
-    dataset = get_fullname(
-        data_info_row['date'],
-        data_info_row['name']
-    )
-    filename = get_fullname(
-        data_info_row['date'], data_info_row['name'],
-        data_info_row['ix'], data_info_row['iy']
-    )
+    instance_name = '_'.join([data_info_row['name'], data_info_row['position']])
     image_path = get_filepath(
-        data_path, input_folder, year,
-        dataset, image_folder, filename,
-        file_type=image_type
+        data_path, data_info_row['name'], image_folder,
+        instance_name, file_type=image_type
     )
     mask_path = get_filepath(
-        data_path, input_folder, year,
-        dataset, mask_folder, filename,
-        file_type=mask_type
+        data_path,  data_info_row['name'], mask_folder,
+        instance_name, file_type=mask_type
     )
 
-    image_tensor = filter_by_channels(
+    images_array = filter_by_channels(
         read_tensor(image_path),
         channels
     )
 
-    if image_tensor.ndim == 2:
-        image_tensor = image_tensor.reshape(*image_tensor.shape, 1)
+    if images_array.ndim == 2:
+        images_array = np.expand_dims(images_array, -1)
 
-    images_array = scale(image_tensor, 2).astype(np.uint16)
     masks_array = read_tensor(mask_path)
 
     if channels[0] == 'rgb':
