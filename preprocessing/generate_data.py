@@ -1,9 +1,11 @@
 import os
+import re
 import imageio
 import argparse
 import numpy as np
 import pandas as pd
 import geopandas as gp
+from PIL import Image
 
 from sklearn.model_selection import StratifiedShuffleSplit
 
@@ -38,6 +40,11 @@ def parse_args():
         help='Name of folder where instances are storing'
     )
     parser.add_argument(
+        '--polygons_folder', '-pf', dest='polygons_folder',
+        default='geojson_polygons',
+        help='Name of folder where polygons are storing'
+    )
+    parser.add_argument(
         '--image_type', '-imt', dest='image_type',
         default='tiff',
         help='Type of image file'
@@ -57,6 +64,11 @@ def parse_args():
         default='geo_split',
         help='Choose split function between geo_split and stratified_split'
     )
+    parser.add_argument(
+        '--markup_path', '-mp', dest='markup_path',
+        required=True,
+        help='Choose split function between geo_split and stratified_split'
+    )
 
     return parser.parse_args()
 
@@ -65,8 +77,8 @@ args = parse_args()
 
 
 def get_instance_info(instance):
-    name_parts = instance.split('_')
-    return '_'.join(name_parts[:2]), '_'.join(name_parts[-2:])
+    name_parts = re.split(r'[_.]', instance)
+    return '_'.join(name_parts[:2]), '_'.join(name_parts[-3:-1])
 
 
 def add_record(data_info, name, position):
@@ -103,8 +115,8 @@ def get_data_pathes(
     insatnces_path = os.path.join(data_path, dataset, instances_folder)
     
     return images_path, masks_path, insatnces_path
-    
-    
+
+
 def get_folders(path):
     return list(os.walk(path))[0][1]
 
@@ -243,10 +255,12 @@ def update_overall_sizes(overall_sizes, test, train, val, deleted):
 
 
 def geo_split(
-        datasets_path, markup_path, mask_type="png",
-        test_height_threshold=0.3, val_height_bottom_threshold=0.3, val_height_top_threshold=0.4
+    data_path=args.data_path, markup_path=args.markup_path,
+    mask_type=args.mask_type, masks_folder=args.masks_folder,
+    val_height_threshold=0.3, test_height_threshold=0.2,
+    polygons_folder=args.polygons_folder
 ):
-    datasets = list(os.walk(datasets_path))[0][1]
+    datasets = get_folders(data_path)
     geojson_markup = gp.read_file(markup_path)
 
     minY, maxY = get_height_bounds(geojson_markup)
@@ -258,10 +272,10 @@ def geo_split(
     val_df = pd.DataFrame(columns=cols)
     test_df = pd.DataFrame(columns=cols)
 
-    overall_sizes = {"test": 0, "train": 0, "val": 0, "deleted": 0}
+    overall_sizes = {'test': 0, 'train': 0, 'val': 0, 'deleted': 0}
 
     for dataset_dir in datasets:
-        polys_path = os.path.join(datasets_path, dataset_dir, "geojson_polygons")
+        polys_path = os.path.join(data_path, dataset_dir, polygons_folder)
         print(dataset_dir)
 
         deleted = 0
@@ -280,10 +294,14 @@ def geo_split(
 
             instance_minY, instance_maxY = get_height_bounds(instance_geojson)
 
-            name, channel, position = get_instance_info(poly_name)
+            name, position = get_instance_info(poly_name)
 
-            masks_path = os.path.join(datasets_path, dataset_dir, "masks")
-            mask_path = os.path.join(masks_path, name + '_' + channel + '_' + position + '.' + mask_type)
+            masks_path = os.path.join(data_path, dataset_dir, masks_folder)
+            mask_path = get_filepath(
+                masks_path,
+                get_fullname(name, position),
+                file_type=mask_type
+            )
             mask = Image.open(mask_path)
             mask_array = np.array(mask)
 
@@ -295,8 +313,7 @@ def geo_split(
                 if instance_maxY < minY + height * test_height_threshold:
                     test += 1
                     test_df = add_record(test_df, name, position)
-                elif instance_maxY < minY + height * val_height_top_threshold \
-                        and instance_minY > minY + height * val_height_bottom_threshold:
+                elif instance_maxY < minY + height * val_height_threshold:
                     val += 1
                     val_df = add_record(val_df, name, position)
                 else:
@@ -315,12 +332,15 @@ def geo_split(
 
 
 if __name__ == '__main__':
-    data_info = get_data_info()
     if args.split_function == 'stratified_split':
+        data_info = get_data_info()
         train_val_df, test_df = stratified_split(data_info, test_size=0.2)
         train_df, val_df = stratified_split(train_val_df, test_size=0.15)
     elif args.split_function == 'geo_split':
-        pass
+        train_df, val_df, test_df = geo_split(
+            val_height_threshold=0.3,
+            test_height_threshold=0.2,
+        )
     else:
         raise Exception(f'{args.split_function} is an unknown function!')
 
