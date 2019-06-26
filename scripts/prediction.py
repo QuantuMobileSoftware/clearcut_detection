@@ -1,7 +1,7 @@
-import argparse
 import os
 
 import cv2 as cv
+import imageio
 import pandas as pd
 import torch
 import torchvision.transforms as transforms
@@ -12,7 +12,7 @@ from models.utils import get_model
 from params import args
 
 
-def predict(datasets_path, model_weights_path, network, test_df_path, save_path):
+def predict(datasets_path, model_weights_path, network, test_df_path, save_path, channels_number=3):
     model = get_model(network)
     checkpoint = torch.load(model_weights_path, map_location='cpu')
     model.load_state_dict(checkpoint['model_state_dict'])
@@ -33,12 +33,34 @@ def predict(datasets_path, model_weights_path, network, test_df_path, save_path)
 
         img_tensor = transforms.ToTensor()(img)
 
-        prediction = model.predict(img_tensor.view(1, 3, image_info["image_size"], image_info["image_size"]))
+        prediction = model.predict(
+            img_tensor.view(1, channels_number, image_info["image_size"], image_info["image_size"]))
 
         result = prediction.view(image_info["image_size"], image_info["image_size"]).detach().numpy()
 
         cv.imwrite(os.path.join(predictions_path, image_info["name"] + '_' + image_info["channel"] + '_' + image_info[
             "position"] + '.png'), result * 255)
+
+
+def image_predict(model, unlabeled_data, image_name, dataset_path, img_size, channels_number=3):
+    pseudo_labeled_path = os.path.join(dataset_path, "pseudo_labeled")
+    image_path = os.path.join(unlabeled_data, image_name)
+    save_path = os.path.join(dataset_path, image_name)
+
+    if not os.path.exists(pseudo_labeled_path):
+        os.makedirs(pseudo_labeled_path, exist_ok=True)
+        print("Directory for pseudo-labeled images created.")
+
+    img = Image.open(image_path)
+
+    img_tensor = transforms.ToTensor()(img)
+
+    prediction = model.predict(img_tensor.view(1, channels_number, img_size, img_size))
+
+    result = prediction.view(img_size, img_size).detach().numpy()
+
+    #TODO copy initial image to images folder
+    imageio.imwrite(save_path, result * 255)
 
 
 if __name__ == '__main__':

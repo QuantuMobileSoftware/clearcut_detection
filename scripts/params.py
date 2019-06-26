@@ -19,8 +19,9 @@ arg('--dataset_path', '-dp', default='../../preprocessed_2016/')
 arg('--model_weights_path', '-mwp', default='../weights/resnet50-19c8e357.pth')
 
 arg('--img_size', '-is', type=int, default=224)
-
 arg('--network', '-n', default='fpn50')
+arg('--pseudolabel_iter', '-pi', type=int, default=3)
+arg('--unlabeled_data', '-ud')
 
 # Prediction args
 arg('--datasets_path', '-dsp', help='Prediction script args: Path to directory with datasets')
