@@ -223,11 +223,11 @@ def train_val_split(datasets_path, save_path, img_size=320, mask_type="png", img
                 val_df = add_record(val_df, dataset_dir, name, channel, position, img_size, mask_type, img_type)
             else:
                 train_df = add_record(train_df, dataset_dir, name, channel, position, img_size, mask_type, img_type)
-    train_df.to_csv(os.path.join(save_path, f'train.csv'), index=None, header=True)
-    val_df.to_csv(os.path.join(save_path, f'val.csv'), index=None, header=True)
+    train_df.to_csv(os.path.join(save_path, f'field_train.csv'), index=None, header=True)
+    val_df.to_csv(os.path.join(save_path, f'field_val.csv'), index=None, header=True)
 
 
 if __name__ == "__main__":
     args = parse_args()
     # season_split(args.datasets_path, args.markup_path, args.save_path, args.image_size)
-    train_val_split(args.datasets_path, args.save_path)
+    train_val_split(args.datasets_path, args.save_path, img_size=args.image_size)

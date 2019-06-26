@@ -1,7 +1,6 @@
 import os
 
 import cv2 as cv
-import imageio
 import pandas as pd
 import torch
 import torchvision.transforms as transforms
@@ -42,14 +41,8 @@ def predict(datasets_path, model_weights_path, network, test_df_path, save_path,
             "position"] + '.png'), result * 255)
 
 
-def image_predict(model, unlabeled_data, image_name, dataset_path, img_size, channels_number=3):
-    pseudo_labeled_path = os.path.join(dataset_path, "pseudo_labeled")
+def image_predict(model, unlabeled_data, image_name, img_size, channels_number=3):
     image_path = os.path.join(unlabeled_data, image_name)
-    save_path = os.path.join(dataset_path, image_name)
-
-    if not os.path.exists(pseudo_labeled_path):
-        os.makedirs(pseudo_labeled_path, exist_ok=True)
-        print("Directory for pseudo-labeled images created.")
 
     img = Image.open(image_path)
 
@@ -58,9 +51,7 @@ def image_predict(model, unlabeled_data, image_name, dataset_path, img_size, cha
     prediction = model.predict(img_tensor.view(1, channels_number, img_size, img_size))
 
     result = prediction.view(img_size, img_size).detach().numpy()
-
-    #TODO copy initial image to images folder
-    imageio.imwrite(save_path, result * 255)
+    return result
 
 
 if __name__ == '__main__':
