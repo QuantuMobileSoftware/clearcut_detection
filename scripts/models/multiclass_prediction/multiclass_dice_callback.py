@@ -1,4 +1,4 @@
-from catalyst.dl.core import MetricCallback
+from catalyst.dl.callbacks.metrics import MetricCallback
 
 from metrics import multi_class_dice
 
@@ -12,10 +12,10 @@ class MultiClassDiceCallback(MetricCallback):
             self,
             input_key: str = "targets",
             output_key: str = "logits",
-            prefix: str = "dice",
+            prefix: str = "mc_dice",
             eps: float = 1e-7,
             threshold: float = None,
-            activation: str = "Sigmoid"
+            activation: str = "Softmax"
     ):
         """
         :param input_key: input key to use for dice calculation;

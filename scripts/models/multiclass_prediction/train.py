@@ -13,7 +13,7 @@ from datasets import create_loaders
 from models.utils import get_model
 from params import args
 from losses import MultiClass_Dice_Loss
-# from multiclass_dice_callback import MultiClassDiceCallback
+from multiclass_dice_callback import MultiClassDiceCallback
 
 
 def main():
@@ -39,7 +39,7 @@ def main():
         scheduler=scheduler,
         loaders=loaders,
         callbacks=[
-            # MultiClassDiceCallback()
+            MultiClassDiceCallback()
             # EarlyStoppingCallback(patience=20, min_delta=0.01)
         ],
         logdir=args.logdir,
