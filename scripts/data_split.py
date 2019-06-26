@@ -1,5 +1,6 @@
 import argparse
 import os
+import random
 from os.path import basename, normpath
 
 import geopandas as gp
@@ -205,37 +206,28 @@ def autoencoder_split(datasets_path, markup_path, save_path, img_size=320, mask_
     test_df.to_csv(os.path.join(save_path, 'test.csv'), index=None, header=True)
 
 
-def train_test_split(dataset_path, save_path, train_test_ratio=0.8):
-    masks_path = os.path.join(dataset_path, "masks")
-    image_names = []
-    for file in os.listdir(masks_path):
-        if ".png" in file and ".xml" not in file:
-            filename, file_extension = os.path.splitext(file)
-            image_names.append(filename)
+def train_val_split(datasets_path, save_path, img_size=320, mask_type="png", img_type="tiff", train_val_ratio=0.3):
+    random.seed(42)
+    datasets = list(os.walk(datasets_path))[0][1]
 
-    filenames = sklearn.utils.shuffle(image_names, random_state=42)
+    cols = ["dataset_folder", "name", "channel", "image_size", "mask_type", "image_type", "position"]
+    train_df = pd.DataFrame(columns=cols)
+    val_df = pd.DataFrame(columns=cols)
 
-    dataset_size = len(filenames)
-
-    train_size = int(dataset_size * train_test_ratio)
-    test_size = dataset_size - train_size
-
-    print("Dataset size: {0}".format(dataset_size))
-    print("Train size: {0}".format(train_size))
-    print("Test size: {0}".format(test_size))
-
-    output_name = basename(normpath(dataset_path))
-
-    folder_names_train = [output_name] * train_size
-    folder_names_test = [output_name] * test_size
-
-    train_df = pd.DataFrame(zip(folder_names_train, filenames[:train_size]), columns=["dataset_folder", "image_name"])
-    test_df = pd.DataFrame(zip(folder_names_test, filenames[train_size:]), columns=["dataset_folder", "image_name"])
-
-    train_df.to_csv(os.path.join(save_path, '{0}_train.csv'.format(output_name)), index=None, header=True)
-    test_df.to_csv(os.path.join(save_path, '{0}_test.csv'.format(output_name)), index=None, header=True)
+    for dataset_dir in datasets:
+        polys_path = os.path.join(datasets_path, dataset_dir, "geojson_polygons")
+        print(dataset_dir)
+        for poly_name in os.listdir(polys_path):
+            name, channel, position = get_image_info(poly_name)
+            if random.random() <= train_val_ratio:
+                val_df = add_record(val_df, dataset_dir, name, channel, position, img_size, mask_type, img_type)
+            else:
+                train_df = add_record(train_df, dataset_dir, name, channel, position, img_size, mask_type, img_type)
+    train_df.to_csv(os.path.join(save_path, f'train.csv'), index=None, header=True)
+    val_df.to_csv(os.path.join(save_path, f'val.csv'), index=None, header=True)
 
 
 if __name__ == "__main__":
     args = parse_args()
-    season_split(args.datasets_path, args.markup_path, args.save_path, args.image_size)
+    # season_split(args.datasets_path, args.markup_path, args.save_path, args.image_size)
+    train_val_split(args.datasets_path, args.save_path)
