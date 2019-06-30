@@ -20,7 +20,7 @@ arg('--model_weights_path', '-mwp', default='../weights/resnet50-19c8e357.pth')
 
 arg('--img_size', '-is', type=int, default=224)
 arg('--network', '-n', default='fpn50')
-arg('--pseudolabel_iter', '-pi', type=int, default=3)
+arg('--pseudolabel_iter', '-pi', type=int, default=2)
 arg('--unlabeled_data', '-ud')
 
 # Prediction args

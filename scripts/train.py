@@ -21,6 +21,10 @@ from params import args
 from prediction import image_predict
 
 
+def main():
+    train()
+
+
 def set_random_seed(seed):
     np.random.seed(seed)
     cudnn.deterministic = True
@@ -32,31 +36,34 @@ def set_random_seed(seed):
     print('Random seed:', seed)
 
 
-def main():
-    pseudo_labeling()
+def pseudo_labeling(eps=1e-7, confidence_threshold=0.8):
+    train()
 
-
-def pseudo_labeling():
     for i in range(args.pseudolabel_iter):
-        train()
-
-        model = get_model(args.network)
-        model, device = UtilsFactory.prepare_model(model)
-        checkpoint = torch.load(f"{args.logdir}/checkpoints/best.pth", map_location=device)
-        model.load_state_dict(checkpoint['model_state_dict'])
-
+        model = load_model(args.network, f"{args.logdir}/checkpoints/best.pth")
         train_df = pd.read_csv(args.train_df)
-
+        added_to_train = 0
         if os.path.isdir(args.unlabeled_data):
             for image_name in tqdm(os.listdir(args.unlabeled_data)):
                 predicted_mask = image_predict(model, args.unlabeled_data, image_name, 320, channels_number=3)
-                confidence = 1 - np.uint8(np.logical_and(0.3 < predicted_mask, predicted_mask < 0.7)).sum() / np.uint8(
-                    predicted_mask > 0.5).sum()
-                if confidence > 0.8:
+                confidence = 1 - np.uint8(np.logical_and(0.3 < predicted_mask, predicted_mask < 0.7)).sum() / (np.uint8(
+                    predicted_mask > 0.5).sum() + eps)
+                if confidence > confidence_threshold and predicted_mask[predicted_mask > 0.3].sum() > 50:
                     print(f'Added {image_name} to train')
+                    added_to_train += 1
                     train_df = move_pseudo_labeled_to_train(image_name, predicted_mask, train_df)
-
+        print(f'Added {added_to_train} images to train')
         train_df.to_csv(args.train_df)
+
+        train()
+
+
+def load_model(network, model_weights_path):
+    model = get_model(network)
+    model, device = UtilsFactory.prepare_model(model)
+    checkpoint = torch.load(model_weights_path, map_location=device)
+    model.load_state_dict(checkpoint['model_state_dict'])
+    return model
 
 
 def move_pseudo_labeled_to_train(image_name, predicted_mask, train_df, img_size=320, mask_type="png", img_type="tiff"):
@@ -77,8 +84,8 @@ def move_pseudo_labeled_to_train(image_name, predicted_mask, train_df, img_size=
 
     move(unlabeled_image_path, os.path.join(dataset_images_path, image_name))
     imageio.imwrite(os.path.join(dataset_masks_path, name + '_' + channel + '_' + position + '.' + mask_type),
-                    np.uint8(predicted_mask > 0.5) * 255)
-    return add_record(train_df, pseudo_labeled_folder, image_name, channel, position, img_size, mask_type, img_type)
+                    np.uint8(predicted_mask > 0.3) * 255)
+    return add_record(train_df, pseudo_labeled_folder, name, channel, position, img_size, mask_type, img_type)
 
 
 def train():

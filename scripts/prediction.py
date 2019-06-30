@@ -48,9 +48,9 @@ def image_predict(model, unlabeled_data, image_name, img_size, channels_number=3
 
     img_tensor = transforms.ToTensor()(img)
 
-    prediction = model.predict(img_tensor.view(1, channels_number, img_size, img_size))
+    prediction = model.predict(img_tensor.view(1, channels_number, img_size, img_size).cuda())
 
-    result = prediction.view(img_size, img_size).detach().numpy()
+    result = prediction.view(img_size, img_size).detach().cpu().numpy()
     return result
 
 
