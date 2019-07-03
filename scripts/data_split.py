@@ -49,7 +49,7 @@ def update_overall_sizes(overall_sizes, test, train, val, deleted):
 
 
 def geo_split(datasets_path, markup_path, save_path, mask_type="png",
-              test_height_threshold=0.3, val_height_bottom_threshold=0.3, val_height_top_threshold=0.7, fold=''):
+              test_height_threshold=0.3, val_height_bottom_threshold=0.3, val_height_top_threshold=0.4, fold=''):
     datasets = list(os.walk(datasets_path))[0][1]
     geojson_markup = gp.read_file(markup_path)
 
