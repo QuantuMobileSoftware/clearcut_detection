@@ -13,11 +13,10 @@ from catalyst.dl.utils import UtilsFactory
 from params import args
 
 
-def get_image(image_info):
+def get_image(image_info, images_folder="images", image_type="tiff"):
     dataset_path = args.dataset_path
-    img_path = os.path.join(dataset_path, image_info["dataset_folder"], "images",
-                            image_info["name"] + '_' + image_info["channel"] + '_' + image_info["position"] + '.' +
-                            image_info["image_type"])
+    img_path = os.path.join(dataset_path, image_info["dataset_folder"], images_folder,
+                            image_info["name"] + '_' + image_info["position"] + '.' + image_type)
 
     img = Image.open(img_path)
 
@@ -31,11 +30,6 @@ def get_image(image_info):
             RGBShift(),
             CLAHE(clip_limit=2)
         ], p=0.4),
-        # OneOf([
-        #     RandomSizedCrop(min_max_height=(int(image_info['image_size'] * 0.7), image_info['image_size']),
-        #                     height=image_info['image_size'],
-        #                     width=image_info['image_size'])
-        # ], p=0.4),
         ToTensor()
     ], p=1)
 

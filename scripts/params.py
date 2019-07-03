@@ -23,10 +23,4 @@ arg('--network', '-n', default='fpn50')
 arg('--pseudolabel_iter', '-pi', type=int, default=2)
 arg('--unlabeled_data', '-ud')
 
-# Prediction args
-arg('--datasets_path', '-dsp', help='Prediction script args: Path to directory with datasets')
-arg('--weights_path', '-wp', help='Prediction script args: Path to file with model weights')
-arg('--test_df', '-tdf', help='Prediction script args: Path to test dataframe')
-arg('--save_path', '-sp', help='Prediction script args: Path to save predictions')
-
 args = parser.parse_args()

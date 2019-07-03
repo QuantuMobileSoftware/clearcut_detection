@@ -115,32 +115,30 @@ def compute_metric_at_thresholds(iou_matrix):
     return np.average(dices)
 
 
-def evaluate(datasets_path, predictions_path, test_df_path, output_name):
+def evaluate(datasets_path, predictions_path, test_df_path, output_name, images_folder="images", image_type="tiff",
+             masks_folder="masks", mask_type="png"):
     filenames = pd.read_csv(test_df_path)
-
-    metrics = []
 
     writer = tf.python_io.TFRecordWriter(
         os.path.join(os.path.dirname(predictions_path), output_name + '.tfrecords'))
 
+    metrics = []
     dices = []
 
     for ind, image_info in tqdm(filenames.iterrows()):
-
-        name = image_info["name"] + '_' + image_info["channel"] + '_' + image_info["position"]
+        name = image_info["name"] + '_' + image_info["position"]
 
         prediction = cv.imread(os.path.join(predictions_path, name) + ".png")
 
-        image = cv.imread(
-            os.path.join(datasets_path, image_info["dataset_folder"], "images", name+ '.' + image_info["image_type"]))
-        mask = cv.imread(
-            os.path.join(datasets_path, image_info["dataset_folder"], "masks", name+ '.' + image_info["mask_type"]))
+        image = cv.imread(os.path.join(datasets_path, image_info["dataset_folder"], images_folder,
+                                       name + '.' + image_type))
+        mask = cv.imread(os.path.join(datasets_path, image_info["dataset_folder"], masks_folder,
+                                      name + '.' + mask_type))
 
         img_size = image.shape
         instances = []
 
-        image_instances_path = os.path.join(datasets_path, image_info["dataset_folder"], "instance_masks",
-                                            name)
+        image_instances_path = os.path.join(datasets_path, image_info["dataset_folder"], "instance_masks", name)
 
         for instance_name in os.listdir(image_instances_path):
             if ".png" in instance_name and ".xml" not in instance_name:

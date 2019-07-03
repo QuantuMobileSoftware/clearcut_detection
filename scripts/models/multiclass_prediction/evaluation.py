@@ -32,7 +32,8 @@ def parse_args():
     return parser.parse_args()
 
 
-def evaluate(datasets_path, test_df_path, model_weights_path):
+def evaluate(datasets_path, test_df_path, model_weights_path, images_folder="images", image_type="tiff",
+             masks_folder="masks", mask_type="png"):
     filenames = pd.read_csv(test_df_path)
     model = smp.FPN('resnet50', encoder_weights='imagenet', classes=3, activation='softmax')
     checkpoint = torch.load(model_weights_path, map_location='cpu')
@@ -42,12 +43,12 @@ def evaluate(datasets_path, test_df_path, model_weights_path):
     dices = []
 
     for ind, image_info in tqdm(filenames.iterrows()):
-        name = image_info["name"] + '_' + image_info["channel"] + '_' + image_info["position"]
+        name = image_info["name"] + '_' + image_info["position"]
 
-        image = Image.open(
-            os.path.join(datasets_path, image_info["dataset_folder"], "images", name + '.' + image_info["image_type"]))
-        mask = Image.open(
-            os.path.join(datasets_path, image_info["dataset_folder"], "masks", name + '.' + image_info["mask_type"]))
+        image = Image.open(os.path.join(datasets_path, image_info["name"], images_folder,
+                                        name + '.' + image_type))
+        mask = Image.open(os.path.join(datasets_path, image_info["name"], masks_folder,
+                                       name + '.' + mask_type))
 
         img_array = np.array(image)
         mask_array = np.array(mask).astype(np.float32)

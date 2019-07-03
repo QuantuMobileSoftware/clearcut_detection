@@ -1,21 +1,18 @@
 import segmentation_models_pytorch as smp
 import torch
-import torchvision.models as models
-from segmentation_models_pytorch.encoders.resnet import ResNetEncoder, resnet_encoders
-from params import args
 from models.season_prediction.model import FPN_double_output
 from models.autoencoder.model import Autoencoder_Unet
 
 
-def get_satellite_pretrained_resnet(encoder_name='resnet50'):
+def get_satellite_pretrained_resnet(model_weights_path, encoder_name='resnet50'):
     model = Autoencoder_Unet(encoder_name=encoder_name)
-    checkpoint = torch.load(args.model_weights_path, map_location='cpu')
+    checkpoint = torch.load(model_weights_path, map_location='cpu')
     model.load_state_dict(checkpoint['model_state_dict'])
 
     return model.encoder
 
 
-def get_model(name='unet34'):
+def get_model(model_weights_path, name='fpn50'):
     if name == 'unet34':
         return smp.Unet('resnet34', encoder_weights='imagenet')
     elif name == 'unet50':
@@ -40,7 +37,7 @@ def get_model(name='unet34'):
         return FPN_double_output('resnet50', encoder_weights='imagenet')
     elif name == 'fpn50_satellite':
         fpn_resnet50 = smp.FPN('resnet50', encoder_weights=None)
-        fpn_resnet50.encoder = get_satellite_pretrained_resnet()
+        fpn_resnet50.encoder = get_satellite_pretrained_resnet(model_weights_path)
         return fpn_resnet50
     elif name == 'fpn50_multiclass':
         return smp.FPN('resnet50', encoder_weights='imagenet', classes=3, activation='softmax')

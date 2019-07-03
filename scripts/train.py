@@ -21,10 +21,6 @@ from params import args
 from prediction import image_predict
 
 
-def main():
-    train()
-
-
 def set_random_seed(seed):
     np.random.seed(seed)
     cudnn.deterministic = True
@@ -66,7 +62,7 @@ def load_model(network, model_weights_path):
     return model
 
 
-def move_pseudo_labeled_to_train(image_name, predicted_mask, train_df, img_size=320, mask_type="png", img_type="tiff"):
+def move_pseudo_labeled_to_train(image_name, predicted_mask, train_df, mask_type="png"):
     pseudo_labeled_folder = "pseudo-labeled"
     pseudo_labeled_path = os.path.join(args.dataset_path, pseudo_labeled_folder)
     dataset_images_path = os.path.join(pseudo_labeled_path, 'images')
@@ -80,12 +76,12 @@ def move_pseudo_labeled_to_train(image_name, predicted_mask, train_df, img_size=
 
     unlabeled_image_path = os.path.join(args.unlabeled_data, image_name)
 
-    name, channel, position = get_image_info(image_name)
+    name, position = get_image_info(image_name)
 
     move(unlabeled_image_path, os.path.join(dataset_images_path, image_name))
-    imageio.imwrite(os.path.join(dataset_masks_path, name + '_' + channel + '_' + position + '.' + mask_type),
+    imageio.imwrite(os.path.join(dataset_masks_path, name + '_' + position + '.' + mask_type),
                     np.uint8(predicted_mask > 0.3) * 255)
-    return add_record(train_df, pseudo_labeled_folder, name, channel, position, img_size, mask_type, img_type)
+    return add_record(train_df, pseudo_labeled_folder, name, position)
 
 
 def train():
@@ -135,6 +131,10 @@ def checkpoint(model, runner, loaders):
             InferCallback()
         ],
     )
+
+
+def main():
+    train()
 
 
 if __name__ == '__main__':

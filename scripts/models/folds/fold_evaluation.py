@@ -3,9 +3,9 @@ import os
 
 import numpy as np
 import pandas as pd
+import tensorflow as tf
 from PIL import Image
 from tqdm import tqdm
-import tensorflow as tf
 
 
 def parse_args():
@@ -36,7 +36,8 @@ def dice_coef(y_true, y_pred, eps=1e-7):
     return (2. * intersection + eps) / (np.sum(y_true_f) + np.sum(y_pred_f))
 
 
-def evaluate(datasets_path, predictions_path, test_df_path, output_name, folds):
+def evaluate(datasets_path, predictions_path, test_df_path, output_name, folds, images_folder="images",
+             image_type="tiff", masks_folder="masks", mask_type="png"):
     filenames = pd.read_csv(test_df_path)
     writer = tf.python_io.TFRecordWriter(
         os.path.join(os.path.dirname(predictions_path), output_name + '.tfrecords'))
@@ -45,19 +46,19 @@ def evaluate(datasets_path, predictions_path, test_df_path, output_name, folds):
 
     for ind, image_info in tqdm(filenames.iterrows()):
 
-        name = image_info["name"] + '_' + image_info["channel"] + '_' + image_info["position"]
+        name = image_info["name"] + '_' + image_info["position"]
 
-        image = Image.open(
-            os.path.join(datasets_path, image_info["dataset_folder"], "images", name + '.' + image_info["image_type"]))
-        mask = Image.open(
-            os.path.join(datasets_path, image_info["dataset_folder"], "masks", name + '.' + image_info["mask_type"]))
-
+        image = Image.open(os.path.join(datasets_path, image_info["dataset_folder"], images_folder,
+                                        name + '.' + image_type))
+        mask = Image.open(os.path.join(datasets_path, image_info["dataset_folder"], masks_folder,
+                                       name + '.' + mask_type))
         img_size = image.size
         prediction = np.zeros(img_size, dtype=np.float)
 
         for fold_dir in os.listdir(predictions_path):
             if os.path.isdir(os.path.join(predictions_path, fold_dir)):
-                prediction += np.array(Image.open(os.path.join(predictions_path, fold_dir, 'predictions', name + ".png")))
+                prediction += np.array(
+                    Image.open(os.path.join(predictions_path, fold_dir, 'predictions', name + ".png")))
 
         prediction = prediction / folds
 

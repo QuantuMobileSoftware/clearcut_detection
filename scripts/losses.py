@@ -73,17 +73,5 @@ class MultiClass_Dice_Loss(Module):
 
 
 def multi_class_dice_loss(input, target, eps=1e-7):
-    """Computes the Sørensen–Dice loss.
-    Note that PyTorch optimizers minimize a loss. In this
-    case, we would like to maximize the dice so we
-    return the negated dice loss.
-    Args:
-        target: a tensor of shape [B, 1, H, W].
-        input: a tensor of shape [B, C, H, W]. Corresponds to
-            the raw output or logits of the model.
-        eps: added to the denominator for numerical stability.
-    Returns:
-        dice_loss: the Sørensen–Dice loss.
-    """
     return 1 - multi_class_dice(input, target)
 
