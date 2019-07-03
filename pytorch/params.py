@@ -8,7 +8,7 @@ arg = parser.add_argument
 
 arg('--batch_size', type=int, default=8)
 arg('--num_workers', type=int, default=4)
-arg('--epochs', type=int, default=100)
+arg('--epochs', type=int, default=3)
 
 arg('--logdir', default='../logs')
 arg('--train_df', default='../data/train_df.csv')

@@ -12,24 +12,7 @@ from torchvision import transforms
 from shapely.geometry import Polygon
 from catalyst.dl.utils import UtilsFactory
 
-from pytorch.utils import get_model
-
-
-def count_channels(channels):
-    count = 0
-    for ch in channels:
-        if ch == 'rgb':
-            count += 3
-        elif ch == 'ndvi':
-            count += 1
-        elif ch == 'ndvi_color':
-            count += 4
-        elif ch == 'b2':
-            count += 1
-        else:
-            raise Exception('{} channel is unknown!'.format(ch))
-
-    return count
+from pytorch.utils import get_model, count_channels, filter_by_channels
 
 
 def load_model(network, model_weights_path, channels):
@@ -81,12 +64,8 @@ def predict_raster(tiff_file, channels, network, model_weights_path, input_size=
                     col = int(right_bound - window_size_pixels)
                     step_col = right_bound
 
-                res = src.read(
-                    window=(
-                        (step_row, row),
-                        (col, step_col)
-                    )
-                )
+                res = np.moveaxis(src.read(window=((step_row, row), (col, step_col))), 0, -1)
+                res = filter_by_channels(res, channels)
                 rect = [
                     [step_row, row],
                     [col, step_col]
@@ -95,8 +74,7 @@ def predict_raster(tiff_file, channels, network, model_weights_path, input_size=
                 for channel in range(res.shape[0]):
                     res[channel] = scale(res[channel], 255)
 
-                res = np.moveaxis(res, 0, -1).astype(np.uint8)
-                res = transforms.ToTensor()(res)
+                res = transforms.ToTensor()(res.astype(np.uint8))
                 pred = predict(model, res, (1, count_channels(channels), input_size, input_size))
                 stack_arr = np.dstack([
                     pred[rect[0][0] - rect[0][1]:, :rect[1][1] - rect[1][0]],

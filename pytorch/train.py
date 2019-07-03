@@ -78,43 +78,10 @@ def main():
         model=model,
         loaders=infer_loader,
         callbacks=[
-            TestCheckpointCallback(resume=f'{save_path}/checkpoints/best.pth'),
+            CheckpointCallback(resume=f'{save_path}/checkpoints/best.pth'),
             InferCallback()
         ],
     )
-
-
-class TestCheckpointCallback(CheckpointCallback):
-
-    def on_epoch_end(self, state: RunnerState):
-        if state.stage.startswith("infer"):
-            return
-
-        state.valid_loader = 'test'
-        state.metrics = MetricManager(
-            valid_loader='test',
-            main_metric='loss',
-            minimize=True
-        )
-
-        checkpoint = self.pack_checkpoint(
-            model=state.model,
-            criterion=state.criterion,
-            optimizer=state.optimizer,
-            scheduler=state.scheduler,
-            epoch_metrics=dict(state.metrics.epoch_values),
-            valid_metrics=dict(state.metrics.valid_values),
-            stage=state.stage,
-            epoch=state.epoch
-        )
-        self.save_checkpoint(
-            logdir=state.logdir,
-            checkpoint=checkpoint,
-            is_best=state.metrics.is_best,
-            save_n_best=self.save_n_best,
-            main_metric=state.main_metric,
-            minimize_metric=state.minimize_metric
-        )
 
 
 if __name__ == '__main__':

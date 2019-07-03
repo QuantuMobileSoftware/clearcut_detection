@@ -1,5 +1,6 @@
 mkdir $2/$3
-for ch in rgb ndvi ndvi_color b2 b3 b4 b8
+
+for ch in ndvi ndvi_color
 do
     ssh_tif=$1/$3_$ch.tif
     local_tif=$2/$3/$3_$ch.tif

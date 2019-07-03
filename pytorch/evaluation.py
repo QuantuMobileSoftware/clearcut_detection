@@ -1,29 +1,61 @@
-import numpy as np
-import argparse
-import pandas as pd
-from tqdm import tqdm
 import os
 import cv2 as cv
+import imageio
+import numpy as np
+import pandas as pd
 import tensorflow as tf
+import argparse
 from PIL import Image
 
-from datasets import get_filepath, get_fullname, count_channels, read_tensor
+from tqdm import tqdm
+
 
 def parse_args():
     parser = argparse.ArgumentParser(
         description='Script for evaluating performance of the model.')
     parser.add_argument(
-        '--dataset_path', '-dp', dest='dataset_path',
+        '--datasets_path', '-dp', dest='datasets_path',
         required=True, help='Path to the directory all the data')
     parser.add_argument(
         '--prediction_path', '-pp', dest='prediction_path',
-        default='../data/predictions', help='Path to the directory with predictions')
+        required=True, help='Path to the directory with predictions')
     parser.add_argument(
         '--test_df_path', '-tp', dest='test_df_path',
-        default='../data/test_df.csv', help='Path to the test dataframe with image names')
+        required=True, help='Path to the test dataframe with image names')
     parser.add_argument(
         '--output_name', '-on', dest='output_name',
-        default='prediction', help='Name for output file')
+        required=True, help='Name for output file')
+    parser.add_argument(
+        '--images_folder', '-imf', dest='images_folder',
+        default='images',
+        help='Name of folder where images are storing'
+    )
+    parser.add_argument(
+        '--masks_folder', '-mf', dest='masks_folder',
+        default='masks',
+        help='Name of folder where masks are storing'
+    )
+    parser.add_argument(
+        '--instances_folder', '-inf', dest='instances_folder',
+        default='instance_masks',
+        help='Name of folder where instances are storing'
+    )
+    parser.add_argument(
+        '--image_type', '-imt', dest='image_type',
+        default='tiff',
+        help='Type of image file'
+    )
+    parser.add_argument(
+        '--mask_type', '-mt', dest='mask_type',
+        default='png',
+        help='Type of mask file'
+    )
+    parser.add_argument(
+        '--threshold', '-t', dest='threshold',
+        default=0.35,
+        help='Threshold for prediction'
+    )
+
     return parser.parse_args()
 
 
@@ -35,7 +67,7 @@ def watershed_transformation(prediction):
     imgResult = sharp - imgLaplacian
 
     imgResult = np.clip(imgResult, 0, 255)
-    imgResult = imgResult.astype('uint8')
+    imgResult = imgResult.astype(np.uint8)
 
     bw = cv.cvtColor(prediction, cv.COLOR_BGR2GRAY)
     _, bw = cv.threshold(bw, 40, 255, cv.THRESH_BINARY | cv.THRESH_OTSU)
@@ -70,18 +102,18 @@ def dice_coef_logical(true_positives, false_positives, false_negatives):
     return (2. * true_positives) / (2. * true_positives + false_positives + false_negatives)
 
 
-def dice_coef(y_true, y_pred, smooth=1.0):
+def dice_coef(y_true, y_pred, eps=1e-7):
     y_true_f = y_true.flatten()
     y_pred_f = y_pred.flatten()
     intersection = np.sum(y_true_f * y_pred_f)
-    return (2. * intersection + smooth) / (np.sum(y_true_f) + np.sum(y_pred_f) + smooth)
+    return (2. * intersection + eps) / (np.sum(y_true_f) + np.sum(y_pred_f))
 
 
 def iou(y_true, y_pred, smooth=1.0):
     y_true_f = y_true.flatten()
     y_pred_f = y_pred.flatten()
     intersection = np.sum(y_true_f * y_pred_f)
-    return (2. * intersection + smooth) / (np.sum(y_true_f) + np.sum(y_pred_f) + smooth)
+    return (1. * intersection + smooth) / (np.sum(y_true_f) + np.sum(y_pred_f) - intersection + smooth)
 
 
 def compute_iou_matrix(markers, instances):
@@ -89,11 +121,10 @@ def compute_iou_matrix(markers, instances):
 
     labels = labels[labels < 255]
     labels = labels[labels > 0]
-
     iou_matrix = np.zeros((len(labels), len(instances)), dtype=np.float32)
 
     for i, label in enumerate(labels):
-        prediction_instance = (markers == label).astype(int)
+        prediction_instance = (markers == label).astype(np.uint8)
 
         for j, ground_truth_instance in enumerate(instances):
             iou_value = iou(prediction_instance, ground_truth_instance)
@@ -106,6 +137,8 @@ def compute_metric_at_thresholds(iou_matrix):
     dices = []
     if iou_matrix.shape == (0, 0):
         return 1
+    elif iou_matrix.shape[0] == 0:
+        return 0
     for threshold in np.arange(0.5, 1, 0.05):
         true_positives = (iou_matrix.max(axis=1) > threshold).sum()
         false_positives = (iou_matrix.max(axis=1) <= threshold).sum()
@@ -114,35 +147,42 @@ def compute_metric_at_thresholds(iou_matrix):
     return np.average(dices)
 
 
-def evaluate(dataset_path, predictions_path, test_df_path, output_name):
-    test_df = pd.read_csv(test_df_path)
+def evaluate(
+    datasets_path, predictions_path, test_df_path, output_name, threshold,
+    images_folder, image_type, masks_folder, mask_type, instances_folder
+):
+    filenames = pd.read_csv(test_df_path)
 
     metrics = []
 
     writer = tf.python_io.TFRecordWriter(
-        os.path.join(os.path.dirname(predictions_path), output_name + '.tfrecords'))
+        os.path.join(os.path.dirname(predictions_path), f'{output_name}.tfrecords'))
 
+    dices = []
 
-    for _, image_info in tqdm(test_df.iterrows()):
-        dataset = get_fullname(
-            image_info['date'],
-            image_info['name'],
-            'rgb'
-        )
-        filename = get_fullname(
-            image_info['date'], image_info['name'],
-            'rgb', image_info['ix'], image_info['iy']
-        )
-        prediction = cv.imread(os.path.join(predictions_path, filename) + ".png")
-        image = cv.imread(os.path.join(dataset_path, dataset, "images", filename) + ".tiff")
-        mask = cv.imread(os.path.join(dataset_path, dataset, "masks", filename) + ".png")
+    for ind, image_info in tqdm(filenames.iterrows()):
 
-        print(prediction.shape)
+        name = '_'.join([image_info['name'], image_info['position']])
+
+        prediction = cv.imread(f'{os.path.join(predictions_path, name)}.png')
+
+        image = imageio.imread(os.path.join(
+            datasets_path, image_info['name'],
+            images_folder, f'{name}.{image_type}'
+        ))[:, :, :3]
+
+        mask = cv.imread(os.path.join(
+            datasets_path, image_info['name'],
+            masks_folder, f'{name}.{mask_type}'
+        ))
 
         img_size = image.shape
         instances = []
 
-        image_instances_path = os.path.join(dataset_path, dataset, "instance_masks", filename)
+        image_instances_path = os.path.join(
+            datasets_path, image_info['name'],
+            instances_folder, name
+        )
 
         for instance_name in os.listdir(image_instances_path):
             if ".png" in instance_name and ".xml" not in instance_name:
@@ -151,6 +191,7 @@ def evaluate(dataset_path, predictions_path, test_df_path, output_name):
                 instances.append(bw_instance)
 
         markers = post_processing(prediction)
+
         iou_matrix = compute_iou_matrix(markers, instances)
         metric = compute_metric_at_thresholds(iou_matrix)
         metrics.append(metric)
@@ -159,7 +200,8 @@ def evaluate(dataset_path, predictions_path, test_df_path, output_name):
         msk_raw = Image.fromarray(np.uint8(mask), 'RGB').tobytes()
         pred_raw = Image.fromarray(np.uint8(prediction), 'RGB').tobytes()
 
-        dice_score = dice_coef(mask, (prediction / 255) > 0.5)
+        dice_score = dice_coef(mask / 255, (prediction / 255) > threshold)
+        dices.append(dice_score)
 
         example = tf.train.Example(features=tf.train.Features(feature={
             "img_height": tf.train.Feature(int64_list=tf.train.Int64List(value=[int(img_size[1])])),
@@ -170,17 +212,24 @@ def evaluate(dataset_path, predictions_path, test_df_path, output_name):
             "pred_raw": tf.train.Feature(bytes_list=tf.train.BytesList(value=[pred_raw])),
             "metric": tf.train.Feature(float_list=tf.train.FloatList(value=[metric])),
             "img_name": tf.train.Feature(
-                bytes_list=tf.train.BytesList(value=[tf.compat.as_bytes(filename)])),
+                bytes_list=tf.train.BytesList(value=[tf.compat.as_bytes(name)])),
             "msk_name": tf.train.Feature(
-                bytes_list=tf.train.BytesList(value=[tf.compat.as_bytes(filename)])),
+                bytes_list=tf.train.BytesList(value=[tf.compat.as_bytes(name)])),
             "pred_name": tf.train.Feature(
-                bytes_list=tf.train.BytesList(value=[tf.compat.as_bytes(filename)])),
+                bytes_list=tf.train.BytesList(value=[tf.compat.as_bytes(name)])),
         }))
         writer.write(example.SerializeToString())
 
-    print("Metrics value - {0}".format(round(np.average(metrics), 4)))
+    # print("Metrics value - {0}".format(round(np.average(metrics), 4)))
+    print("Average dice score - {0}".format(round(np.average(dices), 4)))
 
 
 if __name__ == "__main__":
     args = parse_args()
-    evaluate(args.dataset_path, args.prediction_path, args.test_df_path, args.output_name)
+    evaluate(
+        args.datasets_path, args.prediction_path,
+        args.test_df_path, args.output_name,
+        args.threshold, args.images_folder,
+        args.image_type, args.masks_folder,
+        args.mask_type, args.instances_folder
+    )

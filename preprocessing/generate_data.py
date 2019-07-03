@@ -69,6 +69,16 @@ def parse_args():
         required=True,
         help='Choose split function between geo_split and stratified_split'
     )
+    parser.add_argument(
+        '--val_threshold', '-vt', dest='val_threshold',
+        default=0.3, type=float,
+        help='Split threshold to specify validation size'
+    )
+    parser.add_argument(
+        '--test_threshold', '-tt', dest='test_threshold',
+        default=0.2, type=float,
+        help='Split threshold to specify test size'
+    )
 
     return parser.parse_args()
 
@@ -334,12 +344,12 @@ def geo_split(
 if __name__ == '__main__':
     if args.split_function == 'stratified_split':
         data_info = get_data_info()
-        train_val_df, test_df = stratified_split(data_info, test_size=0.2)
-        train_df, val_df = stratified_split(train_val_df, test_size=0.15)
+        train_val_df, test_df = stratified_split(data_info, test_size=args.test_threshold)
+        train_df, val_df = stratified_split(train_val_df, test_size=args.val_threshold)
     elif args.split_function == 'geo_split':
         train_df, val_df, test_df = geo_split(
-            val_height_threshold=0.3,
-            test_height_threshold=0.2,
+            val_height_threshold=args.val_threshold,
+            test_height_threshold=args.test_threshold
         )
     else:
         raise Exception(f'{args.split_function} is an unknown function!')
