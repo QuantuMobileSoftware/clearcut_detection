@@ -1,40 +1,54 @@
+import argparse
 import collections
 import os
-import numpy as np
 
-from torch import cuda
-from torch.backends import cudnn
+import pandas as pd
 import torch
 from catalyst.dl.callbacks import DiceCallback, CheckpointCallback, InferCallback
 from catalyst.dl.experiments import SupervisedRunner
 from catalyst.dl.utils import UtilsFactory
 
-from datasets import create_loaders
+from dataset import Dataset
 from losses import BCE_Dice_Loss
-from models.utils import get_model
-from params import args
+from models.utils import get_model, set_random_seed
 
 
-def set_random_seed(seed):
-    np.random.seed(seed)
-    cudnn.deterministic = True
-    cudnn.benchmark = False
-    torch.manual_seed(seed)
-    if cuda.is_available():
-        cuda.manual_seed_all(seed)
+def parse_args():
+    parser = argparse.ArgumentParser()
+    arg = parser.add_argument
 
-    print('Random seed:', seed)
+    arg('--batch_size', type=int, default=8)
+    arg('--num_workers', type=int, default=4)
+    arg('--epochs', '-e', type=int, default=100)
+    arg('--folds', '-f', type=int)
+
+    arg('--logdir', default='../logs')
+    arg('--dataset_path', '-dp', default='../data/input', help='Path to the data')
+
+    arg('--image_size', '-is', type=int, default=224)
+    arg('--network', '-n', default='unet50')
+    arg(
+        '--channels', '-ch',
+        default=[
+            'rgb', 'ndvi', 'ndvi_color',
+            'b2', 'b3', 'b4', 'b8'
+        ], nargs='+', help='Channels list')
+
+    return parser.parse_args()
 
 
-def main():
+def train(args):
     set_random_seed(42)
     for fold in range(args.folds):
         model = get_model(args.network)
 
         print("Loading model")
         model, device = UtilsFactory.prepare_model(model)
-        loaders = create_loaders(train_df=os.path.join(args.train_df, f'train{fold}.csv'),
-                                 val_df=os.path.join(args.val_df, f'val{fold}.csv'))
+        train_df = pd.read_csv(os.path.join(args.dataset_path, f'train{fold}.csv')).to_dict('records')
+        val_df = pd.read_csv(os.path.join(args.dataset_path, f'val{fold}.csv')).to_dict('records')
+
+        ds = Dataset(args.channels, args.dataset_path, args.image_size, args.batch_size, args.num_workers)
+        loaders = ds.create_loaders(train_df, val_df)
 
         criterion = BCE_Dice_Loss(bce_weight=0.2)
 
@@ -79,4 +93,5 @@ def main():
 
 
 if __name__ == '__main__':
-    main()
+    args = parse_args()
+    train(args)

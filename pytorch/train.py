@@ -1,3 +1,4 @@
+import argparse
 import collections
 import os
 
@@ -10,11 +11,36 @@ from catalyst.dl.utils import UtilsFactory
 from torch import nn, cuda
 from torch.backends import cudnn
 
-from datasets import create_loaders
+from dataset import Dataset
 from losses import BCE_Dice_Loss
 from models.utils import get_model
-from params import args
 from utils import count_channels
+
+
+def parse_args():
+    parser = argparse.ArgumentParser()
+    arg = parser.add_argument
+
+    arg('--batch_size', type=int, default=8)
+    arg('--num_workers', type=int, default=4)
+    arg('--epochs', '-e', type=int, default=100)
+
+    arg('--logdir', default='../logs')
+    arg('--train_df', '-td', default='../data/train_df.csv')
+    arg('--val_df', '-vd', default='../data/val_df.csv')
+    arg('--dataset_path', '-dp', default='../data/input', help='Path to the data')
+    arg('--model_weights_path', '-mwp', default='../weights/resnet50-19c8e357.pth')
+
+    arg('--image_size', '-is', type=int, default=224)
+    arg('--network', '-n', default='unet50')
+    arg(
+        '--channels', '-ch',
+        default=[
+            'rgb', 'ndvi', 'ndvi_color',
+            'b2', 'b3', 'b4', 'b8'
+        ], nargs='+', help='Channels list')
+
+    return parser.parse_args()
 
 
 def set_random_seed(seed):
@@ -28,7 +54,7 @@ def set_random_seed(seed):
     print('Random seed:', seed)
 
 
-def train():
+def train(args):
     set_random_seed(42)
     model = get_model(args.network)
     print('Loading model')
@@ -39,9 +65,9 @@ def train():
 
     train_df = pd.read_csv(args.train_df).to_dict('records')
     val_df = pd.read_csv(args.val_df).to_dict('records')
-    test_df = pd.read_csv(args.test_df).to_dict('records')
 
-    loaders = create_loaders(train_df, val_df, test_df)
+    ds = Dataset(args.channels, args.dataset_path, args.image_size, args.batch_size, args.num_workers)
+    loaders = ds.create_loaders(train_df, val_df)
 
     criterion = BCE_Dice_Loss(bce_weight=0.2)
     optimizer = torch.optim.Adam(model.parameters(), lr=1e-3)
@@ -84,4 +110,5 @@ def train():
 
 
 if __name__ == '__main__':
-    train()
+    args = parse_args()
+    train(args)

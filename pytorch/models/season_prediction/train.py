@@ -1,3 +1,5 @@
+import argparse
+import os
 import sys
 
 sys.path.append("../..")
@@ -6,21 +8,51 @@ import torch
 from catalyst.dl.metrics import dice
 from catalyst.dl.utils import UtilsFactory
 from torch.nn import functional as F
+import pandas as pd
 
-from datasets import create_loaders
+from models.season_prediction.season_dataset import SeasonDataset
 from losses import BCE_Dice_Loss
-from models.utils import get_model
-from params import args
+from models.utils import get_model, set_random_seed
 from statistics import mean
 
 
-def main():
-    model = get_model(args.network)
+def parse_args():
+    parser = argparse.ArgumentParser()
+    arg = parser.add_argument
+
+    arg('--batch_size', type=int, default=8)
+    arg('--num_workers', type=int, default=4)
+    arg('--epochs', '-e', type=int, default=100)
+
+    arg('--logdir', default='../logs')
+    arg('--train_df', '-td', default='../data/train_df.csv')
+    arg('--val_df', '-vd', default='../data/val_df.csv')
+    arg('--dataset_path', '-dp', default='../data/input', help='Path to the data')
+
+    arg('--image_size', '-is', type=int, default=224)
+    arg('--network', '-n', default='unet50')
+    arg(
+        '--channels', '-ch',
+        default=[
+            'rgb', 'ndvi', 'ndvi_color',
+            'b2', 'b3', 'b4', 'b8'
+        ], nargs='+', help='Channels list')
+
+    return parser.parse_args()
+
+
+def train(args):
+    set_random_seed(42)
+    model = get_model('fpn50_season')
 
     print("Loading model")
     model, device = UtilsFactory.prepare_model(model)
 
-    loaders = create_loaders()
+    train_df = pd.read_csv(args.train_df).to_dict('records')
+    val_df = pd.read_csv(args.val_df).to_dict('records')
+
+    ds = SeasonDataset(args.channels, args.dataset_path, args.image_size, args.batch_size, args.num_workers)
+    loaders = ds.create_loaders(train_df, val_df)
 
     criterion = BCE_Dice_Loss(bce_weight=0.2)
 
@@ -130,6 +162,7 @@ def main():
                 best_valid_dice = dice_mean
                 best_epoch = epoch
                 best_accuracy = valid_accuracy
+                os.makedirs(f'{args.logdir}/weights')
                 torch.save(model.state_dict(), 'weights/epoch{0}.pth'.format(epoch))
 
         scheduler.step()
@@ -139,4 +172,5 @@ def main():
 
 
 if __name__ == '__main__':
-    main()
+    args = parse_args()
+    train(args)

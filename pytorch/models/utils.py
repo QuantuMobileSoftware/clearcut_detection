@@ -1,7 +1,11 @@
+import numpy as np
 import segmentation_models_pytorch as smp
 import torch
-from models.season_prediction.model import FPN_double_output
+from torch import cuda
+from torch.backends import cudnn
+
 from models.autoencoder.model import Autoencoder_Unet
+from models.season_prediction.model import FPN_double_output
 
 
 def get_satellite_pretrained_resnet(model_weights_path, encoder_name='resnet50'):
@@ -43,3 +47,14 @@ def get_model(name='fpn50', model_weights_path=None):
         return smp.FPN('resnet50', encoder_weights='imagenet', classes=3, activation='softmax')
     else:
         raise ValueError("Unknown network")
+
+
+def set_random_seed(seed):
+    np.random.seed(seed)
+    cudnn.deterministic = True
+    cudnn.benchmark = False
+    torch.manual_seed(seed)
+    if cuda.is_available():
+        cuda.manual_seed_all(seed)
+
+    print('Random seed:', seed)

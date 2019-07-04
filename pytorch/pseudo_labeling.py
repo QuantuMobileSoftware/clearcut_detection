@@ -1,3 +1,4 @@
+import argparse
 import os
 from shutil import move
 
@@ -8,16 +9,44 @@ import torch
 from catalyst.dl.utils import UtilsFactory
 from tqdm import tqdm
 
-from datasets import add_record
+from dataset import add_record
 from models.utils import get_model
-from params import args
 from prediction import image_labeling
 from train import train
 from utils import get_image_info
 
 
-def pseudo_labeling(eps=1e-7, confidence_threshold=0.8):
-    train()
+def parse_args():
+    parser = argparse.ArgumentParser()
+    arg = parser.add_argument
+
+    arg('--batch_size', type=int, default=8)
+    arg('--num_workers', type=int, default=4)
+    arg('--epochs', '-e', type=int, default=100)
+    arg('--pseudolabel_iter', '-pi', type=int, default=2)
+
+    arg('--logdir', default='../logs')
+    arg('--train_df', '-td', default='../data/train_df.csv')
+    arg('--val_df', '-vd', default='../data/val_df.csv')
+    arg('--dataset_path', '-dp', default='../data/input', help='Path to the data')
+    arg('--unlabeled_data', '-ud', default='../data/unlabeled_data')
+
+    arg('--image_size', '-is', type=int, default=224)
+
+    arg('--network', '-n', default='unet50')
+
+    arg(
+        '--channels', '-ch',
+        default=[
+            'rgb', 'ndvi', 'ndvi_color',
+            'b2', 'b3', 'b4', 'b8'
+        ], nargs='+', help='Channels list')
+
+    return parser.parse_args()
+
+
+def pseudo_labeling(args, eps=1e-7, confidence_threshold=0.8):
+    train(args)
 
     for i in range(args.pseudolabel_iter):
         model = load_model(args.network, f"{args.logdir}/checkpoints/best.pth")
@@ -35,7 +64,7 @@ def pseudo_labeling(eps=1e-7, confidence_threshold=0.8):
         print(f'Added {added_to_train} images to train')
         train_df.to_csv(args.train_df)
 
-        train()
+        train(args)
 
 
 def load_model(network, model_weights_path):
@@ -69,4 +98,5 @@ def move_pseudo_labeled_to_train(image_name, predicted_mask, train_df, mask_type
 
 
 if __name__ == '__main__':
-    pseudo_labeling()
+    args = parse_args()
+    pseudo_labeling(args)
