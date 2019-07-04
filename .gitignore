@@ -7,10 +7,7 @@ notebooks/\.ipynb_checkpoints/
 
 venv/
 
-data/
-
-\.vscode/
-
-pytorch/__pycache__/
-
-logs/
+scripts/models/__pycache__/
+scripts/models/season_prediction/__pycache__/
+scripts/models/autoencoder/__pycache__/
+scripts/models/autoencoder/\.ipynb_checkpoints/
