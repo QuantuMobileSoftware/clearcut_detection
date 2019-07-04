@@ -1,22 +1,22 @@
 import argparse
 import os
 
+import cv2 as cv
 import numpy as np
 import pandas as pd
-from PIL import Image
-import cv2 as cv
 import torch
 import torchvision.transforms as transforms
+from PIL import Image
+from torch import nn
 from tqdm import tqdm
 
-from torch import nn
-from utils import get_filepath, count_channels, read_tensor, filter_by_channels
 from models.utils import get_model
+from utils import get_filepath, count_channels, read_tensor, filter_by_channels
 
 
 def predict(
-    data_path, model_weights_path, network,
-    test_df_path, save_path, size, channels
+        data_path, model_weights_path, network,
+        test_df_path, save_path, size, channels
 ):
     model = get_model(network)
     model.encoder.conv1 = nn.Conv2d(

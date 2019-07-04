@@ -1,12 +1,12 @@
+import argparse
 import os
+
 import cv2 as cv
 import imageio
 import numpy as np
 import pandas as pd
 import tensorflow as tf
-import argparse
 from PIL import Image
-
 from tqdm import tqdm
 
 
@@ -148,8 +148,8 @@ def compute_metric_at_thresholds(iou_matrix):
 
 
 def evaluate(
-    datasets_path, predictions_path, test_df_path, output_name, threshold,
-    images_folder, image_type, masks_folder, mask_type, instances_folder
+        datasets_path, predictions_path, test_df_path, output_name, threshold,
+        images_folder, image_type, masks_folder, mask_type, instances_folder
 ):
     filenames = pd.read_csv(test_df_path)
 

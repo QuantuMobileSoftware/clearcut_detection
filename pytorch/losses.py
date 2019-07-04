@@ -3,6 +3,7 @@ from catalyst.dl.metrics import dice
 from torch.nn import CrossEntropyLoss
 from torch.nn import Module
 from torch.nn import functional as F
+
 from metrics import multi_class_dice
 
 
@@ -74,4 +75,3 @@ class MultiClass_Dice_Loss(Module):
 
 def multi_class_dice_loss(input, target):
     return 1 - multi_class_dice(input, target)
-

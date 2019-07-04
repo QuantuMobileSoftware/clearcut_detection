@@ -1,7 +1,8 @@
 import os
+import re
+
 import imageio
 import numpy as np
-import re
 
 
 def join_paths(*paths):

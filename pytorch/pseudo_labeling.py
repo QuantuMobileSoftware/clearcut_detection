@@ -1,19 +1,19 @@
-from train import train
-from prediction import image_labeling
-from models.utils import get_model
-
-from tqdm import tqdm
-from catalyst.dl.utils import UtilsFactory
-from datasets import add_record
-from utils import get_image_info
-import pandas as pd
 import os
-import numpy as np
-import torch
 from shutil import move
-import imageio
 
+import imageio
+import numpy as np
+import pandas as pd
+import torch
+from catalyst.dl.utils import UtilsFactory
+from tqdm import tqdm
+
+from datasets import add_record
+from models.utils import get_model
 from params import args
+from prediction import image_labeling
+from train import train
+from utils import get_image_info
 
 
 def pseudo_labeling(eps=1e-7, confidence_threshold=0.8):
@@ -46,8 +46,8 @@ def load_model(network, model_weights_path):
     return model
 
 
-def move_pseudo_labeled_to_train(image_name, predicted_mask, train_df, mask_type="png"):
-    pseudo_labeled_folder = "pseudo-labeled"
+def move_pseudo_labeled_to_train(image_name, predicted_mask, train_df, mask_type="png",
+                                 pseudo_labeled_folder="pseudo-labeled"):
     pseudo_labeled_path = os.path.join(args.dataset_path, pseudo_labeled_folder)
     dataset_images_path = os.path.join(pseudo_labeled_path, 'images')
     dataset_masks_path = os.path.join(pseudo_labeled_path, 'masks')

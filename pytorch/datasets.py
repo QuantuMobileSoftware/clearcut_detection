@@ -1,14 +1,14 @@
 import collections
+
 import numpy as np
 import pandas as pd
-
-from catalyst.dl.utils import UtilsFactory
 from albumentations import (
-    CLAHE, RandomRotate90, Flip, OneOf, Compose, RGBShift, RandomSizedCrop, RandomCrop)
+    CLAHE, RandomRotate90, Flip, OneOf, Compose, RGBShift, RandomSizedCrop)
 from albumentations.pytorch.transforms import ToTensor
+from catalyst.dl.utils import UtilsFactory
 
-from utils import get_filepath, read_tensor, filter_by_channels
 from params import args
+from utils import get_filepath, read_tensor, filter_by_channels
 
 
 def add_record(data_info, dataset_folder, name, position):
@@ -23,8 +23,8 @@ def add_record(data_info, dataset_folder, name, position):
 
 
 def get_input_pair(
-    data_info_row, channels=args.channels, data_path=args.dataset_path,
-    images_folder="images", image_type="tiff", masks_folder="masks", mask_type="png"
+        data_info_row, channels=args.channels, data_path=args.dataset_path,
+        images_folder="images", image_type="tiff", masks_folder="masks", mask_type="png"
 ):
     if len(channels) == 0:
         raise Exception('You have to specify at least one channel.')
@@ -35,7 +35,7 @@ def get_input_pair(
         instance_name, file_type=image_type
     )
     mask_path = get_filepath(
-        data_path,  data_info_row['dataset_folder'], masks_folder,
+        data_path, data_info_row['dataset_folder'], masks_folder,
         instance_name, file_type=mask_type
     )
 
@@ -64,14 +64,13 @@ def get_input_pair(
         masks_array = augmented_rgb['mask']
 
     aug = Compose([
-        RandomCrop(224,224),
         RandomRotate90(),
         Flip(),
-        # OneOf([
-        #     RandomSizedCrop(
-        #         min_max_height=(int(args.image_size * 0.7), args.image_size),
-        #         height=args.image_size, width=args.image_size)
-        # ], p=0.4),
+        OneOf([
+            RandomSizedCrop(
+                min_max_height=(int(args.image_size * 0.7), args.image_size),
+                height=args.image_size, width=args.image_size)
+        ], p=0.4),
         ToTensor()
     ])
 

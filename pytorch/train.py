@@ -1,20 +1,20 @@
 import collections
+import os
+
 import numpy as np
 import pandas as pd
 import torch
-import os
-
-from torch import nn, cuda
-from torch.backends import cudnn
 from catalyst.dl.callbacks import InferCallback, CheckpointCallback, DiceCallback
 from catalyst.dl.experiments import SupervisedRunner
 from catalyst.dl.utils import UtilsFactory
+from torch import nn, cuda
+from torch.backends import cudnn
 
 from datasets import create_loaders
 from losses import BCE_Dice_Loss
 from models.utils import get_model
-from utils import count_channels
 from params import args
+from utils import count_channels
 
 
 def set_random_seed(seed):
