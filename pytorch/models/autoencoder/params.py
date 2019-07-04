@@ -3,9 +3,6 @@ import argparse
 parser = argparse.ArgumentParser()
 arg = parser.add_argument
 
-# arg('--loss_function', default='bce_dice')
-# arg('--learning_rate', type=float, default=0.0001)
-
 arg('--batch_size', type=int, default=8)
 arg('--num_workers', type=int, default=4)
 arg('--epochs', '-e', type=int, default=100)

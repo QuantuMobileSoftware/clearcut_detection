@@ -2,14 +2,16 @@ import argparse
 import os
 
 import numpy as np
-import cv2 as cv
 import pandas as pd
+from PIL import Image
+import cv2 as cv
 import torch
 import torchvision.transforms as transforms
 from tqdm import tqdm
 
 from torch import nn
-from utils import get_model, get_filepath, count_channels, read_tensor, filter_by_channels
+from utils import get_filepath, count_channels, read_tensor, filter_by_channels
+from models.utils import get_model
 
 
 def predict(
@@ -30,13 +32,13 @@ def predict(
     predictions_path = os.path.join(save_path, "predictions")
 
     if not os.path.exists(predictions_path):
-        os.mkdir(predictions_path)
+        os.makedirs(predictions_path, exist_ok=True)
         print("Prediction directory created.")
 
     for _, image_info in tqdm(test_df.iterrows()):
         filename = '_'.join([image_info['name'], image_info['position']])
         image_path = get_filepath(
-            data_path, image_info['name'],
+            data_path, image_info['dataset_folder'],
             'images', filename,
             file_type='tiff'
         )
@@ -60,6 +62,19 @@ def predict(
         )
 
 
+def image_labeling(model, unlabeled_data, image_name, img_size, channels_number=3):
+    image_path = os.path.join(unlabeled_data, image_name)
+
+    img = Image.open(image_path)
+
+    img_tensor = transforms.ToTensor()(img)
+
+    prediction = model.predict(img_tensor.view(1, channels_number, img_size, img_size).cuda())
+
+    result = prediction.view(img_size, img_size).detach().cpu().numpy()
+    return result
+
+
 def parse_args():
     parser = argparse.ArgumentParser(
         description='Script for making predictions on test images of dataset.')
@@ -69,7 +84,7 @@ def parse_args():
     parser.add_argument('--test_df', '-td', required=True, help='Path to test dataframe')
     parser.add_argument('--save_path', '-sp', required=True, help='Path to save predictions')
     parser.add_argument('--size', '-s', default=224, type=int, help='Image size')
-    parser.add_argument('--channels', '-ch', default=['rgb', 'ndvi', 'ndvi_color'], type=list, help='Channels list')
+    parser.add_argument('--channels', '-ch', default=['rgb', 'ndvi', 'ndvi_color'], nargs='+', help='Channels list')
 
     return parser.parse_args()
 

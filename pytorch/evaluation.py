@@ -167,12 +167,12 @@ def evaluate(
         prediction = cv.imread(f'{os.path.join(predictions_path, name)}.png')
 
         image = imageio.imread(os.path.join(
-            datasets_path, image_info['name'],
+            datasets_path, image_info['dataset_folder'],
             images_folder, f'{name}.{image_type}'
         ))[:, :, :3]
 
         mask = cv.imread(os.path.join(
-            datasets_path, image_info['name'],
+            datasets_path, image_info['dataset_folder'],
             masks_folder, f'{name}.{mask_type}'
         ))
 

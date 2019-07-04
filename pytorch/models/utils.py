@@ -12,7 +12,7 @@ def get_satellite_pretrained_resnet(model_weights_path, encoder_name='resnet50')
     return model.encoder
 
 
-def get_model(model_weights_path, name='fpn50'):
+def get_model(name='fpn50', model_weights_path=None):
     if name == 'unet34':
         return smp.Unet('resnet34', encoder_weights='imagenet')
     elif name == 'unet50':

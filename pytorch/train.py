@@ -4,17 +4,16 @@ import pandas as pd
 import torch
 import os
 
-from catalyst.dl.metric_manager import MetricManager
-from catalyst.dl.state import RunnerState
 from torch import nn, cuda
 from torch.backends import cudnn
 from catalyst.dl.callbacks import InferCallback, CheckpointCallback, DiceCallback
 from catalyst.dl.experiments import SupervisedRunner
 from catalyst.dl.utils import UtilsFactory
 
-from datasets import create_loaders, count_channels
+from datasets import create_loaders
 from losses import BCE_Dice_Loss
-from utils import get_model
+from models.utils import get_model
+from utils import count_channels
 from params import args
 
 
@@ -29,7 +28,7 @@ def set_random_seed(seed):
     print('Random seed:', seed)
 
 
-def main():
+def train():
     set_random_seed(42)
     model = get_model(args.network)
     print('Loading model')
@@ -73,7 +72,7 @@ def main():
         verbose=True
     )
 
-    infer_loader = collections.OrderedDict([('infer', loaders['test'])])
+    infer_loader = collections.OrderedDict([('infer', loaders['valid'])])
     runner.infer(
         model=model,
         loaders=infer_loader,
@@ -85,4 +84,4 @@ def main():
 
 
 if __name__ == '__main__':
-    main()
+    train()

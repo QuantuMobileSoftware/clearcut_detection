@@ -1,10 +1,11 @@
 from train import train
-from prediction import image_predict
+from prediction import image_labeling
 from models.utils import get_model
 
 from tqdm import tqdm
 from catalyst.dl.utils import UtilsFactory
-from data_split import add_record, get_image_info
+from datasets import add_record
+from utils import get_image_info
 import pandas as pd
 import os
 import numpy as np
@@ -24,7 +25,7 @@ def pseudo_labeling(eps=1e-7, confidence_threshold=0.8):
         added_to_train = 0
         if os.path.isdir(args.unlabeled_data):
             for image_name in tqdm(os.listdir(args.unlabeled_data)):
-                predicted_mask = image_predict(model, args.unlabeled_data, image_name, 320, channels_number=3)
+                predicted_mask = image_labeling(model, args.unlabeled_data, image_name, 320, channels_number=3)
                 confidence = 1 - np.uint8(np.logical_and(0.3 < predicted_mask, predicted_mask < 0.7)).sum() / (np.uint8(
                     predicted_mask > 0.5).sum() + eps)
                 if confidence > confidence_threshold and predicted_mask[predicted_mask > 0.3].sum() > 50:

@@ -178,7 +178,7 @@ def parse_args():
         default=0.3, help='Threshold to get binary values in mask', type=float
     )
     parser.add_argument(
-        '--polygonize_olny', '-po', dest='polygonize_olny',
+        '--polygonize_only', '-po', dest='polygonize_only',
         default=False, help='Flag to skip prediction', type=bool
     )
 
@@ -191,7 +191,7 @@ def main():
     filename = re.split(r'[./]', args.image_path)[-2]
     predicted_filename = f'predicted_{filename}'
 
-    if not args.polygonize_olny:
+    if not args.polygonize_only:
         raster_array, meta = predict_raster(
             args.image_path, args.channels,
             args.network, args.model_weights_path

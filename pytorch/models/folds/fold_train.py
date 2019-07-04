@@ -2,7 +2,7 @@ import collections
 import os
 import numpy as np
 
-from torch import nn, cuda
+from torch import cuda
 from torch.backends import cudnn
 import torch
 from catalyst.dl.callbacks import DiceCallback, CheckpointCallback, InferCallback
@@ -58,7 +58,6 @@ def main():
             loaders=loaders,
             callbacks=[
                 DiceCallback()
-                # EarlyStoppingCallback(patience=20, min_delta=0.01)
             ],
             logdir=save_path,
             num_epochs=args.epochs,

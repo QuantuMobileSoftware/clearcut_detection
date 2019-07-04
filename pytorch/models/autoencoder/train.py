@@ -31,7 +31,6 @@ def main():
         criterion=criterion,
         optimizer=optimizer,
         callbacks=[
-            # EarlyStoppingCallback(patience=10, min_delta=0.01)
         ],
         scheduler=scheduler,
         loaders=loaders,

@@ -59,13 +59,7 @@ class UnetDecoder(Model):
         self.initialize()
 
     def compute_channels(self, encoder_channels, decoder_channels):
-        # channels = [
-        #     encoder_channels[0] + encoder_channels[1],
-        #     encoder_channels[2] + decoder_channels[0],
-        #     encoder_channels[3] + decoder_channels[1],
-        #     encoder_channels[4] + decoder_channels[2],
-        #     0 + decoder_channels[3],
-        # ]
+
         channels = [
             encoder_channels[0],
             decoder_channels[0],
@@ -82,11 +76,6 @@ class UnetDecoder(Model):
         if self.center:
             encoder_head = self.center(encoder_head)
 
-        # x = self.layer1([encoder_head, skips[0]])
-        # x = self.layer2([x, skips[1]])
-        # x = self.layer3([x, skips[2]])
-        # x = self.layer4([x, skips[3]])
-        # x = self.layer5([x, None])
         x = self.layer1([encoder_head, None])
         x = self.layer2([x, None])
         x = self.layer3([x, None])

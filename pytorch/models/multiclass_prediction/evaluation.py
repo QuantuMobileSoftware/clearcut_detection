@@ -45,9 +45,9 @@ def evaluate(datasets_path, test_df_path, model_weights_path, images_folder="ima
     for ind, image_info in tqdm(filenames.iterrows()):
         name = image_info["name"] + '_' + image_info["position"]
 
-        image = Image.open(os.path.join(datasets_path, image_info["name"], images_folder,
+        image = Image.open(os.path.join(datasets_path, image_info["dataset_folder"], images_folder,
                                         name + '.' + image_type))
-        mask = Image.open(os.path.join(datasets_path, image_info["name"], masks_folder,
+        mask = Image.open(os.path.join(datasets_path, image_info["dataset_folder"], masks_folder,
                                        name + '.' + mask_type))
 
         img_array = np.array(image)
