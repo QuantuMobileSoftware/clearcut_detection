@@ -6,3 +6,11 @@ notebooks/\.ipynb_checkpoints/
 \.idea/
 
 venv/
+
+data/
+
+\.vscode/
+
+pytorch/__pycache__/
+
+logs/
