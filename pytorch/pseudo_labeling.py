@@ -13,7 +13,7 @@ from dataset import add_record
 from models.utils import get_model
 from prediction import image_labeling
 from train import train
-from utils import get_image_info
+from utils import get_image_info, count_channels
 
 
 def parse_args():
@@ -45,7 +45,7 @@ def parse_args():
     return parser.parse_args()
 
 
-def pseudo_labeling(args, eps=1e-7, confidence_threshold=0.8):
+def pseudo_labeling(args, eps=1e-7, confidence_threshold=0.8, prediction_threshold=0.3):
     train(args)
 
     for i in range(args.pseudolabel_iter):
@@ -54,10 +54,12 @@ def pseudo_labeling(args, eps=1e-7, confidence_threshold=0.8):
         added_to_train = 0
         if os.path.isdir(args.unlabeled_data):
             for image_name in tqdm(os.listdir(args.unlabeled_data)):
-                predicted_mask = image_labeling(model, args.unlabeled_data, image_name, 320, channels_number=3)
+                predicted_mask = image_labeling(model, args.unlabeled_data, image_name, args.image_size,
+                                                channels_number=count_channels(args.channels))
                 confidence = 1 - np.uint8(np.logical_and(0.3 < predicted_mask, predicted_mask < 0.7)).sum() / (np.uint8(
                     predicted_mask > 0.5).sum() + eps)
-                if confidence > confidence_threshold and predicted_mask[predicted_mask > 0.3].sum() > 50:
+                if confidence > confidence_threshold and \
+                        predicted_mask[predicted_mask > prediction_threshold].sum() > 50:
                     print(f'Added {image_name} to train')
                     added_to_train += 1
                     train_df = move_pseudo_labeled_to_train(image_name, predicted_mask, train_df)
@@ -75,7 +77,7 @@ def load_model(network, model_weights_path):
     return model
 
 
-def move_pseudo_labeled_to_train(image_name, predicted_mask, train_df, mask_type="png",
+def move_pseudo_labeled_to_train(image_name, predicted_mask, train_df, prediction_threshold, mask_type="png",
                                  pseudo_labeled_folder="pseudo-labeled"):
     pseudo_labeled_path = os.path.join(args.dataset_path, pseudo_labeled_folder)
     dataset_images_path = os.path.join(pseudo_labeled_path, 'images')
@@ -93,7 +95,7 @@ def move_pseudo_labeled_to_train(image_name, predicted_mask, train_df, mask_type
 
     move(unlabeled_image_path, os.path.join(dataset_images_path, image_name))
     imageio.imwrite(os.path.join(dataset_masks_path, name + '_' + position + '.' + mask_type),
-                    np.uint8(predicted_mask > 0.3) * 255)
+                    np.uint8(predicted_mask > prediction_threshold) * 255)
     return add_record(train_df, pseudo_labeled_folder, name, position)
 
 

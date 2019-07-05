@@ -21,7 +21,7 @@ def add_record(data_info, dataset_folder, name, position):
     )
 
 
-class Dataset():
+class Dataset:
     def __init__(self, channels, dataset_path, image_size, batch_size, num_workers):
         self.channels = channels
         self.dataset_path = dataset_path
