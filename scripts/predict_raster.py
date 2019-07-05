@@ -1,18 +1,19 @@
+import argparse
 import os
 import re
+
 import cv2
-import torch
-import rasterio
-import argparse
 import numpy as np
-
-from tqdm import tqdm
-from geopandas import GeoSeries
-from torchvision import transforms
-from shapely.geometry import Polygon
+import rasterio
+import torch
 from catalyst.dl.utils import UtilsFactory
+from geopandas import GeoSeries
+from shapely.geometry import Polygon
+from torchvision import transforms
+from tqdm import tqdm
 
-from pytorch.utils import get_model, count_channels, filter_by_channels
+from pytorch.models.utils import get_model
+from pytorch.utils import count_channels, filter_by_channels
 
 
 def load_model(network, model_weights_path, channels):
