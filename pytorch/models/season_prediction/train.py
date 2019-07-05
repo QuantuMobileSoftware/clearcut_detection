@@ -163,7 +163,7 @@ def train(args):
                 best_epoch = epoch
                 best_accuracy = valid_accuracy
                 os.makedirs(f'{args.logdir}/weights')
-                torch.save(model.state_dict(), 'weights/epoch{0}.pth'.format(epoch))
+                torch.save(model.state_dict(), f'{args.logdir}/weights/epoch{epoch}.pth')
 
         scheduler.step()
         print("Epoch {0} ended".format(epoch))
