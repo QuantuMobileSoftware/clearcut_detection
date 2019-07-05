@@ -4,8 +4,6 @@ import pandas as pd
 import torch
 import os
 
-from catalyst.dl.metric_manager import MetricManager
-from catalyst.dl.state import RunnerState
 from torch import nn, cuda
 from torch.backends import cudnn
 from catalyst.dl.callbacks import InferCallback, CheckpointCallback, DiceCallback
