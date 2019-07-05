@@ -1,6 +1,9 @@
 import argparse
 import os
 import re
+import sys
+
+sys.path.append("..")
 
 import cv2
 import numpy as np

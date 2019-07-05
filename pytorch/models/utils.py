@@ -4,11 +4,9 @@ import torch
 from torch import cuda
 from torch.backends import cudnn
 
-from models.autoencoder.model import Autoencoder_Unet
-from models.season_prediction.model import FPN_double_output
-
 
 def get_satellite_pretrained_resnet(model_weights_path, encoder_name='resnet50'):
+    from models.autoencoder.model import Autoencoder_Unet
     model = Autoencoder_Unet(encoder_name=encoder_name)
     checkpoint = torch.load(model_weights_path, map_location='cpu')
     model.load_state_dict(checkpoint['model_state_dict'])
@@ -38,6 +36,7 @@ def get_model(name='fpn50', model_weights_path=None):
     elif name == 'pspnet50':
         return smp.PSPNet('resnet50', encoder_weights='imagenet', classes=1)
     elif name == 'fpn50_season':
+        from models.season_prediction.model import FPN_double_output
         return FPN_double_output('resnet50', encoder_weights='imagenet')
     elif name == 'fpn50_satellite':
         fpn_resnet50 = smp.FPN('resnet50', encoder_weights=None)
