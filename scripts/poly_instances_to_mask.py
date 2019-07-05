@@ -1,4 +1,6 @@
 import os
+import fiona
+import shutil
 import imageio
 import argparse
 import pandas as pd
@@ -12,38 +14,12 @@ from itertools import combinations
 from shapely.geometry import MultiPolygon
 
 
-def parse_args():
-    parser = argparse.ArgumentParser(
-        description='Script for creating binary mask from geojson.')
-    parser.add_argument(
-        '--geojson_pieces', '-gp', dest='geojson_pieces',
-        required=True, help='Path to the directory geojson polygons of image pieces')
-    parser.add_argument(
-        '--geojson_markup', '-gm', dest='geojson_markup',
-        required=True, help='Path to the original geojson markup')
-    parser.add_argument(
-        '--save_path', '-sp', dest='save_path',
-        required=True, help='Path to the directory where separate polygons will be stored')
-    parser.add_argument(
-        '--pieces_info_path', '-pi', dest='pieces_info_path',
-        required=True, help='Path to the image pieces info')
-    parser.add_argument(
-        '--original_image', '-oi', dest='original_image',
-        required=True, help='Path to the source tif image')
-    parser.add_argument(
-        '--image_pieces_path', '-ip', dest='image_pieces_path',
-        required=False, help='Image pieces without markup that will be removed')
-    parser.add_argument(
-        '--mask_pieces_path', '-mp', dest='mask_pieces_path',
-        required=False, help='Mask pieces without markup that will be removed')
-    return parser.parse_args()
-
-
 def markup_to_separate_polygons(
     poly_pieces_path, markup_path, save_path,
     pieces_info_path, original_image_path,
-    image_pieces_path=None, mask_pieces_path=None
-    ):
+    image_pieces_path, mask_pieces_path,
+    pxl_size_threshold
+):
 
     if not os.path.exists(save_path):
         os.makedirs(save_path)
@@ -63,28 +39,37 @@ def markup_to_separate_polygons(
         start_y = pieces_info["start_y"][i]
 
         x, y = original_image.transform * (start_x + 1, start_y + 1)
+        filename, _ = os.path.splitext(poly_piece_name)
 
-        poly_piece = gp.read_file(os.path.join(poly_pieces_path, poly_piece_name))
+        try:
+            poly_piece = gp.read_file(os.path.join(poly_pieces_path, poly_piece_name))
+        except fiona.errors.DriverError:
+            print('Polygon is not found.')
+            remove_piece(
+                filename, save_path, poly_pieces_path,
+                image_pieces_path, mask_pieces_path
+            )
+            continue
+
         intersection = gp.overlay(geojson_markup, poly_piece, how='intersection')
 
-        filename, _ = os.path.splitext(poly_piece_name)
         if not os.path.exists(os.path.join(save_path, filename)):
             os.makedirs(os.path.join(save_path, filename))
 
-        adjacency_list = compose_adjacency_list(intersection["geometry"])
-        components = get_components(intersection["geometry"], adjacency_list)
+        adjacency_list = compose_adjacency_list(intersection['geometry'])
+        components = get_components(intersection['geometry'], adjacency_list)
 
         multi_polys = []
         for component in components:
             multi_polys.append(MultiPolygon(poly for poly in component))
 
-        if len(multi_polys) == 0:
-            os.removedirs(os.path.join(save_path, filename))
-            os.remove(os.path.join(poly_pieces_path, filename + '.geojson'))
-            if image_pieces_path is not None:
-                os.remove(os.path.join(image_pieces_path, filename + '.tiff'))
-            if image_pieces_path is not None: 
-                os.remove(os.path.join(mask_pieces_path, filename + '.png'))
+        png_file = os.path.join(mask_pieces_path, filename + '.png')
+
+        if len(multi_polys) == 0 or (imageio.imread(png_file)).sum() < 255 * pxl_size_threshold:
+            remove_piece(
+                filename, save_path, poly_pieces_path,
+                image_pieces_path, mask_pieces_path
+            )
             continue
 
         gs = GeoSeries(multi_polys)
@@ -92,7 +77,8 @@ def markup_to_separate_polygons(
         piece_geojson_name = "{0}.geojson".format(filename)
         gs.to_file(
             "{}/{}/{}".format(save_path, filename, piece_geojson_name),
-            driver='GeoJSON')            
+            driver='GeoJSON'
+        )
 
         original_transform = original_image.transform
         for idx, component in enumerate(components):
@@ -101,11 +87,29 @@ def markup_to_separate_polygons(
                 out_shape=(width, height),
                 transform=[
                     original_transform[0], original_transform[1], x,
-                    original_transform[3], original_transform[4], y])
-
+                    original_transform[3], original_transform[4], y
+                ]
+            )
             imageio.imwrite(
                 "{}/{}/{}.png".format(save_path, filename, idx),
-                mask)
+                mask
+            )
+
+
+def remove_piece(filename, save_path, poly_pieces_path, image_pieces_path, mask_pieces_path):
+    image_save_path = os.path.join(save_path, filename)
+    geojson_file = os.path.join(poly_pieces_path, filename + '.geojson')
+    tiff_file = os.path.join(image_pieces_path, filename + '.tiff')
+    png_file = os.path.join(mask_pieces_path, filename + '.png')
+
+    if os.path.exists(geojson_file):
+        os.remove(geojson_file)
+    if os.path.exists(tiff_file):
+        os.remove(tiff_file)
+    if os.path.exists(png_file):
+        os.remove(png_file)
+    if os.path.exists(image_save_path):
+        shutil.rmtree(image_save_path)
 
 
 def compose_adjacency_list(polys):
@@ -119,6 +123,7 @@ def compose_adjacency_list(polys):
             if poly1.buffer(1).intersection(poly2).area > area_threshold:
                 adjacency_list[idx_tuple[0]].add(idx_tuple[1])
                 adjacency_list[idx_tuple[1]].add(idx_tuple[0])
+
     return adjacency_list
 
 
@@ -141,7 +146,46 @@ def get_components(polys, adjacency_list):
         dif = bfs(adjacency_list, i, visited)
         if dif:
             graph_components.append(polys[list(dif)])
+
     return graph_components
+
+
+def parse_args():
+    parser = argparse.ArgumentParser(
+        description='Script for creating binary mask from geojson.')
+    parser.add_argument(
+        '--geojson_pieces', '-gp', dest='geojson_pieces',
+        required=True, help='Path to the directory geojson polygons of image pieces'
+    )
+    parser.add_argument(
+        '--geojson_markup', '-gm', dest='geojson_markup',
+        required=True, help='Path to the original geojson markup'
+    )
+    parser.add_argument(
+        '--save_path', '-sp', dest='save_path',
+        required=True, help='Path to the directory where separate polygons will be stored'
+    )
+    parser.add_argument(
+        '--pieces_info_path', '-pi', dest='pieces_info_path',
+        required=True, help='Path to the image pieces info'
+    )
+    parser.add_argument(
+        '--original_image', '-oi', dest='original_image',
+        required=True, help='Path to the source tif image'
+    )
+    parser.add_argument(
+        '--image_pieces_path', '-ip', dest='image_pieces_path',
+        required=False, help='Image pieces without markup that will be removed'
+    )
+    parser.add_argument(
+        '--mask_pieces_path', '-mp', dest='mask_pieces_path',
+        required=False, help='Mask pieces without markup that will be removed'
+    )
+    parser.add_argument(
+        '--pxl_size_threshold', '-mp', dest='pxl_size_threshold',
+        default=20, help='Minimum pixel size of mask area'
+    )
+    return parser.parse_args()
 
 
 if __name__ == "__main__":
@@ -149,5 +193,6 @@ if __name__ == "__main__":
     markup_to_separate_polygons(
         args.geojson_pieces, args.geojson_markup, args.save_path,
         args.pieces_info_path, args.original_image,
-        image_pieces_path=args.image_pieces_path,
-        mask_pieces_path=args.mask_pieces_path)
+        args.image_pieces_path, args.mask_pieces_path,
+        args.pxl_size_threshold
+    )

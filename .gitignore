@@ -4,4 +4,6 @@ venv/
 scripts/__pycache__/
 \.vscode/
 data/
+logs/
 notebooks/\.ipynb_checkpoints/
+
