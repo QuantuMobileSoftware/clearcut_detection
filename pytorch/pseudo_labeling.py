@@ -6,12 +6,13 @@ import imageio
 import numpy as np
 import pandas as pd
 import torch
+import torchvision.transforms as transforms
+from PIL import Image
 from catalyst.dl.utils import UtilsFactory
 from tqdm import tqdm
 
 from dataset import add_record
 from models.utils import get_model
-from prediction import image_labeling
 from train import train
 from utils import get_image_info, count_channels
 
@@ -45,6 +46,14 @@ def parse_args():
     return parser.parse_args()
 
 
+def load_model(network, model_weights_path):
+    model = get_model(network)
+    model, device = UtilsFactory.prepare_model(model)
+    checkpoint = torch.load(model_weights_path, map_location=device)
+    model.load_state_dict(checkpoint['model_state_dict'])
+    return model
+
+
 def pseudo_labeling(args, eps=1e-7, confidence_threshold=0.8, prediction_threshold=0.3):
     train(args)
 
@@ -62,19 +71,24 @@ def pseudo_labeling(args, eps=1e-7, confidence_threshold=0.8, prediction_thresho
                         predicted_mask[predicted_mask > prediction_threshold].sum() > 50:
                     print(f'Added {image_name} to train')
                     added_to_train += 1
-                    train_df = move_pseudo_labeled_to_train(image_name, predicted_mask, train_df)
+                    train_df = move_pseudo_labeled_to_train(image_name, predicted_mask, train_df, prediction_threshold)
         print(f'Added {added_to_train} images to train')
         train_df.to_csv(args.train_df)
 
         train(args)
 
 
-def load_model(network, model_weights_path):
-    model = get_model(network)
-    model, device = UtilsFactory.prepare_model(model)
-    checkpoint = torch.load(model_weights_path, map_location=device)
-    model.load_state_dict(checkpoint['model_state_dict'])
-    return model
+def image_labeling(model, unlabeled_data, image_name, img_size, channels_number=3):
+    image_path = os.path.join(unlabeled_data, image_name)
+
+    img = Image.open(image_path)
+
+    img_tensor = transforms.ToTensor()(img)
+
+    prediction = model.predict(img_tensor.view(1, channels_number, img_size, img_size).cuda())
+
+    result = prediction.view(img_size, img_size).detach().cpu().numpy()
+    return result
 
 
 def move_pseudo_labeled_to_train(image_name, predicted_mask, train_df, prediction_threshold, mask_type="png",

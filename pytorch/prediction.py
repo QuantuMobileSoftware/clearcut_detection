@@ -6,7 +6,6 @@ import numpy as np
 import pandas as pd
 import torch
 import torchvision.transforms as transforms
-from PIL import Image
 from torch import nn
 from tqdm import tqdm
 
@@ -60,19 +59,6 @@ def predict(
             get_filepath(predictions_path, filename, file_type='png'),
             result * 255
         )
-
-
-def image_labeling(model, unlabeled_data, image_name, img_size, channels_number=3):
-    image_path = os.path.join(unlabeled_data, image_name)
-
-    img = Image.open(image_path)
-
-    img_tensor = transforms.ToTensor()(img)
-
-    prediction = model.predict(img_tensor.view(1, channels_number, img_size, img_size).cuda())
-
-    result = prediction.view(img_size, img_size).detach().cpu().numpy()
-    return result
 
 
 def parse_args():
