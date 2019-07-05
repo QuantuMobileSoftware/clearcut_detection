@@ -1,7 +1,7 @@
 albumentations
 torchvision
 torch
-catalyst
+catalyst==19.5
 scikit-learn
 affine==2.2.2
 attrs==19.1.0
