@@ -1,5 +1,6 @@
 import os
 import re
+import random
 import argparse
 import numpy as np
 import pandas as pd
@@ -63,7 +64,8 @@ def parse_args():
     parser.add_argument(
         '--split_function', '-sf', dest='split_function',
         default='geo_split',
-        help='Choose split function between geo_split and stratified_split'
+        help='Available functions: geo_split, stratified_split, '
+             + 'train_val_split, fold_split'
     )
     parser.add_argument(
         '--markup_path', '-mp', dest='markup_path',
@@ -73,14 +75,23 @@ def parse_args():
     parser.add_argument(
         '--val_threshold', '-vt', dest='val_threshold',
         default=0.3, type=float,
-        help='Split threshold to specify validation size'
+        help='Split top threshold to specify validation size'
+    )
+    parser.add_argument(
+        '--val_bottom_threshold', '-tt', dest='val_bottom_threshold',
+        default=0.2, type=float,
+        help='Split bottom threshold to specify validation size'
     )
     parser.add_argument(
         '--test_threshold', '-tt', dest='test_threshold',
         default=0.2, type=float,
         help='Split threshold to specify test size'
     )
-
+    parser.add_argument(
+        '--folds', '-f', dest='folds',
+        default=3, type=int,
+        help='Folds count'
+    )
     return parser.parse_args()
 
 
@@ -92,9 +103,10 @@ def get_instance_info(instance):
     return '_'.join(name_parts[:2]), '_'.join(name_parts[-3:-1])
 
 
-def add_record(data_info, name, position):
+def add_record(data_info, dataset_folder, name, position):
     return data_info.append(
         pd.DataFrame({
+            'dataset_folder': dataset_folder,
             'name': name,
             'position': position
         }, index=[0]),
@@ -243,8 +255,8 @@ def update_overall_sizes(overall_sizes, test, train, val, deleted):
 def geo_split(
     data_path=args.data_path, markup_path=args.markup_path,
     mask_type=args.mask_type, masks_folder=args.masks_folder,
-    val_height_threshold=0.3, test_height_threshold=0.2,
-    polygons_folder=args.polygons_folder
+    val_bottom_threshold=0.2, val_threshold=0.3,
+    test_threshold=0.2, polygons_folder=args.polygons_folder
 ):
     datasets = get_folders(data_path)
     geojson_markup = gp.read_file(markup_path)
@@ -253,7 +265,7 @@ def geo_split(
 
     height = maxY - minY
 
-    cols = ['name', 'position']
+    cols = ['dataset_folder', 'name', 'position']
     train_df = pd.DataFrame(columns=cols)
     val_df = pd.DataFrame(columns=cols)
     test_df = pd.DataFrame(columns=cols)
@@ -296,10 +308,11 @@ def geo_split(
             border_pixels = mask_pixels - center_pixels
 
             if mask_pixels > mask_array.size * 0.001 and center_pixels > border_pixels:
-                if instance_maxY < minY + height * test_height_threshold:
+                if instance_maxY < minY + height * test_threshold:
                     test += 1
                     test_df = add_record(test_df, name, position)
-                elif instance_maxY < minY + height * val_height_threshold:
+                elif instance_maxY < minY + height * val_threshold \
+                        and instance_minY > minY + height * val_bottom_threshold:
                     val += 1
                     val_df = add_record(val_df, name, position)
                 else:
@@ -317,28 +330,74 @@ def geo_split(
     return train_df, val_df, test_df
 
 
+def fold_split(datasets_path, markup_path, save_path, folds, test_height_threshold=0.3):
+    for fold in range(folds):
+        train_df, val_df, test_df = geo_split(
+            datasets_path, markup_path,
+            val_threshold=1 - (1 - test_height_threshold) / folds * fold,
+            val_bottom_threshold=1 - (1 - test_height_threshold) / folds * (fold + 1),
+            test_threshold=test_height_threshold
+        )
+        save_split(train_df, f'train{fold}_df', save_path)
+        save_split(val_df, f'val{fold}_df', save_path)
+        save_split(test_df, f'test{fold}_df', save_path)
+
+
+def train_val_split(datasets_path, train_val_ratio=0.3):
+    random.seed(42)
+    datasets = list(os.walk(datasets_path))[0][1]
+
+    cols = ['dataset_folder', 'name', 'position']
+    train_df = pd.DataFrame(columns=cols)
+    val_df = pd.DataFrame(columns=cols)
+
+    for dataset_dir in datasets:
+        polys_path = os.path.join(datasets_path, dataset_dir, "geojson_polygons")
+        print(dataset_dir)
+        for poly_name in os.listdir(polys_path):
+            name, position = get_instance_info(poly_name)
+            if random.random() <= train_val_ratio:
+                val_df = add_record(val_df, dataset_folder=name, name=name, position=position)
+            else:
+                train_df = add_record(train_df, dataset_folder=name, name=name, position=position)
+
+    return train_df, val_df
+
+
+def save_split(split_info, filename, save_path):
+    split_info.to_csv(
+        get_filepath(save_path, filename, file_type='csv'),
+        index=False
+    )
+
+
 if __name__ == '__main__':
     if args.split_function == 'stratified_split':
         data_info = get_data_info()
         train_val_df, test_df = stratified_split(data_info, test_size=args.test_threshold)
         train_df, val_df = stratified_split(train_val_df, test_size=args.val_threshold)
+
+        save_split(train_df, 'train_df', args.save_path)
+        save_split(val_df, 'val_df', args.save_path)
+        save_split(test_df, 'test_df', args.save_path)
     elif args.split_function == 'geo_split':
         train_df, val_df, test_df = geo_split(
-            val_height_threshold=args.val_threshold,
-            test_height_threshold=args.test_threshold
+            val_threshold=args.val_threshold,
+            val_bottom_threshold=args.val_bottom_threshold,
+            test_threshold=args.test_threshold
         )
+        save_split(train_df, 'train_df', args.save_path)
+        save_split(val_df, 'val_df', args.save_path)
+        save_split(test_df, 'test_df', args.save_path)
+    elif args.split_function == 'fold_split':
+        fold_split(
+            args.data_path, args.markup_path,
+            args.save_path, args.folds, args.test_threshold
+        )
+    elif args.split_function == 'train_val_split':
+        train_df, val_df = train_val_split(args.data_path, args.val_threshold)
+
+        save_split(train_df, 'train_df', args.save_path)
+        save_split(val_df, 'val_df', args.save_path)
     else:
         raise Exception(f'{args.split_function} is an unknown function!')
-
-    train_df.to_csv(
-        get_filepath(args.save_path, 'train_df', file_type='csv'),
-        index=False
-    )
-    val_df.to_csv(
-        get_filepath(args.save_path, 'val_df', file_type='csv'),
-        index=False
-    )
-    test_df.to_csv(
-        get_filepath(args.save_path, 'test_df', file_type='csv'),
-        index=False
-    )
