@@ -29,18 +29,18 @@ def load_model(network, model_weights_path, channels):
     model.load_state_dict(checkpoint['model_state_dict'])
     model, device = UtilsFactory.prepare_model(model.eval())
 
-    return model
+    return model, device
 
 
-def predict(model, image_tensor, input_shape=(1, 3, 224, 224)):
-    prediction = model(image_tensor.view(input_shape))
+def predict(model, image_tensor, input_shape, device):
+    prediction = model(image_tensor.view(input_shape)).to(device)
     return torch \
         .sigmoid(prediction.view(input_shape[2:])) \
-        .detach().numpy()
+        .cpu().detach().numpy()
 
 
 def predict_raster(tiff_file, channels, network, model_weights_path, input_size=224):
-    model = load_model(network, model_weights_path, channels)
+    model, device = load_model(network, model_weights_path, channels)
 
     with rasterio.open(tiff_file) as src:
         meta = src.meta
@@ -78,8 +78,8 @@ def predict_raster(tiff_file, channels, network, model_weights_path, input_size=
                 for channel in range(res.shape[0]):
                     res[channel] = scale(res[channel], 255)
 
-                res = transforms.ToTensor()(res.astype(np.uint8))
-                pred = predict(model, res, (1, count_channels(channels), input_size, input_size))
+                res = transforms.ToTensor()(res.astype(np.uint8)).to(device)
+                pred = predict(model, res, (1, count_channels(channels), input_size, input_size), device)
                 stack_arr = np.dstack([
                     pred[rect[0][0] - rect[0][1]:, :rect[1][1] - rect[1][0]],
                     raster_array[rect[0][0]:rect[0][1], rect[1][0]:rect[1][1]]])
