@@ -10,9 +10,9 @@ from catalyst.dl.callbacks import InferCallback, CheckpointCallback, DiceCallbac
 from catalyst.dl.experiments import SupervisedRunner
 from catalyst.dl.utils import UtilsFactory
 
-from datasets import create_loaders, count_channels
+from datasets import create_loaders
 from losses import BCE_Dice_Loss
-from utils import get_model
+from utils import get_model, count_channels
 from params import args
 
 
