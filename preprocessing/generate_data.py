@@ -78,7 +78,7 @@ def parse_args():
         help='Split top threshold to specify validation size'
     )
     parser.add_argument(
-        '--val_bottom_threshold', '-tt', dest='val_bottom_threshold',
+        '--val_bottom_threshold', '-vbt', dest='val_bottom_threshold',
         default=0.2, type=float,
         help='Split bottom threshold to specify validation size'
     )
@@ -100,7 +100,9 @@ args = parse_args()
 
 def get_instance_info(instance):
     name_parts = re.split(r'[_.]', instance)
-    return '_'.join(name_parts[:2]), '_'.join(name_parts[-3:-1])
+    if len(name_parts) > 4:
+        name_parts = name_parts[:4]
+    return '_'.join(name_parts[:2]), '_'.join(name_parts[-2:])
 
 
 def add_record(data_info, dataset_folder, name, position):
@@ -118,10 +120,11 @@ def get_data_info(data_path=args.data_path):
     _, _, insatnces_path = get_data_pathes(data_path)
     instances = get_folders(insatnces_path)
     
-    cols = ['name', 'position']
+    cols = ['dataset_folder', 'name', 'position']
     data_info = pd.DataFrame(columns=cols)
     for instance in instances:
-        data_info = add_record(data_info, *get_instance_info(instance))
+        name, position = get_instance_info(instance)
+        data_info = add_record(data_info, dataset_folder=name, name=name, position=position)
         
     return data_info
 
@@ -255,8 +258,8 @@ def update_overall_sizes(overall_sizes, test, train, val, deleted):
 def geo_split(
     data_path=args.data_path, markup_path=args.markup_path,
     mask_type=args.mask_type, masks_folder=args.masks_folder,
+    polygons_folder=args.polygons_folder, test_threshold=0.2,
     val_bottom_threshold=0.2, val_threshold=0.3,
-    test_threshold=0.2, polygons_folder=args.polygons_folder
 ):
     datasets = get_folders(data_path)
     geojson_markup = gp.read_file(markup_path)
@@ -310,14 +313,14 @@ def geo_split(
             if mask_pixels > mask_array.size * 0.001 and center_pixels > border_pixels:
                 if instance_maxY < minY + height * test_threshold:
                     test += 1
-                    test_df = add_record(test_df, name, position)
+                    test_df = add_record(test_df, dataset_folder=name, name=name, position=position)
                 elif instance_maxY < minY + height * val_threshold \
                         and instance_minY > minY + height * val_bottom_threshold:
                     val += 1
-                    val_df = add_record(val_df, name, position)
+                    val_df = add_record(val_df, dataset_folder=name, name=name, position=position)
                 else:
                     train += 1
-                    train_df = add_record(train_df, name, position)
+                    train_df = add_record(train_df, dataset_folder=name, name=name, position=position)
             else:
                 deleted += 1
 
