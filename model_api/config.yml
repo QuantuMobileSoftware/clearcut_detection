@@ -1,8 +1,14 @@
-model:
-  network: fpn50
-  channels:
-    - rgb
-  weights: ../../models/fpn50_new_markup_320_rnd_crop.pth
+models:
+  deforestration_detection:
+    network: fpn50
+    channels:
+      - rgb
+    weights: ../../models/fpn50_new_markup_320_rnd_crop.pth
+#  cloud_detection:
+#    network: fpn50
+#    channels:
+#      - rgb
+#    weights: ../../models/fpn50_new_markup_320_rnd_crop.pth
 prediction:
   save_path: ../../test_data/raster_predictions
   threshold: 0.3
