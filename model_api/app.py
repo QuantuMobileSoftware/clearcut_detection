@@ -39,7 +39,7 @@ def raster_prediction():
             image_path, channels,
             network, model_weights_path, input_size=input_size
         )
-        save_raster(raster_array, result_directory_path, filename)
+        save_raster(raster_array, result_directory_path, predicted_filename)
 
         polygons = polygonize(raster_array, meta, threshold)
         save_polygons(polygons, meta, result_directory_path, predicted_filename)
@@ -53,7 +53,7 @@ def raster_prediction():
 
 
 def save_raster(raster_array, save_path, filename):
-    save_path = os.path.join(save_path, f'predicted_{filename}')
+    save_path = os.path.join(save_path, filename)
     imageio.imwrite(f'{save_path}.png', (raster_array * 255).astype(np.uint8))
 
 
