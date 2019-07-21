@@ -1,22 +1,25 @@
+\.idea/
+\.vscode
 
-scripts/__pycache__/
+data/
+logs/
+venv/
 
 notebooks/\.ipynb_checkpoints/
 
-\.idea/
-
-venv/
-
+scripts/__pycache__/
 scripts/models/__pycache__/
 scripts/models/season_prediction/__pycache__/
 scripts/models/autoencoder/__pycache__/
 scripts/models/autoencoder/\.ipynb_checkpoints/
+
 pytorch/__pycache__/
-
 pytorch/models/__pycache__/
-
 pytorch/models/autoencoder/__pycache__/
-
 pytorch/models/multiclass_prediction/__pycache__/
-
 pytorch/models/season_prediction/__pycache__/
+
+clearcut_detection_backend/clearcut_detection_backend/__pycache__
+clearcut_detection_backend/clearcut_detection_backend/migrations
+clearcut_detection_backend/clearcuts/__pycache__
+clearcut_detection_backend/clearcuts/migrations

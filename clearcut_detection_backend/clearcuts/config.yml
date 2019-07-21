@@ -1,0 +1,4 @@
+model-api:
+  url: "http://localhost"
+  port: 5000
+  endpoint: "/raster_prediction"
