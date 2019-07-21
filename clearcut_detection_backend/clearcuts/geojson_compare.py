@@ -40,13 +40,14 @@ def convert_geodataframe_to_geospolygons(dataframe):
     return geometries
 
 
-def run():
+def compare(poly_path):
     db_clearcuts = Clearcut.objects.values_list('mpoly', flat=True)
-    predicted_clearcuts = gp.read_file(
-        "/home/andrew/PycharmProjects/test_data/raster_predictions/toy_example/predicted_deforestration_detection_toy_example.geojson")
+    predicted_clearcuts = gp.read_file(poly_path)
     predicted_clearcuts = predicted_clearcuts.to_crs({'init': 'epsg:4326'})
     result = geojson_compare(db_clearcuts, predicted_clearcuts)
     for poly in result:
-        clearcut = Clearcut(forest_type='', forest_state='', detected_class='', image_date=date.today(),
-                            mpoly=poly)
+        clearcut = Clearcut(
+            forest_type='', forest_state='', detected_class='',
+            image_date=date.today(), mpoly=poly
+        )
         clearcut.save()

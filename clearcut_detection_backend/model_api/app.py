@@ -7,7 +7,7 @@ import numpy as np
 import yaml
 from flask import Flask, abort, request, jsonify
 
-sys.path.append('..')
+sys.path.append('../..')
 from scripts.predict_raster import predict_raster, polygonize, save_polygons
 
 app = Flask(__name__)

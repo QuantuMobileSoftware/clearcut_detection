@@ -3,13 +3,13 @@ models:
     network: fpn50
     channels:
       - rgb
-    weights: ../logs/fpn50_new_markup_320_rnd_crop.pth
+    weights: ../../logs/fpn50_new_markup_320_rnd_crop.pth
 #  cloud_detection:
 #    network: fpn50
 #    channels:
 #      - rgb
 #    weights: ../../models/fpn50_new_markup_320_rnd_crop.pth
 prediction:
-  save_path: ../clearcut_detection_backend/data
+  save_path: ../data
   threshold: 0.3
   input_size: 224
