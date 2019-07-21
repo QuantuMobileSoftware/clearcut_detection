@@ -4,6 +4,8 @@ import threading
 from invoke import task
 from os.path import join, splitext
 
+from clearcuts.model_call import call
+
 def wait_port_is_open(host, port):
     import socket
     import time
@@ -48,11 +50,12 @@ def prodcron(ctx):
 
 @task
 def run(ctx):
-    init_db(ctx, recreate_db=True)
+    # init_db(ctx, recreate_db=True)
     # collect_static_element(ctx)
     # thread_cron = threading.Thread(target=devcron, args=(ctx,))
     # thread_cron.start()
-    download_tile(ctx, 'data')
+    # download_tile(ctx, 'data')
+    process_tile(ctx, 'data')
     # ctx.run('uwsgi --ini uwsgi.ini')
 
 
@@ -78,17 +81,19 @@ def run_prod(ctx):
 
 
 @task
-def download_tile(ctx, download_dir):
-    ctx.run('python peps_download.py')   
-    for file in os.listdir(download_dir):
+def download_tile(ctx, data_dir):
+    ctx.run('python peps_download.py')
+    for file in os.listdir(data_dir):
         if file.endswith('.zip'):
-            path = join(download_dir, splitext(file)[0])
-            ctx.run(f'unzip {path} -d {download_dir}')
+            path = join(data_dir, splitext(file)[0])
+            ctx.run(f'unzip {path} -d {data_dir}')
             os.remove(path + '.zip')
-            ctx.run(f'python prepare_tif.py -f {path}')
-            os.rmdir(path)
-
+            ctx.run(f'python prepare_tif.py -f {path}.SAFE')
+            os.rmdir(f'{path}.SAFE')
 
 @task
-def process_tile(ctx, img_path):
-    
+def process_tile(ctx, data_dir):
+    for file in os.listdir(data_dir):
+        if file.endswith('.tif'):
+            path = join('../clearcut_detection_backend', data_dir, file)
+            call(path)

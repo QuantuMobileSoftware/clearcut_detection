@@ -1,20 +1,19 @@
-import argparse
 import os
 import re
 import sys
-
-sys.path.append("..")
-
 import cv2
-import numpy as np
-import rasterio
 import torch
+import rasterio
+import argparse
+import numpy as np
+
 from catalyst.dl.utils import UtilsFactory
 from geopandas import GeoSeries
 from shapely.geometry import Polygon
 from torchvision import transforms
 from tqdm import tqdm
 
+sys.path.append("..")
 from pytorch.models.utils import get_model
 from pytorch.utils import count_channels, filter_by_channels
 
