@@ -82,12 +82,18 @@ DATABASES = {
         'ENGINE': 'django.contrib.gis.db.backends.postgis',
         'NAME': 'clearcuts_db',
         'USER': 'postgres',
-        'PASSWORD': 'ecoProj7',
+        'PASSWORD': '1234',
         'HOST': 'localhost',
         'PORT': '5432'
     }
 }
 
+EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
+EMAIL_HOST = 'smtp.gmail.com'
+EMAIL_USE_TLS = True
+EMAIL_PORT = 587
+EMAIL_HOST_USER = 'from@gmail.com'
+EMAIL_HOST_PASSWORD = 'from_password'
 
 # Password validation
 # https://docs.djangoproject.com/en/2.2/ref/settings/#auth-password-validators

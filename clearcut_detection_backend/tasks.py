@@ -6,6 +6,8 @@ from os.path import join, splitext
 
 from clearcuts.model_call import call
 from clearcuts.geojson_compare import compare
+import shutil
+
 
 def wait_port_is_open(host, port):
     import socket
@@ -57,8 +59,9 @@ def run(ctx):
     # thread_cron = threading.Thread(target=devcron, args=(ctx,))
     # thread_cron.start()
     download_tile(ctx, 'data')
-    poly_dir = process_tile(ctx, 'data')
-    update_db(ctx, poly_dir)
+    poly_path, image_path = process_tile(ctx, 'data')
+    update_db(ctx, poly_path)
+    sendEmail(ctx, image_path)
     # ctx.run('uwsgi --ini uwsgi.ini')
 
 
@@ -73,7 +76,7 @@ def download_tile(ctx, data_dir):
             ctx.run(f'unzip {path} -d {data_dir}')
             os.remove(path + '.zip')
             ctx.run(f'python prepare_tif.py -f {path}.SAFE')
-            os.rmdir(f'{path}.SAFE')
+            shutil.rmtree(f'{path}.SAFE')
 
 
 @task
@@ -81,13 +84,28 @@ def process_tile(ctx, data_dir):
     for file in os.listdir(data_dir):
         if file.endswith('.tif'):
             path = join('..', data_dir, file)
-            call(path)
+            result_paths = call(path)
             os.remove(join(data_dir, file))
-            return splitext(join(data_dir, file))[0]
+
+            return result_paths["polygons"], result_paths["picture"]
 
 
 @task
-def update_db(ctx, poly_dir):
-    for file in os.listdir(poly_dir):
-        if file.endswith('.geojson'):
-            compare(join(poly_dir, file))
+def update_db(ctx, poly_path):
+    compare(poly_path)
+
+
+@task
+def sendEmail(ctx, image_path):
+    from django.core.mail.message import EmailMessage
+
+    email = EmailMessage()
+    email.subject = "New clearcuts detected"
+    email.body = "hi"
+    email.from_email = "from@gmail.com"
+    email.to = ["to@gmail.com", ]
+
+    email.attach_file(image_path)
+
+    email.send()
+    os.remove(image_path)
