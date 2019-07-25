@@ -35,10 +35,8 @@ def parse_args():
     arg('--network', '-n', default='unet50')
     arg(
         '--channels', '-ch',
-        default=[
-            'rgb', 'ndvi', 'ndvi_color',
-            'b2', 'b3', 'b4', 'b8'
-        ], nargs='+', help='Channels list')
+        default=['rgb', 'ndvi', 'b8'],
+        nargs='+', help='Channels list')
 
     return parser.parse_args()
 

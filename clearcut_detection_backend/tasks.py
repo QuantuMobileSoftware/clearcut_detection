@@ -1,4 +1,5 @@
 import os
+import shutil
 import threading
 
 from invoke import task
@@ -6,7 +7,6 @@ from os.path import join, splitext
 
 from clearcuts.model_call import call
 from clearcuts.geojson_compare import compare
-import shutil
 
 
 def wait_port_is_open(host, port):

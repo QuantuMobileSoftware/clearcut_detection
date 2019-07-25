@@ -23,3 +23,5 @@ clearcut_detection_backend/clearcut_detection_backend/__pycache__
 clearcut_detection_backend/clearcut_detection_backend/migrations
 clearcut_detection_backend/clearcuts/__pycache__
 clearcut_detection_backend/clearcuts/migrations
+
+preprocessing/__pycache__
