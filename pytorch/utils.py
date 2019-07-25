@@ -40,7 +40,7 @@ def filter_by_channels(image_tensor, channels):
         elif ch == 'b8':
             result.append(image_tensor[:, :, 4:5])
         else:
-            raise Exception('{} channel is unknown!'.format(ch))
+            raise Exception(f'{ch} channel is unknown!')
 
     return np.concatenate(result, axis=2)
 

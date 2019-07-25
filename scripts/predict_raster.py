@@ -39,8 +39,7 @@ def predict(model, image_tensor, input_shape, device):
 
 def predict_raster(tiff_file, channels, network, model_weights_path, input_size=224):
     model, device = load_model(network, model_weights_path, channels)
-    device = torch.device('cpu')
-    model.to(device)
+    # model.to(torch.device('cpu'))
     with rasterio.open(tiff_file) as src:
         meta = src.meta
         meta['count'] = 1
