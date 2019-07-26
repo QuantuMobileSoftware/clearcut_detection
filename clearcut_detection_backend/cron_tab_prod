@@ -1,0 +1,3 @@
+# Cron tab prod
+
+* * */1 * * python update.py

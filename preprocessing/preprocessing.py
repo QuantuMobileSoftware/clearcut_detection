@@ -18,8 +18,8 @@ def scale_img(img_file, min_value=0, max_value=255, output_type='Byte'):
         img = src.read(1)
         img = np.nan_to_num(img)
         min_ = img.min()
-        max_ = img.mean() + 2 * img.std()
-
+        max_ = min(img.max(), img.mean() + 2 * img.std())
+        
         os.system(
             f'gdal_translate -ot {output_type} \
             -scale {min_} {max_} {min_value} {max_value} \

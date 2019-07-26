@@ -26,7 +26,7 @@ def scale_img(img_file):
     with rasterio.open(img_file) as src:
         img = src.read(1)
         min_ = img.min()
-        max_ = img.mean() + 2 * img.std()
+        max_ = min(img.max(), img.mean() + 2 * img.std())
         os.system(
             f'gdal_translate -ot Byte \
             -scale {min_} {max_} 0 255 \
