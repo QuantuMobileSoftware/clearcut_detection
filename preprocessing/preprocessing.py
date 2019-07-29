@@ -1,10 +1,12 @@
 import os
 import sys
+import imageio
 import argparse
 import rasterio
 import numpy as np
 
 from tqdm import tqdm
+from os.path import join, splitext, basename
 from image_division import divide_into_pieces
 from binary_mask_converter import poly2mask, split_mask
 from poly_instances_to_mask import markup_to_separate_polygons
@@ -17,14 +19,30 @@ def scale_img(img_file, min_value=0, max_value=255, output_type='Byte'):
     with rasterio.open(img_file) as src:
         img = src.read(1)
         img = np.nan_to_num(img)
-        min_ = img.min()
-        max_ = min(img.max(), img.mean() + 2 * img.std())
+        mean_ = img.mean()
+        std_ = img.std()
+        min_ = max(img.min(), mean_ - 2 * std_)
+        max_ = min(img.max(), mean_ + 2 * std_)
         
         os.system(
-            f'gdal_translate -ot {output_type} \
+            f"gdal_translate -ot {output_type} \
             -scale {min_} {max_} {min_value} {max_value} \
-            {img_file} {os.path.splitext(img_file)[0]}_scaled.tif'
+            {img_file} {f'{os.path.splitext(img_file)[0]}_scaled.tif'}"
         )
+
+
+def get_ndvi(data_folder, save_path):
+    b4_file = join(data_folder, f'{basename(data_folder)}_b4.tif')
+    b8_file = join(data_folder, f'{basename(data_folder)}_b8.tif')
+    ndvi_file = join(data_folder, f'{basename(data_folder)}_ndvi.tif')
+
+    os.system(
+        f'gdal_calc.py -A {b4_file} -B {b8_file} \
+        --outfile={ndvi_file} \
+        --calc="(B-A)/(A+B+0.001)" --type=Float32'
+    )
+
+    return ndvi_file
 
 
 def merge(save_path, *images):
@@ -43,15 +61,16 @@ def merge_bands(tiff_filepath, save_path, channels):
 
     for i, channel in enumerate(channels):
         img = os.path.join(tiff_filepath, '_'.join([image_name, channel]))
-        file_list.append(f'{img}_scaled.tif')
-        with rasterio.open(f'{img}.tif') as src:
+        if channel == 'rgb':
+            file_list.append(f'{img}.tif')
+        elif channel == 'ndvi':
+            scale_img(get_ndvi(tiff_filepath, tiff_filepath))
+            file_list.append(f'{img}_scaled.tif')
+        else:
             scale_img(f'{img}.tif')
-            src.close()
+            file_list.append(f'{img}_scaled.tif')
 
     merge(image_path, *file_list)
-
-    for file in file_list:
-        os.remove(file)
 
     return image_path
 
