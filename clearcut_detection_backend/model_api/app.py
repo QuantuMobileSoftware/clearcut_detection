@@ -25,7 +25,8 @@ def raster_prediction():
         abort(400)
 
     models, save_path, threshold, input_size = load_config()
-    result_directory_path = os.path.join(save_path, filename)
+    predicted_directory_name = 'predicted_' + filename
+    result_directory_path = os.path.join(save_path, predicted_directory_name)
     os.makedirs(result_directory_path, exist_ok=True)
     path_array = []
 
@@ -45,8 +46,8 @@ def raster_prediction():
         save_polygons(polygons, meta, result_directory_path, predicted_filename)
 
         path_array.append({
-            "picture": os.path.join(filename, predicted_filename + '.png'),
-            "polygons": os.path.join(filename, predicted_filename + '.geojson')
+            "picture": os.path.join(predicted_directory_name, predicted_filename + '.png'),
+            "polygons": os.path.join(predicted_directory_name, predicted_filename + '.geojson')
         })
 
     return jsonify(path_array)
