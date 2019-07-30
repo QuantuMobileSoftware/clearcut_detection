@@ -45,8 +45,8 @@ def raster_prediction():
         save_polygons(polygons, meta, result_directory_path, predicted_filename)
 
         path_array.append({
-            "picture": os.path.join(result_directory_path, predicted_filename + '.png'),
-            "polygons": os.path.join(result_directory_path, predicted_filename + '.geojson')
+            "picture": os.path.join(filename, predicted_filename + '.png'),
+            "polygons": os.path.join(filename, predicted_filename + '.geojson')
         })
 
     return jsonify(path_array)
@@ -69,4 +69,4 @@ def load_config():
 
 
 if __name__ == '__main__':
-    app.run(debug=True)
+    app.run(debug=True, host='0.0.0.0', port=5000)

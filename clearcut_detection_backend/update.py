@@ -44,7 +44,8 @@ def send_email(image_path):
 
 
 if __name__ == '__main__':
-    download_tile('data')
-    poly_path, image_path = process_tile('data')
-    compare(poly_path)
-    send_email(image_path)
+    DATA_DIR = 'data'
+    download_tile(DATA_DIR)
+    poly_path, image_path = process_tile(DATA_DIR)
+    compare(os.path.join(DATA_DIR, poly_path))
+    # send_email(os.path.join(DATA_DIR, image_path))
