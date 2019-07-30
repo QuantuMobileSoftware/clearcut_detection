@@ -26,7 +26,7 @@ SECRET_KEY = 't@wm3&fh5l(w)cb+(9zk%s4r-bmeunos5)&+4)-k2ubxnq+lt4'
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = ['*']
 
 
 # Application definition
@@ -81,9 +81,9 @@ DATABASES = {
     'default': {
         'ENGINE': 'django.contrib.gis.db.backends.postgis',
         'NAME': 'clearcuts_db',
-        'USER': 'postgres',
-        'PASSWORD': '1234',
-        'HOST': 'localhost',
+        'USER': 'ecoProj',
+        'PASSWORD': os.getenv('DB_PASSWORD', 'zys8rwTAC9VIR1X9'),
+        'HOST': 'db',
         'PORT': '5432'
     }
 }
