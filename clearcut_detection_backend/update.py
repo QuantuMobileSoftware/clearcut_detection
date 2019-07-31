@@ -3,7 +3,7 @@ import shutil
 
 from os.path import join, splitext
 from clearcuts.model_call import call
-from clearcuts.geojson_compare import compare
+from clearcuts.geojson_convert import convert
 from django.core.mail.message import EmailMessage
 
 
@@ -46,5 +46,5 @@ def send_email(image_path):
 if __name__ == '__main__':
     download_tile('data')
     poly_path, image_path = process_tile('data')
-    compare(poly_path)
+    convert(poly_path)
     send_email(image_path)
