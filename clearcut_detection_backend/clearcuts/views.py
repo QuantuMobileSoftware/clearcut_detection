@@ -1,10 +1,12 @@
 from django.core.serializers import serialize
 from django.http import JsonResponse
-from django.views.decorators.csrf import csrf_exempt
+from rest_framework.decorators import api_view
 from rest_framework import viewsets
-
+from django.contrib.gis.db.models.functions import Area, AsGeoJSON, Transform
 from .models import Clearcut
+from django.db.models import Max, F
 from .serializers import ClearcutSerializer
+import json
 
 
 class ClearcutViewSet(viewsets.ModelViewSet):
@@ -12,12 +14,27 @@ class ClearcutViewSet(viewsets.ModelViewSet):
     serializer_class = ClearcutSerializer
 
 
-@csrf_exempt
-def get_clearcuts(request):
+@api_view()
+def clearcuts_info(request):
     if request.method == 'GET':
-        data = serialize('geojson', Clearcut.objects.all(),
+        clearcuts = Clearcut.objects.annotate(max_date=Max('image_date')).filter(image_date=F('max_date'))
+        data = serialize('geojson', clearcuts,
                          geometry_field='mpoly',
-                         fields=('forest_type', 'forest_state', 'detected_class', 'image_date',))
+                         fields=('image_date', 'pk'))
         response = JsonResponse(data, safe=False)
+        response["Access-Control-Allow-Origin"] = "*"
+        return response
+
+
+@api_view()
+def clearcut_area(request, pk):
+    if request.method == 'GET':
+        clearcut = Clearcut.objects.annotate(transformed_poly=Transform('mpoly', 3857)).get(pk=pk)
+        poly = clearcut.transformed_poly
+        area = poly.area
+        result = {
+            "area": area
+        }
+        response = JsonResponse(json.dumps(result), safe=False)
         response["Access-Control-Allow-Origin"] = "*"
         return response
