@@ -17,7 +17,8 @@ class ClearcutViewSet(viewsets.ModelViewSet):
 @api_view()
 def clearcuts_info(request):
     if request.method == 'GET':
-        clearcuts = Clearcut.objects.annotate(max_date=Max('image_date')).filter(image_date=F('max_date'))
+        latest_clearcut = Clearcut.objects.latest('image_date')
+        clearcuts = Clearcut.objects.filter(image_date=latest_clearcut.image_date)
         data = serialize('geojson', clearcuts,
                          geometry_field='mpoly',
                          fields=('image_date', 'pk'))
