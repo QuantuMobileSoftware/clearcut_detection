@@ -8,7 +8,7 @@ from django.core.mail.message import EmailMessage
 
 
 def download_tile(data_dir):
-    os.system('python peps_download.py')
+    # os.system('python peps_download.py')
     for file in os.listdir(data_dir):
         if file.endswith('.json'):
             os.remove(join(data_dir, file))
@@ -44,7 +44,8 @@ def send_email(image_path):
 
 
 if __name__ == '__main__':
-    download_tile('data')
-    poly_path, image_path = process_tile('data')
-    convert(poly_path)
-    send_email(image_path)
+    DATA_DIR = 'data'
+    download_tile(DATA_DIR)
+    # poly_path, image_path = process_tile(DATA_DIR)
+    # compare(os.path.join(DATA_DIR, poly_path))
+    # send_email(os.path.join(DATA_DIR, image_path))

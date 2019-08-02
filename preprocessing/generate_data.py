@@ -1,5 +1,6 @@
 import os
 import re
+import sys
 import random
 import argparse
 import numpy as np
@@ -9,6 +10,7 @@ import geopandas as gp
 from PIL import Image
 from sklearn.model_selection import StratifiedShuffleSplit
 
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 from pytorch.utils import get_filepath, read_tensor, get_folders, get_fullname
 
 
@@ -99,10 +101,8 @@ args = parse_args()
 
 
 def get_instance_info(instance):
-    name_parts = re.split(r'[_.]', instance)
-    if len(name_parts) > 4:
-        name_parts = name_parts[:4]
-    return '_'.join(name_parts[:2]), '_'.join(name_parts[-2:])
+    name_parts = os.path.splitext(instance)[0].split('_')
+    return '_'.join(name_parts[:-2]), '_'.join(name_parts[-2:])
 
 
 def add_record(data_info, dataset_folder, name, position):

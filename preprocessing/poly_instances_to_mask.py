@@ -13,6 +13,8 @@ from geopandas import GeoSeries
 from itertools import combinations
 from shapely.geometry import MultiPolygon
 
+from random import random
+
 
 def markup_to_separate_polygons(
     poly_pieces_path, markup_path, save_path,
@@ -74,9 +76,9 @@ def markup_to_separate_polygons(
 
         gs = GeoSeries(multi_polys)
         gs.crs = original_image.crs
-        piece_geojson_name = "{0}.geojson".format(filename)
+        piece_geojson_name = f'{filename}.geojson'
         gs.to_file(
-            "{}/{}/{}".format(save_path, filename, piece_geojson_name),
+            f'{save_path}/{filename}/{piece_geojson_name}'
             driver='GeoJSON'
         )
 
@@ -90,10 +92,8 @@ def markup_to_separate_polygons(
                     original_transform[3], original_transform[4], y
                 ]
             )
-            imageio.imwrite(
-                "{}/{}/{}.png".format(save_path, filename, idx),
-                mask
-            )
+            imageio.imwrite(f'{save_path}/{filename}/{idx}.png', mask)
+
 
 
 def remove_piece(filename, save_path, poly_pieces_path, image_pieces_path, mask_pieces_path):

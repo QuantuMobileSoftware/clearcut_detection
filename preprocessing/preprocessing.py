@@ -78,7 +78,7 @@ def merge_bands(tiff_filepath, save_path, channels):
 def preprocess(
     tiff_path, save_path, width, height,
     polys_path, channels, type_filter,
-    pxl_size_threshold
+    filter_by_date, pxl_size_threshold, no_merge
 ):
     if not os.path.exists(save_path):
         os.makedirs(save_path, exist_ok=True)
@@ -86,14 +86,21 @@ def preprocess(
 
     for tiff_name in get_folders(tiff_path):
         tiff_filepath = os.path.join(tiff_path, tiff_name)
-        tiff_file = merge_bands(tiff_filepath, save_path, channels)
-
-        data_path = os.path.join(save_path, tiff_file[:-4].split('/')[-1])
+        
+        if no_merge:
+            tiff_file = join(save_path, f'{tiff_name}.tif')
+        else:
+            tiff_file = merge_bands(tiff_filepath, save_path, channels)
+        
+        data_path = os.path.join(save_path, basename(tiff_file[:-4]))
         divide_into_pieces(tiff_file, data_path, width, height)
 
         pieces_path = os.path.join(data_path, 'masks')
         pieces_info = os.path.join(data_path, 'image_pieces.csv')
-        mask_path = poly2mask(polys_path, tiff_file, data_path, type_filter)
+        mask_path = poly2mask(
+            polys_path, tiff_file, data_path,
+            type_filter, filter_by_date
+        )
         split_mask(mask_path, pieces_path, pieces_info)
 
         geojson_polygons = os.path.join(data_path, "geojson_polygons")
@@ -143,11 +150,20 @@ def parse_args():
         help='Type of clearcut: "open" or "closed")'
     )
     parser.add_argument(
+        '--filter_by_date', '-fd', dest='filter_by_date',
+        action='store_true', default=False,
+        help='Filter by date is enabled'
+    )
+    parser.add_argument(
         '--pxl_size_threshold', '-mp', dest='pxl_size_threshold',
         default=20, help='Minimum pixel size of mask area'
     )
+    parser.add_argument(
+        '--no_merge', '-m', dest='no_merge',
+        action='store_true', default=False,
+        help='Skip merging bands'
+    )
     return parser.parse_args()
-
 
 if __name__ == '__main__':
     args = parse_args()
@@ -155,5 +171,6 @@ if __name__ == '__main__':
         args.tiff_path, args.save_path,
         args.width, args.height,
         args.polys_path, args.channels,
-        args.type_filter, args.pxl_size_threshold
+        args.type_filter, args.filter_by_date,
+        args.pxl_size_threshold
     )

@@ -11,24 +11,31 @@ import geopandas as gp
 from rasterio import features
 
 
-def poly2mask(polys_path, image_path, save_path, type_filter=None):
+def poly2mask(
+    polys_path, image_path, save_path,
+    type_filter=None, filter_by_date=True
+):
     if not os.path.exists(save_path):
         os.mkdir(save_path)
         print("Output directory created.")
 
-    original_image_filename = os.path.basename(os.path.normpath(image_path))
-    dt = datetime.datetime.strptime(original_image_filename.split('_')[0], '%Y%m%d')
-
     markup = gp.read_file(polys_path)
-    markup['img_date'] = markup['img_date'].apply(
-        lambda x: datetime.datetime.strptime(x, '%Y-%m-%d')
-    )
 
-    if markup[markup['img_date'] <= dt].size == 0:
-        dt = markup['img_date'][0]
+    if filter_by_date:
+        markup['img_date'] = markup['img_date'].apply(
+            lambda x: datetime.datetime.strptime(x, '%Y-%m-%d')
+        )
 
-    dt += datetime.timedelta(days=1)
-    polys = markup[markup['img_date'] <= dt].loc[:, 'geometry']
+        original_image_filename = os.path.basename(os.path.normpath(image_path))
+        dt = datetime.datetime.strptime(original_image_filename.split('_')[0], '%Y%m%d')
+
+        if markup[markup['img_date'] <= dt].size == 0:
+            dt = markup['img_date'][0]
+
+        dt += datetime.timedelta(days=1)
+        polys = markup[markup['img_date'] <= dt].loc[:, 'geometry']
+    else:
+        polys = markup.loc[:, 'geometry']
 
     with rs.open(image_path) as image:
         polys = polys.to_crs({'init': image.crs})
@@ -114,6 +121,11 @@ def parse_args():
     parser.add_argument(
         '--type_filter', '-tf', dest='type_filter',
         help='Type of clearcut: "open" or "closed")'
+    )
+    parser.add_argument(
+        '--filter_by_date', '-fd', dest='filter_by_date',
+        action='store_true', default=False,
+        help='Filter by date is enabled'
     )
     return parser.parse_args()
 
