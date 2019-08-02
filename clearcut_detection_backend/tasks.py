@@ -12,6 +12,15 @@ def run(ctx):
     # thread_cron.start()
     # ctx.run('python update.py')
 
+
+@task
+def runcron(ctx):
+    init_db(ctx, create_db=False)
+    collect_static_element(ctx)
+    thread_cron = threading.Thread(target=devcron, args=(ctx,))
+    thread_cron.start()
+
+
 @task
 def devcron(ctx):
     ctx.run('python devcron.py cron_tab_prod')
@@ -24,12 +33,10 @@ def collect_static_element(ctx):
 
 
 @task
-def init_db(ctx, recreate_db=False):
+def init_db(ctx, create_db=False):
     wait_port_is_open(os.getenv('DB_HOST', 'db'), 5432)
-    if recreate_db:
-        pass
-        # ctx.run('python manage.py dbshell < clear.sql')
-        # ctx.run('python manage.py dbshell < db.dump2404191230')
+    if create_db:
+        ctx.run('python manage.py loaddata db.json')
 
     ctx.run('python manage.py makemigrations clearcuts')
     ctx.run('python manage.py migrate')
@@ -48,3 +55,9 @@ def wait_port_is_open(host, port):
         except socket.gaierror:
             pass
         time.sleep(1)
+
+
+@task
+def rundev(ctx, createdb=False):
+    init_db(ctx, createdb)
+    ctx.run('python manage.py runserver 0.0.0.0:9000')

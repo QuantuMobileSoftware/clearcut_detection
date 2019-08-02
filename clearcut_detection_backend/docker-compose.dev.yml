@@ -29,5 +29,4 @@ services:
       - 9000
     ports:
       - "9000:9000"
-    command: /bin/bash -c "pip install -r requirements.txt && exec invoke run"
-#    command: /bin/bash -c "pip install -r requirements.txt && python manage.py runserver 0.0.0.0:9000"
+    command: /bin/bash -c "pip install -r requirements.txt && exec invoke rundev"
