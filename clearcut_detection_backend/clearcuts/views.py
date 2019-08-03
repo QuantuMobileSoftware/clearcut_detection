@@ -1,12 +1,13 @@
-from django.core.serializers import serialize
-from django.http import JsonResponse
-from rest_framework.decorators import api_view
-from rest_framework import viewsets
-from django.contrib.gis.db.models.functions import Area, AsGeoJSON, Transform
-from .models import Clearcut
-from django.db.models import Max, F
-from .serializers import ClearcutSerializer
 import json
+
+from django.core.exceptions import ObjectDoesNotExist
+from django.core.serializers import serialize
+from django.http import JsonResponse, HttpResponse
+from rest_framework import viewsets
+from rest_framework.decorators import api_view
+
+from .models import Clearcut
+from .serializers import ClearcutSerializer
 
 
 class ClearcutViewSet(viewsets.ModelViewSet):
@@ -17,25 +18,26 @@ class ClearcutViewSet(viewsets.ModelViewSet):
 @api_view()
 def clearcuts_info(request):
     if request.method == 'GET':
+        if Clearcut.objects.all().count() == 0:
+            return HttpResponse(status=404)
         latest_clearcut = Clearcut.objects.latest('image_date')
         clearcuts = Clearcut.objects.filter(image_date=latest_clearcut.image_date)
         data = serialize('geojson', clearcuts,
                          geometry_field='mpoly',
                          fields=('image_date', 'pk'))
         response = JsonResponse(data, safe=False)
-        response["Access-Control-Allow-Origin"] = "*"
         return response
 
 
 @api_view()
 def clearcut_area(request, pk):
     if request.method == 'GET':
-        clearcut = Clearcut.objects.annotate(transformed_poly=Transform('mpoly', 3857)).get(pk=pk)
-        poly = clearcut.transformed_poly
-        area = poly.area
-        result = {
-            "area": area
-        }
-        response = JsonResponse(json.dumps(result), safe=False)
-        response["Access-Control-Allow-Origin"] = "*"
-        return response
+        try:
+            clearcut = Clearcut.objects.all().get(pk=pk)
+            result = {
+                "area": clearcut.area
+            }
+            response = JsonResponse(json.dumps(result), safe=False)
+            return response
+        except ObjectDoesNotExist:
+            return HttpResponse(status=404)
