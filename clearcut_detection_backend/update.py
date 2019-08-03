@@ -43,9 +43,18 @@ def send_email(image_path):
     os.remove(image_path)
 
 
+def init_db(data_dir):
+    files = sorted(os.listdir(data_dir))
+    for file in files:
+        save(os.path.join(data_dir, file), init_db=True)
+
+
+def update_db(data_dir):
+    download_tile(data_dir)
+    poly_path, image_path = process_tile(data_dir)
+    save(os.path.join(data_dir, poly_path), init_db=False)
+
+
 if __name__ == '__main__':
     DATA_DIR = 'data'
-    download_tile(DATA_DIR)
-    poly_path, image_path = process_tile(DATA_DIR)
-    save(os.path.join(DATA_DIR, poly_path))
-    # send_email(os.path.join(DATA_DIR, image_path))
+    update_db(DATA_DIR)
