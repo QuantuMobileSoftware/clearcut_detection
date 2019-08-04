@@ -5,4 +5,10 @@ from rest_framework import serializers
 class ClearcutSerializer(serializers.HyperlinkedModelSerializer):
     class Meta:
         model = Clearcut
-        fields = ['forest_type', 'forest_state', 'detected_class', 'image_date', 'mpoly']
+        fields = ['image_date', 'mpoly']
+
+
+class ClearcutChartSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Clearcut
+        fields = ['image_date', 'area']
