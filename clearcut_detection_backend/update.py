@@ -2,13 +2,13 @@ import os
 import shutil
 
 from os.path import join, splitext
-from clearcuts.model_call import call
 from clearcuts.geojson_save import save
+from clearcuts.predict import raster_prediction
 from django.core.mail.message import EmailMessage
 
 
 def download_tile(data_dir):
-    # os.system('python peps_download.py')
+    os.system('python peps_download.py')
     for file in os.listdir(data_dir):
         if file.endswith('.json'):
             os.remove(join(data_dir, file))
@@ -24,7 +24,7 @@ def process_tile(data_dir):
     for file in os.listdir(data_dir):
         if file.endswith('.tif'):
             path = join('..', data_dir, file)
-            result_paths = call(path)
+            result_paths = raster_prediction(path)][0]
             os.remove(join(data_dir, file))
 
             return result_paths["polygons"], result_paths["picture"]

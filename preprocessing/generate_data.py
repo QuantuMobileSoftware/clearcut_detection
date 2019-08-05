@@ -72,7 +72,7 @@ def parse_args():
     parser.add_argument(
         '--markup_path', '-mp', dest='markup_path',
         required=True,
-        help='Choose split function between geo_split and stratified_split'
+        help='Path to polygons'
     )
     parser.add_argument(
         '--val_threshold', '-vt', dest='val_threshold',

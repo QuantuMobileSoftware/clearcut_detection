@@ -13,9 +13,10 @@ from shapely.geometry import Polygon
 from torchvision import transforms
 from tqdm import tqdm
 
-sys.path.append("..")
+sys.path.append('..')
 from pytorch.models.utils import get_model
 from pytorch.utils import count_channels, filter_by_channels
+
 
 def load_model(network, model_weights_path, channels):
     model = get_model(network)

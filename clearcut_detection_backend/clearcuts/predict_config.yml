@@ -4,11 +4,7 @@ models:
     channels:
       - rgb
     weights: ../../../models/fpn50_new_markup_320_rnd_crop.pth
-#  cloud_detection:
-#    network: fpn50
-#    channels:
-#      - rgb
-#    weights: ../../models/fpn50_new_markup_320_rnd_crop.pth
+
 prediction:
   save_path: ../data
   threshold: 0.3

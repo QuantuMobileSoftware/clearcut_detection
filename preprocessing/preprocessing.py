@@ -9,7 +9,7 @@ from tqdm import tqdm
 from os.path import join, splitext, basename
 from image_division import divide_into_pieces
 from binary_mask_converter import poly2mask, split_mask
-from poly_instances_to_mask import markup_to_separate_polygons
+from poly_instances_to_mask import filter_poly
 
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 from pytorch.utils import get_folders
@@ -78,7 +78,8 @@ def merge_bands(tiff_filepath, save_path, channels):
 def preprocess(
     tiff_path, save_path, width, height,
     polys_path, channels, type_filter,
-    filter_by_date, pxl_size_threshold, no_merge
+    filter_by_date, pxl_size_threshold,
+    no_merge, pass_chance
 ):
     if not os.path.exists(save_path):
         os.makedirs(save_path, exist_ok=True)
@@ -105,13 +106,13 @@ def preprocess(
 
         geojson_polygons = os.path.join(data_path, "geojson_polygons")
         instance_masks_path = os.path.join(data_path, "instance_masks")
-        markup_to_separate_polygons(
+        filter_poly(
             poly_pieces_path=geojson_polygons, markup_path=polys_path,
-            save_path=instance_masks_path, pieces_info_path=pieces_info,
-            original_image_path=tiff_file,
+            pieces_info_path=pieces_info, original_image_path=tiff_file,
             image_pieces_path=os.path.join(data_path, 'images'),
-            mask_pieces_path=pieces_path,
-            pxl_size_threshold=pxl_size_threshold
+            mask_pieces_path=pieces_path, 
+            pxl_size_threshold=pxl_size_threshold,
+            pass_chance=pass_chance
         )
 
 
@@ -159,9 +160,13 @@ def parse_args():
         default=20, help='Minimum pixel size of mask area'
     )
     parser.add_argument(
-        '--no_merge', '-m', dest='no_merge',
+        '--no_merge', '-nm', dest='no_merge',
         action='store_true', default=False,
         help='Skip merging bands'
+    )
+    parser.add_argument(
+        '--pass_chance', '-pc', dest='pass_chance', type=float,
+        default=0, help='Chance of passing blank tile'
     )
     return parser.parse_args()
 
@@ -172,5 +177,6 @@ if __name__ == '__main__':
         args.width, args.height,
         args.polys_path, args.channels,
         args.type_filter, args.filter_by_date,
-        args.pxl_size_threshold
+        args.pxl_size_threshold,
+        args.no_merge, args.pass_chance
     )

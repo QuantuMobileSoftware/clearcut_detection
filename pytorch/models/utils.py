@@ -4,7 +4,6 @@ import torch
 from torch import cuda
 from torch.backends import cudnn
 
-
 def get_satellite_pretrained_resnet(model_weights_path, encoder_name='resnet50'):
     from models.autoencoder.model import Autoencoder_Unet
     model = Autoencoder_Unet(encoder_name=encoder_name)
