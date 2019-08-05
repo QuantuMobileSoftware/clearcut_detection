@@ -29,6 +29,9 @@ DEBUG = True
 ALLOWED_HOSTS = ['*']
 
 
+ROOT_URLCONF = 'clearcut_detection_backend.urls'
+WSGI_APPLICATION = 'clearcut_detection_backend.wsgi.application'
+
 # Application definition
 
 INSTALLED_APPS = [
@@ -53,7 +56,6 @@ MIDDLEWARE = [
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 ]
 
-ROOT_URLCONF = 'clearcut_detection_backend.urls'
 
 TEMPLATES = [
     {
@@ -71,7 +73,6 @@ TEMPLATES = [
     },
 ]
 
-WSGI_APPLICATION = 'clearcut_detection_backend.wsgi.application'
 
 
 # Database
