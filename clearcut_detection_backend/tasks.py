@@ -16,7 +16,6 @@ def run(ctx):
 @task
 def runcron(ctx):
     init_db(ctx, create_db=False)
-    collect_static_element(ctx)
     thread_cron = threading.Thread(target=devcron, args=(ctx,))
     thread_cron.start()
 
@@ -60,4 +59,12 @@ def wait_port_is_open(host, port):
 @task
 def rundev(ctx, createdb=False):
     init_db(ctx, createdb)
+    ctx.run('python manage.py runserver 0.0.0.0:9000')
+
+
+@task
+def runbackend(ctx, createdb=False):
+    init_db(ctx, createdb)
+    thread_cron = threading.Thread(target=devcron, args=(ctx,))
+    thread_cron.start()
     ctx.run('python manage.py runserver 0.0.0.0:9000')

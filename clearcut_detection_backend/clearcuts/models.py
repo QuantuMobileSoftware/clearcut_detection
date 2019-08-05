@@ -1,13 +1,17 @@
 from django.contrib.gis.db import models
 
 
-class Clearcut(models.Model):
-    forest_type = models.CharField(max_length=20)
-    forest_state = models.CharField(max_length=20)
-    detected_class = models.CharField(max_length=20)
-    image_date = models.DateField()
+class Zone(models.Model):
+    def __str__(self):
+        return f"Zone {self.id}"
 
+
+class Clearcut(models.Model):
+    image_date = models.DateField()
+    area = models.FloatField()
+    centroid = models.PointField()
+    zone = models.ForeignKey(Zone, on_delete=models.CASCADE)
     mpoly = models.PolygonField()
 
     def __str__(self):
-        return str(self.id)
+        return f"Clearcut {self.id}"

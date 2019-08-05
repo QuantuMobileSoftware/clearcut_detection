@@ -27,3 +27,4 @@ rasterio==1.0.24
 sentinelhub==2.5.3
 tqdm==4.19.9
 imageio==2.5.0
+django-cors-headers
