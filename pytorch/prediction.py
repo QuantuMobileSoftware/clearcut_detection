@@ -70,7 +70,7 @@ def parse_args():
     parser.add_argument('--test_df', '-td', required=True, help='Path to test dataframe')
     parser.add_argument('--save_path', '-sp', required=True, help='Path to save predictions')
     parser.add_argument('--size', '-s', default=224, type=int, help='Image size')
-    parser.add_argument('--channels', '-ch', default=['rgb', 'ndvi', 'ndvi_color'], nargs='+', help='Channels list')
+    parser.add_argument('--channels', '-ch', default=['rgb', 'ndvi', 'b8'], nargs='+', help='Channels list')
 
     return parser.parse_args()
 
