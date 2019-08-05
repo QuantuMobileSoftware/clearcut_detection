@@ -34,6 +34,20 @@ services:
       - db:db
     expose:
       - 9000
-    ports:
-      - "9000:9000"
     command: /bin/bash -c "pip install -r requirements.txt && exec invoke rundev"
+
+  nginx:
+    image: nginx:1.15.8
+    links:
+      - django:django
+    extra_hosts:
+      - "react:127.0.0.1"
+    expose:
+      - "9000"
+    environment:
+      - VIRTUAL_HOST=dev2.atlusblue.com
+      - VIRTUAL_PORT=9000
+      - LETSENCRYPT_HOST=dev2.atlusblue.com
+      - LETSENCRYPT_EMAIL=i.lukinov@quantumobile.com
+    volumes:
+      - ./nginx.conf:/etc/nginx/conf.d/web.conf

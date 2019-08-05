@@ -57,4 +57,4 @@ def wait_port_is_open(host, port):
 @task
 def rundev(ctx, createdb=False):
     init_db(ctx, createdb)
-    ctx.run('python manage.py runserver 0.0.0.0:9000')
+    ctx.run('uwsgi --ini uwsgi.ini')
