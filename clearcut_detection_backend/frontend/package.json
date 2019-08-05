@@ -3,10 +3,13 @@
   "version": "0.1.0",
   "private": true,
   "dependencies": {
+    "@turf/circle": "^6.0.1",
     "leaflet": "^1.5.1",
+    "mapbox-gl": "^1.2.0",
     "react": "^16.8.6",
     "react-dom": "^16.8.6",
     "react-leaflet": "^2.4.0",
+    "react-mapbox-wrapper": "^2.4.0",
     "react-scripts": "3.0.1"
   },
   "scripts": {
