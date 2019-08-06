@@ -13,3 +13,26 @@ body {
 #root {
   height: 100%;
 }
+.tooltip {
+  background: #282c34;
+  padding: 15px;
+  border-radius: 10px;
+  color: #fff;
+  font-size: 15px;
+  position: absolute;
+  transform: translate(-50%, -120%);
+}
+.tooltip::after {
+  bottom: -9px;
+  border-color: transparent;
+  border-width: 10px 10px 0;
+  border-top-color: #282c34;
+  content: "";
+  width: 0;
+  height: 0;
+  position: absolute;
+  left: 50%;
+  display: block;
+  border-style: solid;
+  transform: translateX(-50%);
+}
