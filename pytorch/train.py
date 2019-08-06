@@ -11,10 +11,10 @@ from catalyst.dl.utils import UtilsFactory
 from torch import nn, cuda
 from torch.backends import cudnn
 
-from dataset import Dataset
-from losses import BCE_Dice_Loss
-from models.utils import get_model
-from utils import count_channels
+from pytorch.dataset import Dataset
+from pytorch.losses import BCE_Dice_Loss
+from pytorch.models.utils import get_model
+from pytorch.utils import count_channels
 
 
 def parse_args():

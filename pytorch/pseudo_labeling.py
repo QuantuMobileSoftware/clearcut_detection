@@ -11,10 +11,10 @@ from PIL import Image
 from catalyst.dl.utils import UtilsFactory
 from tqdm import tqdm
 
-from dataset import add_record
-from models.utils import get_model
-from train import train
-from utils import get_image_info, count_channels
+from pytorch.dataset import add_record
+from pytorch.models.utils import get_model
+from pytorch.train import train
+from pytorch.utils import get_image_info, count_channels
 
 
 def parse_args():

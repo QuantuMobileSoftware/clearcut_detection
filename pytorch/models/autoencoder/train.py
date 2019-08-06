@@ -1,8 +1,5 @@
 import argparse
 import collections
-import sys
-
-sys.path.append("../..")
 
 import pandas as pd
 import torch
@@ -11,8 +8,8 @@ from catalyst.dl.experiments import SupervisedRunner
 from catalyst.dl.utils import UtilsFactory
 from torch.nn import MSELoss
 
-from autoencoder_dataset import AutoencoderDataset
-from model import Autoencoder_Unet
+from pytorch.models.autoencoder.autoencoder_dataset import AutoencoderDataset
+from pytorch.models.autoencoder.model import Autoencoder_Unet
 
 
 def parse_args():

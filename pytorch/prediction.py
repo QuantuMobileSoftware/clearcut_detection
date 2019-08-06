@@ -9,8 +9,8 @@ import torchvision.transforms as transforms
 from torch import nn
 from tqdm import tqdm
 
-from models.utils import get_model
-from utils import get_filepath, count_channels, read_tensor, filter_by_channels
+from pytorch.models.utils import get_model
+from pytorch.utils import get_filepath, count_channels, read_tensor, filter_by_channels
 
 
 def predict(

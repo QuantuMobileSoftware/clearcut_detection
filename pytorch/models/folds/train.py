@@ -8,9 +8,9 @@ from catalyst.dl.callbacks import DiceCallback, CheckpointCallback, InferCallbac
 from catalyst.dl.experiments import SupervisedRunner
 from catalyst.dl.utils import UtilsFactory
 
-from dataset import Dataset
-from losses import BCE_Dice_Loss
-from models.utils import get_model, set_random_seed
+from pytorch.dataset import Dataset
+from pytorch.losses import BCE_Dice_Loss
+from pytorch.models.utils import get_model, set_random_seed
 
 
 def parse_args():

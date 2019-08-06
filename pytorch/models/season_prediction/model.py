@@ -1,5 +1,5 @@
 from segmentation_models_pytorch.fpn.decoder import FPNDecoder
-from .encoder_decoder import EncoderDecoder
+from pytorch.models.season_prediction.encoder_decoder import EncoderDecoder
 from segmentation_models_pytorch.encoders import get_encoder
 
 

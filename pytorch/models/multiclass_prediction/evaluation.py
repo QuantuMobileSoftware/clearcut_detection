@@ -1,6 +1,5 @@
 import argparse
 import os
-import sys
 
 import numpy as np
 import pandas as pd
@@ -10,8 +9,7 @@ from PIL import Image
 from torchvision.transforms import ToTensor
 from tqdm import tqdm
 
-sys.path.append("../..")
-from metrics import multi_class_dice
+from pytorch.metrics import multi_class_dice
 
 
 def parse_args():

@@ -1,12 +1,10 @@
 import os
 import sys
-import imageio
 import argparse
 import rasterio
 import numpy as np
 
-from tqdm import tqdm
-from os.path import join, splitext, basename
+from os.path import join, basename
 from image_division import divide_into_pieces
 from binary_mask_converter import poly2mask, split_mask
 from poly_instances_to_mask import filter_poly

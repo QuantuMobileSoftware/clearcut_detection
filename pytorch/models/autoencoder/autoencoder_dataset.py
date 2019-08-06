@@ -7,7 +7,7 @@ from albumentations import (
 )
 from albumentations.pytorch.transforms import ToTensor
 
-from dataset import Dataset
+from pytorch.dataset import Dataset
 
 
 class AutoencoderDataset(Dataset):
