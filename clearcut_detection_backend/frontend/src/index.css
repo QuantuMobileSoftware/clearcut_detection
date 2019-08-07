@@ -13,3 +13,9 @@ body {
 #root {
   height: 100%;
 }
+.tooltip {
+  padding: 15px;
+  border-radius: 10px;
+  color: #282c34;
+  font-size: 15px;
+}

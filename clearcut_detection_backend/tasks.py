@@ -67,4 +67,4 @@ def runbackend(ctx, createdb=False):
     init_db(ctx, createdb)
     thread_cron = threading.Thread(target=devcron, args=(ctx,))
     thread_cron.start()
-    ctx.run('python manage.py runserver 0.0.0.0:9000')
+    ctx.run('uwsgi --ini uwsgi.ini')
