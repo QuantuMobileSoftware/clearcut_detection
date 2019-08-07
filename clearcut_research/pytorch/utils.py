@@ -2,7 +2,6 @@ import os
 import re
 import imageio
 import numpy as np
-import segmentation_models_pytorch as smp
 
 
 def join_pathes(*pathes):

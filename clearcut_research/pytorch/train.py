@@ -11,10 +11,10 @@ from catalyst.dl.utils import UtilsFactory
 from torch import nn, cuda
 from torch.backends import cudnn
 
-from dataset import Dataset
-from losses import BCE_Dice_Loss
-from models.utils import get_model
-from utils import count_channels
+from clearcut_research.pytorch import Dataset
+from clearcut_research.pytorch.losses import BCE_Dice_Loss
+from clearcut_research.pytorch import get_model
+from clearcut_research.pytorch import count_channels
 
 
 def parse_args():
