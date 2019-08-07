@@ -44,8 +44,13 @@ INSTALLED_APPS = [
     'django.contrib.gis',
     'clearcuts',
     'rest_framework',
+    'rest_framework_swagger',
     'corsheaders'
 ]
+
+REST_FRAMEWORK = {
+    'DEFAULT_SCHEMA_CLASS': 'rest_framework.schemas.coreapi.AutoSchema'
+}
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
@@ -78,8 +83,6 @@ TEMPLATES = [
     },
 ]
 
-
-
 # Database
 # https://docs.djangoproject.com/en/2.2/ref/settings/#databases
 
@@ -93,6 +96,8 @@ DATABASES = {
         'PORT': '5432'
     }
 }
+
+
 
 EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
 EMAIL_HOST = 'smtp.gmail.com'
@@ -138,5 +143,7 @@ USE_TZ = True
 # https://docs.djangoproject.com/en/2.2/howto/static-files/
 
 STATIC_URL = '/static/'
+
+STATIC_ROOT = os.path.join(BASE_DIR, "static")
 
 django.setup()

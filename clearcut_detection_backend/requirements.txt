@@ -29,3 +29,4 @@ tqdm==4.19.9
 imageio==2.5.0
 uWSGI==2.0.15
 django-cors-headers
+django-rest-swagger

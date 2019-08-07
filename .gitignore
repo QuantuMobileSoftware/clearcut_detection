@@ -25,3 +25,4 @@ clearcut_detection_backend/clearcuts/__pycache__
 clearcut_detection_backend/clearcuts/migrations
 
 preprocessing/__pycache__
+clearcut_detection_backend/static/

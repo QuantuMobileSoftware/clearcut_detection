@@ -28,7 +28,6 @@ def devcron(ctx):
 @task
 def collect_static_element(ctx):
     ctx.run('python manage.py collectstatic --noinput')
-    ctx.run('python manage.py compilemessages')
 
 
 @task
@@ -59,6 +58,7 @@ def wait_port_is_open(host, port):
 @task
 def rundev(ctx, createdb=False):
     init_db(ctx, createdb)
+    collect_static_element(ctx)
     ctx.run('uwsgi --ini uwsgi.ini')
 
 
