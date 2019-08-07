@@ -24,7 +24,7 @@ def process_tile(data_dir):
     for file in os.listdir(data_dir):
         if file.endswith('.tif'):
             path = join('..', data_dir, file)
-            result_paths = raster_prediction(path)][0]
+            result_paths = raster_prediction(path)[0]
             os.remove(join(data_dir, file))
 
             return result_paths["polygons"], result_paths["picture"]

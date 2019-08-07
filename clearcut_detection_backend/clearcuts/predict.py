@@ -9,7 +9,9 @@ sys.path.append('../..')
 from scripts.predict_raster import predict_raster, polygonize, save_polygons
 from os.path import join
 
+
 def raster_prediction(image_path):
+    filename = re.split(r'[./]', image_path)[-2]
     models, save_path, threshold, input_size = load_config()
     predicted_directory_name = 'predicted_' + filename
     result_directory_path = join(save_path, predicted_directory_name)
