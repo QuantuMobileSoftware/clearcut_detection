@@ -1,5 +1,9 @@
 FROM python:3.6
 
+RUN mkdir /code
+
+WORKDIR /code
+
 RUN apt-get update -y \
     && apt-get upgrade -y \
     && apt-get install -y postgresql-client locales \
@@ -8,5 +12,8 @@ RUN apt-get update -y \
     # Cleanup
     && apt-get clean && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
 
-COPY requirements.txt /tmp
-RUN pip install -r /tmp/requirements.txt
+ADD requirements.txt /code
+
+RUN pip install -r requirements.txt
+
+ADD . /code/
