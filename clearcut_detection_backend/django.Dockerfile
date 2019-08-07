@@ -16,10 +16,4 @@ ADD requirements.txt /code
 
 RUN pip install -r requirements.txt
 
-RUN mkdir /code/backend
-ADD clearcut_detection_backend /code/backend/
-
-RUN mkdir /code/pytorch
-ADD pytorch /code/pytorch/
-
-WORKDIR /code/backend
+ADD . /code/

@@ -9,7 +9,7 @@ from PIL import Image
 from torchvision.transforms import ToTensor
 from tqdm import tqdm
 
-from pytorch.metrics import multi_class_dice
+from clearcut_research.pytorch.metrics import multi_class_dice
 
 
 def parse_args():

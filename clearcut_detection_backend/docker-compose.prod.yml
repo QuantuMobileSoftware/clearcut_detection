@@ -20,20 +20,19 @@ services:
     command: /bin/bash -c "npm install && npm run-script start"
   django:
     build:
-      context: ../
-      dockerfile: clearcut_detection_backend/django.Dockerfile
+      context: ./
+      dockerfile: django.Dockerfile
     environment:
       - DJANGO_SETTINGS_MODULE=clearcut_detection_backend.settings
 
     volumes:
-      - ./:/code/backend
-      - ../pytorch:/code/pytorch
-    working_dir: /code/backend
+      - ./:/code
+    working_dir: /code
     links:
       - db:db
     expose:
       - 9000
-    command: /bin/bash -c "pip install -r ../requirements.txt && exec invoke runbackend"
+    command: /bin/bash -c "pip install -r requirements.txt && exec invoke runbackend"
 
   nginx:
     image: nginx:1.15.8

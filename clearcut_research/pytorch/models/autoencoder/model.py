@@ -1,6 +1,6 @@
 from segmentation_models_pytorch.base import EncoderDecoder
 from segmentation_models_pytorch.encoders import get_encoder
-from pytorch.models.autoencoder.decoder import UnetDecoder
+from clearcut_research.pytorch.models.autoencoder.decoder import UnetDecoder
 
 
 class Autoencoder_Unet(EncoderDecoder):

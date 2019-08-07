@@ -1,20 +1,16 @@
 import argparse
 import collections
-import os
 
-import numpy as np
-import pandas as pd
 import torch
-from catalyst.dl.callbacks import InferCallback, CheckpointCallback, DiceCallback
+from catalyst.dl.callbacks import CheckpointCallback, InferCallback
 from catalyst.dl.experiments import SupervisedRunner
 from catalyst.dl.utils import UtilsFactory
-from torch import nn, cuda
-from torch.backends import cudnn
+import pandas as pd
 
-from pytorch.dataset import Dataset
-from pytorch.losses import BCE_Dice_Loss
-from pytorch.models.utils import get_model
-from pytorch.utils import count_channels
+from clearcut_research.pytorch import get_model, set_random_seed
+from clearcut_research.pytorch import MultiClass_Dice_Loss
+from clearcut_research.pytorch import MulticlassDataset
+from clearcut_research.pytorch import MultiClassDiceCallback
 
 
 def parse_args():
@@ -29,54 +25,35 @@ def parse_args():
     arg('--train_df', '-td', default='../data/train_df.csv')
     arg('--val_df', '-vd', default='../data/val_df.csv')
     arg('--dataset_path', '-dp', default='../data/input', help='Path to the data')
-    arg('--model_weights_path', '-mwp', default='../weights/resnet50-19c8e357.pth')
 
     arg('--image_size', '-is', type=int, default=224)
     arg('--network', '-n', default='unet50')
     arg(
         '--channels', '-ch',
-        default=['rgb', 'ndvi', 'b8'],
-        nargs='+', help='Channels list')
+        default=[
+            'rgb', 'ndvi', 'ndvi_color',
+            'b2', 'b3', 'b4', 'b8'
+        ], nargs='+', help='Channels list')
 
     return parser.parse_args()
 
 
-def set_random_seed(seed):
-    np.random.seed(seed)
-    cudnn.deterministic = True
-    cudnn.benchmark = False
-    torch.manual_seed(seed)
-    if cuda.is_available():
-        cuda.manual_seed_all(seed)
-
-    print('Random seed:', seed)
-
-
 def train(args):
     set_random_seed(42)
-    model = get_model(args.network)
-    print('Loading model')
-    model.encoder.conv1 = nn.Conv2d(
-        count_channels(args.channels), 64, kernel_size=(7, 7),
-        stride=(2, 2), padding=(3, 3), bias=False)
+    model = get_model('fpn50_multiclass')
+
+    print("Loading model")
     model, device = UtilsFactory.prepare_model(model)
 
     train_df = pd.read_csv(args.train_df).to_dict('records')
     val_df = pd.read_csv(args.val_df).to_dict('records')
 
-    ds = Dataset(args.channels, args.dataset_path, args.image_size, args.batch_size, args.num_workers)
+    ds = MulticlassDataset(args.channels, args.dataset_path, args.image_size, args.batch_size, args.num_workers)
     loaders = ds.create_loaders(train_df, val_df)
 
-    criterion = BCE_Dice_Loss(bce_weight=0.2)
+    criterion = MultiClass_Dice_Loss()
     optimizer = torch.optim.Adam(model.parameters(), lr=1e-3)
-    scheduler = torch.optim.lr_scheduler.MultiStepLR(
-        optimizer, milestones=[10, 20, 40], gamma=0.3
-    )
-
-    save_path = os.path.join(
-        args.logdir,
-        '_'.join([args.network, *args.channels])
-    )
+    scheduler = torch.optim.lr_scheduler.MultiStepLR(optimizer, milestones=[10, 20, 40], gamma=0.3)
 
     # model runner
     runner = SupervisedRunner()
@@ -89,19 +66,20 @@ def train(args):
         scheduler=scheduler,
         loaders=loaders,
         callbacks=[
-            DiceCallback()
+            MultiClassDiceCallback()
         ],
-        logdir=save_path,
+        logdir=args.logdir,
         num_epochs=args.epochs,
         verbose=True
     )
 
-    infer_loader = collections.OrderedDict([('infer', loaders['valid'])])
+    infer_loader = collections.OrderedDict([("infer", loaders["valid"])])
     runner.infer(
         model=model,
         loaders=infer_loader,
         callbacks=[
-            CheckpointCallback(resume=f'{save_path}/checkpoints/best.pth'),
+            CheckpointCallback(
+                resume=f"{args.logdir}/checkpoints/best.pth"),
             InferCallback()
         ],
     )
