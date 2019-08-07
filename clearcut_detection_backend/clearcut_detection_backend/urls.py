@@ -22,9 +22,9 @@ router = routers.DefaultRouter()
 router.register(r'clearcuts', views.ClearcutViewSet)
 
 urlpatterns = [
-    path('', include(router.urls)),
-    path('clearcuts_info/', views.clearcuts_info),
-    path('clearcut_area/<int:pk>', views.clearcut_area),
-    path('clearcut_area_chart/', views.clearcut_area_chart),
+    path('api/', include(router.urls)),
+    path('api/clearcuts_info/', views.clearcuts_info),
+    path('api/clearcut_area/<int:pk>', views.clearcut_area),
+    path('api/clearcut_area_chart/', views.clearcut_area_chart),
     path('admin/', admin.site.urls),
 ]

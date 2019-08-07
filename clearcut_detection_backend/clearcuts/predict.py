@@ -1,13 +1,11 @@
 import os
-import re
-import sys
 import yaml
 import imageio
 import numpy as np
 
-sys.path.append('../..')
-from scripts.predict_raster import predict_raster, polygonize, save_polygons
+from clearcuts.predict_raster import predict_raster, polygonize, save_polygons
 from os.path import join
+
 
 def raster_prediction(image_path):
     models, save_path, threshold, input_size = load_config()

@@ -1,5 +1,4 @@
 import os
-import re
 import sys
 import random
 import argparse
@@ -11,7 +10,7 @@ from PIL import Image
 from sklearn.model_selection import StratifiedShuffleSplit
 
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
-from pytorch.utils import get_filepath, read_tensor, get_folders, get_fullname
+from clearcut_research.pytorch import get_filepath, read_tensor, get_folders, get_fullname
 
 
 def parse_args():

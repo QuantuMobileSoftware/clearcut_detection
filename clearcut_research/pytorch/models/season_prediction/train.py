@@ -1,8 +1,5 @@
 import argparse
 import os
-import sys
-
-sys.path.append("../..")
 
 import torch
 from catalyst.dl.metrics import dice
@@ -10,9 +7,9 @@ from catalyst.dl.utils import UtilsFactory
 from torch.nn import functional as F
 import pandas as pd
 
-from models.season_prediction.season_dataset import SeasonDataset
-from losses import BCE_Dice_Loss
-from models.utils import get_model, set_random_seed
+from clearcut_research.pytorch import SeasonDataset
+from clearcut_research.pytorch import BCE_Dice_Loss
+from clearcut_research.pytorch import get_model, set_random_seed
 from statistics import mean
 
 

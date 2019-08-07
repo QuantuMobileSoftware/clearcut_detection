@@ -1,8 +1,4 @@
 import argparse
-import sys
-
-sys.path.append("../..")
-
 import collections
 
 import torch
@@ -11,10 +7,10 @@ from catalyst.dl.experiments import SupervisedRunner
 from catalyst.dl.utils import UtilsFactory
 import pandas as pd
 
-from models.utils import get_model, set_random_seed
-from losses import MultiClass_Dice_Loss
-from models.multiclass_prediction.multiclass_dataset import MulticlassDataset
-from models.multiclass_prediction.multiclass_dice_callback import MultiClassDiceCallback
+from clearcut_research.pytorch import get_model, set_random_seed
+from clearcut_research.pytorch import MultiClass_Dice_Loss
+from clearcut_research.pytorch import MulticlassDataset
+from clearcut_research.pytorch import MultiClassDiceCallback
 
 
 def parse_args():
