@@ -11,6 +11,8 @@
        {
           "type": "Feature",
           "properties": {
+             "pk": 1,
+             "color": "#00bcd4",
              "forest_typ": "deciduous",
              "type": "clearcut",
              "state": "open",
@@ -57,6 +59,8 @@
        {
           "type": "Feature",
           "properties": {
+             "pk": 2,
+                "color": "#ff0000",
              "forest_typ": "deciduous",
              "type": "clearcut",
              "state": "open",
@@ -111,6 +115,8 @@
        {
           "type": "Feature",
           "properties": {
+             "pk": 3,
+                      "color": "#00bcd4",
              "forest_typ": "deciduous",
              "type": "clearcut",
              "state": "overgrown",
@@ -153,6 +159,8 @@
        {
           "type": "Feature",
           "properties": {
+             "pk": 4,
+             "color": "#00bcd4",
              "forest_typ": "deciduous",
              "type": "clearcut",
              "state": "open",
@@ -215,6 +223,8 @@
        {
           "type": "Feature",
           "properties": {
+             "pk": 5,
+             "color": "#00bcd4",
              "forest_typ": "deciduous",
              "type": "clearcut",
              "state": "overgrown",

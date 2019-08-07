@@ -3,11 +3,12 @@ import "./App.css";
 import {} from "leaflet";
 import MapWrapper from "./components/Map";
 import DATA from "./data.json";
+import TEST from "./test.json";
 function App() {
   return (
     <div className="App">
       <div className="map_holder">
-        <MapWrapper data={DATA} />
+        <MapWrapper data={TEST} />
       </div>
     </div>
   );
