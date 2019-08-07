@@ -20,13 +20,13 @@ services:
     ports:
       - "3000:3000"
     command: /bin/bash -c "npm install && npm run-script start"
+  
   django:
     build:
       context: ./
       dockerfile: django.Dockerfile
     environment:
       - DJANGO_SETTINGS_MODULE=clearcut_detection_backend.settings
-
     volumes:
       - ./:/code
     working_dir: /code
