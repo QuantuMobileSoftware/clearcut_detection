@@ -5,15 +5,13 @@ import torch
 import rasterio
 import argparse
 import numpy as np
+import segmentation_models_pytorch as smp
 
 from catalyst.dl.utils import UtilsFactory
 from geopandas import GeoSeries
 from shapely.geometry import Polygon
 from torchvision import transforms
 from tqdm import tqdm
-
-from clearcut_research.pytorch.models.utils import get_model
-from clearcut_research.pytorch.utils import count_channels, filter_by_channels
 
 
 def load_model(network, model_weights_path, channels):
@@ -93,6 +91,47 @@ def predict_raster(tiff_file, channels, network, model_weights_path, input_size=
     meta['dtype'] = 'float32'
 
     return raster_array.astype(np.float32), meta
+
+
+def get_model(name='fpn50', model_weights_path=None):
+    if name == 'unet50':
+        return smp.Unet('resnet50', encoder_weights='imagenet')
+    elif name == 'unet101':
+        return smp.Unet('resnet101', encoder_weights='imagenet')
+    elif name == 'fpn50':
+        return smp.FPN('resnet50', encoder_weights='imagenet')
+    elif name == 'fpn101':
+        return smp.FPN('resnet101', encoder_weights='imagenet')
+    else:
+        raise ValueError("Unknown network")
+
+
+def count_channels(channels):
+    count = 0
+    for ch in channels:
+        if ch == 'rgb':
+            count += 3
+        elif ch in ['ndvi', 'b8']:
+            count += 1
+        else:
+            raise Exception('{} channel is unknown!'.format(ch))
+
+    return count
+
+
+def filter_by_channels(image_tensor, channels):
+    result = []
+    for ch in channels:
+        if ch == 'rgb':
+            result.append(image_tensor[:, :, :3])
+        elif ch == 'ndvi':
+            result.append(image_tensor[:, :, 3:4])
+        elif ch == 'b8':
+            result.append(image_tensor[:, :, 4:5])
+        else:
+            raise Exception(f'{ch} channel is unknown!')
+
+    return np.concatenate(result, axis=2)
 
 
 def scale(tensor, max_value):

@@ -2,18 +2,19 @@ import os
 import yaml
 import imageio
 import numpy as np
+import re
 
 from clearcuts.predict_raster import predict_raster, polygonize, save_polygons
 from os.path import join
 
 
 def raster_prediction(image_path):
+    filename = re.split(r'[./]', image_path)[-2]
     models, save_path, threshold, input_size = load_config()
     predicted_directory_name = 'predicted_' + filename
     result_directory_path = join(save_path, predicted_directory_name)
     os.makedirs(result_directory_path, exist_ok=True)
     path_array = []
-
     for model in models:
         predicted_filename = f'predicted_{model}_{filename}'
 
@@ -43,7 +44,7 @@ def save_raster(raster_array, save_path, filename):
 
 
 def load_config():
-    with open('predict_config.yml', 'r') as config:
+    with open('/code/clearcuts/predict_config.yml', 'r') as config:
         cfg = yaml.load(config, Loader=yaml.SafeLoader)
 
     models = cfg['models']

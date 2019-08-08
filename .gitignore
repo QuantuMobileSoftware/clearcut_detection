@@ -62,3 +62,6 @@ docs/_build/
 
 # PyBuilder
 target/
+clearcut_detection_backend/static/
+
+clearcut_detection_backend/clearcuts/migrations/
