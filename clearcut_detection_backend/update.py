@@ -23,9 +23,9 @@ def download_tile(data_dir):
 def process_tile(data_dir):
     for file in os.listdir(data_dir):
         if file.endswith('.tif'):
-            path = join('..', data_dir, file)
-            result_paths = raster_prediction(path)[0]
-            os.remove(join(data_dir, file))
+            tiff_path = join(data_dir, file)
+            result_paths = raster_prediction(tiff_path)[0]
+            # os.remove(tiff_path)
 
             return result_paths["polygons"], result_paths["picture"]
 
@@ -56,5 +56,5 @@ def update_db(data_dir):
 
 
 if __name__ == '__main__':
-    DATA_DIR = 'data'
+    DATA_DIR = '/code/data'
     update_db(DATA_DIR)
