@@ -7,6 +7,7 @@ geopandas==0.5.1
 imageio==2.5.0
 invoke==1.2.0
 numpy==1.16.4
+opencv-python==4.1.0.25
 pandas==0.24.2
 Pillow==6.1.0
 PyYAML==5.1.2
