@@ -18,17 +18,12 @@ def convert_geodataframe_to_geospolygons(dataframe):
         except (TypeError, ValueError) as exc:
             print(exc)
             continue
-
-        if geometry.geom_type != 'Polygon':
-            print('not polygon')
-            continue
-        else:
-            geometries.append(geometry)
+        geometries.append(geometry)
     return geometries
 
 
-def save_clearcut(poly, avg_area, detection_date, area_in_meters, zone):
-    if poly.area > avg_area:
+def save_clearcut(poly, avg_area, detection_date, area_in_meters, zone, area_threshold=0.2):
+    if area_in_meters > avg_area * area_threshold and poly.geom_type == 'Polygon':
         clearcut = Clearcut(
             image_date=detection_date, mpoly=poly, area=area_in_meters, zone=zone,
             centroid=poly.centroid
@@ -38,11 +33,11 @@ def save_clearcut(poly, avg_area, detection_date, area_in_meters, zone):
 
 def save(poly_path, init_db=False):
     predicted_clearcuts = gp.read_file(poly_path)
+    area_geodataframe = predicted_clearcuts['geometry'].area
     predicted_clearcuts = predicted_clearcuts.buffer(0).to_crs({'init': 'epsg:4326'})
     geodataframe = gp.GeoDataFrame(geometry=predicted_clearcuts)
-    area_geodataframe = geodataframe.to_crs({'init': 'epsg:3827'})['geometry'].area
     geospolygons = convert_geodataframe_to_geospolygons(geodataframe)
-    avg_area = np.mean([poly.area for poly in geospolygons])
+    avg_area = np.mean(area_geodataframe)
 
     if init_db:
         date_part = poly_path.split('_')[4]
@@ -52,10 +47,10 @@ def save(poly_path, init_db=False):
         detection_date = date.today()
 
     if Clearcut.objects.all().count() == 0:
-        first_zone = Zone()
-        first_zone.save()
         for idx, geopoly in enumerate(geospolygons):
-            save_clearcut(geopoly, avg_area, detection_date, area_geodataframe[idx], first_zone)
+            new_zone = Zone()
+            new_zone.save()
+            save_clearcut(geopoly, avg_area, detection_date, area_geodataframe[idx], new_zone)
     else:
         for idx, geopoly in enumerate(geospolygons):
             intersecting_polys = Clearcut.objects.filter(centroid__intersects=geopoly)
