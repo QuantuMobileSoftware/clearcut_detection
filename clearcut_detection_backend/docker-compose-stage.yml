@@ -17,8 +17,6 @@ services:
     volumes:
       - ./frontend:/frontend
     working_dir: /frontend
-    ports:
-      - "3000:3000"
     command: /bin/bash -c "npm install && npm run-script start"
   
   django:
