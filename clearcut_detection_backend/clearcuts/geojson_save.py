@@ -18,17 +18,12 @@ def convert_geodataframe_to_geospolygons(dataframe):
         except (TypeError, ValueError) as exc:
             print(exc)
             continue
-
-        if geometry.geom_type != 'Polygon':
-            print(geometry.geom_type)
-            continue
-        else:
-            geometries.append(geometry)
+        geometries.append(geometry)
     return geometries
 
 
 def save_clearcut(poly, avg_area, detection_date, area_in_meters, zone, area_threshold=0.2):
-    if area_in_meters > avg_area * area_threshold:
+    if area_in_meters > avg_area * area_threshold and poly.geom_type == 'Polygon':
         clearcut = Clearcut(
             image_date=detection_date, mpoly=poly, area=area_in_meters, zone=zone,
             centroid=poly.centroid
