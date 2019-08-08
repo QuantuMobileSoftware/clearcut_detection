@@ -3,9 +3,9 @@ models:
     network: fpn50
     channels:
       - rgb
-    weights: ../../../models/fpn50_new_markup_320_rnd_crop.pth
+    weights: /code/clearcuts/fpn50_new_markup_320_rnd_crop.pth
 
 prediction:
-  save_path: ../data
+  save_path: /code/data
   threshold: 0.3
   input_size: 224
