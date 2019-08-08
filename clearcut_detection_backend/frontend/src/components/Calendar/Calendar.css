@@ -1,0 +1,20 @@
+.calendar_wrapper {
+  position: absolute;
+  left: 15px;
+  top: 15px;
+  background: #fff;
+  padding: 15px;
+  color: #111;
+  border-radius: 3px;
+}
+.calendar_inner {
+  display: flex;
+  align-items: center;
+}
+.calendar_icon {
+  margin-right: 15px;
+}
+.DateInput_input__disabled {
+  cursor: not-allowed;
+  font-style: normal;
+}
