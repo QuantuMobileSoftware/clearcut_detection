@@ -24,7 +24,7 @@ schema_view = get_swagger_view(title='Clearcut detection API')
 
 urlpatterns = [
     path('api/swagger', schema_view),
-    path('api/clearcuts_info/', views.clearcuts_info),
+    path('api/clearcuts_info/<start_date>/<end_date>', views.clearcuts_info),
     path('api/clearcut_area/<int:id>', views.clearcut_area),
     path('api/clearcut_area_chart/<int:id>/<start_date>/<end_date>', views.clearcut_area_chart),
     path('admin/', admin.site.urls),
