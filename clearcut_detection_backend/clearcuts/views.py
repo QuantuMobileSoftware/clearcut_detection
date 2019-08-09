@@ -19,14 +19,16 @@ def clearcuts_info(request, start_date, end_date):
     """
     if Clearcut.objects.all().count() == 0:
         return HttpResponse(status=404)
-    latest_clearcut = Clearcut.objects.filter(image_date__range=[start_date, end_date]).latest('image_date')
+    date_filtered_clearcuts = Clearcut.objects.filter(image_date__range=[start_date, end_date])
+    if date_filtered_clearcuts.count() == 0:
+        return HttpResponse(status=404)
+    latest_clearcut = date_filtered_clearcuts.latest('image_date')
     clearcuts = Clearcut.objects.filter(image_date=latest_clearcut.image_date)
+
     data = serialize('geojson', clearcuts,
                      geometry_field='mpoly',
                      fields=('image_date', 'pk'))
-
     geojson_dict = json.loads(data)
-
     for feature in geojson_dict["features"]:
         feature["properties"]["color"] = random.randint(0, 2)
     response = JsonResponse(json.dumps(geojson_dict), safe=False)
