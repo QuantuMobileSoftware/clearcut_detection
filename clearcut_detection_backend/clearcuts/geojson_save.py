@@ -22,8 +22,11 @@ def convert_geodataframe_to_geospolygons(dataframe):
     return geometries
 
 
-def save_clearcut(poly, avg_area, detection_date, area_in_meters, zone, area_threshold=0.2):
+def save_clearcut(poly, avg_area, detection_date, area_in_meters, zone=None, create_new_zone=False, area_threshold=0.2):
     if area_in_meters > avg_area * area_threshold and poly.geom_type == 'Polygon':
+        if create_new_zone:
+            zone = Zone()
+            zone.save()
         clearcut = Clearcut(
             image_date=detection_date, mpoly=poly, area=area_in_meters, zone=zone,
             centroid=poly.centroid
@@ -48,9 +51,7 @@ def save(poly_path, init_db=False):
 
     if Clearcut.objects.all().count() == 0:
         for idx, geopoly in enumerate(geospolygons):
-            new_zone = Zone()
-            new_zone.save()
-            save_clearcut(geopoly, avg_area, detection_date, area_geodataframe[idx], new_zone)
+            save_clearcut(geopoly, avg_area, detection_date, area_geodataframe[idx], create_new_zone=True)
     else:
         for idx, geopoly in enumerate(geospolygons):
             intersecting_polys = Clearcut.objects.filter(centroid__intersects=geopoly)
@@ -60,10 +61,8 @@ def save(poly_path, init_db=False):
                 areas = [poly.mpoly.intersection(geopoly).area for poly in polys]
                 max_intersection_area = np.argmax(areas)
                 save_clearcut(geopoly, avg_area, detection_date, area_geodataframe[idx],
-                              polys[max_intersection_area].zone)
+                              zone=polys[max_intersection_area].zone)
             else:
-                new_zone = Zone()
-                new_zone.save()
-                save_clearcut(geopoly, avg_area, detection_date, area_geodataframe[idx], new_zone)
+                save_clearcut(geopoly, avg_area, detection_date, area_geodataframe[idx], create_new_zone=True)
 
     print(f'{str(detection_date)} finished')
