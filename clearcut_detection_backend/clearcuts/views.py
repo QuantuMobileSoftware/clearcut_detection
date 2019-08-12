@@ -1,4 +1,5 @@
 import json
+import re
 
 from django.db.models import Max, Subquery, Sum, Min, F, OuterRef
 from django.core.exceptions import ObjectDoesNotExist
@@ -16,6 +17,9 @@ def clearcuts_info(request, start_date, end_date):
     Returns geojson with clearcuts, where each feature in geojson has pk and color property based on polygon
     change during start_date - end_date period.
     """
+    pattern = "[0-9]{4}-[0-9]{2}-[0-9]{2}"
+    if not re.match(pattern, start_date) or not re.match(pattern, end_date):
+        return HttpResponse(status=400)
     CHANGED = 0
     UNCHANGED = 1
     NO_DATA = 2
@@ -114,6 +118,9 @@ def clearcut_area_chart(request, id, start_date, end_date):
     Returns an array of dictionaries with clearcut date and area during chosen period.
     Values are based on clearcuts from the same zone as chosen polygon.
     """
+    pattern = "[0-9]{4}-[0-9]{2}-[0-9]{2}"
+    if not re.match(pattern, start_date) or not re.match(pattern, end_date):
+        return HttpResponse(status=400)
     try:
         clearcut = Clearcut.objects.all().get(pk=id)
         zone_clearcuts = Clearcut.objects.filter(zone=clearcut.zone).filter(
