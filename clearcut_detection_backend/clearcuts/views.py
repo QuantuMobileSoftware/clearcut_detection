@@ -1,8 +1,7 @@
 import json
 
-from django.db.models import Max, Subquery, Count, Sum, Min, F, Q, OuterRef
+from django.db.models import Max, Subquery, Sum, Min, F, OuterRef
 from django.core.exceptions import ObjectDoesNotExist
-from django.core.serializers import serialize
 from django.http import JsonResponse, HttpResponse
 from rest_framework.decorators import api_view, parser_classes
 from rest_framework.parsers import JSONParser
@@ -43,7 +42,7 @@ def clearcuts_info(request, start_date, end_date):
             .filter(max_date=F('min_date'))
 
     ordered_clearcuts = Clearcut.objects.filter(zone=OuterRef('pk')).order_by('-image_date', '-area')
-    newest_zone_clearcuts = Zone.objects\
+    newest_zone_clearcuts = Zone.objects \
         .annotate(newest_clearcut_date=Subquery(ordered_clearcuts.values('image_date')[:1])) \
         .annotate(newest_clearcut_poly=Subquery(ordered_clearcuts.values('mpoly')[:1])) \
         .annotate(newest_clearcut_pk=Subquery(ordered_clearcuts.values('pk')[:1])) \
