@@ -4,12 +4,23 @@ import imageio
 import numpy as np
 import re
 
-from clearcuts.predict_raster import predict_raster, polygonize, save_polygons
+from flask import Flask, abort, request, jsonify
+from model.predict_raster import predict_raster, polygonize, save_polygons
 from os.path import join
 
+app = Flask(__name__)
 
-def raster_prediction(image_path):
-    filename = re.split(r'[./]', image_path)[-2]
+
+@app.route('/raster_prediction', methods=['POST'])
+def raster_prediction():
+    data = request.get_json()
+    image_path = data['image_path']
+    if len(image_path) == 0:
+        abort(400)
+    if '.' in image_path:
+        filename = re.split(r'[./]', image_path)[-2]
+    else:
+        abort(400)
     models, save_path, threshold, input_size = load_config()
     predicted_directory_name = 'predicted_' + filename
     result_directory_path = join(save_path, predicted_directory_name)
@@ -34,9 +45,8 @@ def raster_prediction(image_path):
             'picture': join(predicted_directory_name, predicted_filename + '.png'),
             'polygons': join(predicted_directory_name, predicted_filename + '.geojson')
         })
-    
-    return path_array
-    
+    return jsonify(path_array)
+
 
 def save_raster(raster_array, save_path, filename):
     save_path = join(save_path, filename)
@@ -44,12 +54,16 @@ def save_raster(raster_array, save_path, filename):
 
 
 def load_config():
-    with open('/code/clearcuts/predict_config.yml', 'r') as config:
+    with open('./predict_config.yml', 'r') as config:
         cfg = yaml.load(config, Loader=yaml.SafeLoader)
 
     models = cfg['models']
     save_path = cfg['prediction']['save_path']
     threshold = cfg['prediction']['threshold']
     input_size = cfg['prediction']['input_size']
-    
+
     return models, save_path, threshold, input_size
+
+
+if __name__ == "__main__":
+    app.run(debug=True, host='0.0.0.0', port=5000)

@@ -1,11 +1,13 @@
 models:
   deforestration_detection:
-    network: fpn50
+    network: unet50
     channels:
       - rgb
-    weights: /code/clearcuts/fpn50_new_markup_320_rnd_crop.pth
+      - ndvi
+      - b8
+    weights: /model/unet_v4.pth
 
 prediction:
-  save_path: /code/data
+  save_path: /data
   threshold: 0.3
   input_size: 224
