@@ -3,7 +3,7 @@ import shutil
 
 from os.path import join, splitext
 from clearcuts.geojson_save import save
-from clearcuts.predict import raster_prediction
+from model_call import raster_prediction
 from django.core.mail.message import EmailMessage
 
 
@@ -25,8 +25,6 @@ def process_tile(data_dir):
         if file.endswith('.tif'):
             tiff_path = join(data_dir, file)
             result_paths = raster_prediction(tiff_path)[0]
-            # os.remove(tiff_path)
-
             return result_paths["polygons"], result_paths["picture"]
 
 
@@ -38,7 +36,6 @@ def send_email(image_path):
     email.to = ["to@gmail.com", ]
 
     email.attach_file(image_path)
-
     email.send()
     os.remove(image_path)
 
@@ -50,11 +47,14 @@ def init_db(data_dir):
 
 
 def update_db(data_dir):
+    # TODO download of satellite imagery can be moved to model api in order to reduce amount of times that it is
+    # downloaded, but it also means that model instance will spend time downloading data(which is not correct behavior
+    # for model instance with gpu)
     download_tile(data_dir)
     poly_path, image_path = process_tile(data_dir)
     save(os.path.join(data_dir, poly_path), init_db=False)
 
 
 if __name__ == '__main__':
-    DATA_DIR = '/code/data'
+    DATA_DIR = '/data'
     update_db(DATA_DIR)

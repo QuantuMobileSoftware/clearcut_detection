@@ -5,7 +5,7 @@ import numpy as np
 import re
 
 from flask import Flask, abort, request, jsonify
-from model.predict_raster import predict_raster, polygonize, save_polygons
+from predict_raster import predict_raster, polygonize, save_polygons
 from os.path import join
 
 app = Flask(__name__)
@@ -54,7 +54,7 @@ def save_raster(raster_array, save_path, filename):
 
 
 def load_config():
-    with open('./predict_config.yml', 'r') as config:
+    with open('/model/predict_config.yml', 'r') as config:
         cfg = yaml.load(config, Loader=yaml.SafeLoader)
 
     models = cfg['models']
