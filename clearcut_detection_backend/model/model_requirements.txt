@@ -1,0 +1,11 @@
+catalyst==19.5
+Flask==1.1.1
+geopandas==0.5.1
+imageio==2.5.0
+rasterio==1.0.24
+segmentation-models-pytorch==0.0.1
+Shapely==1.6.4.post2
+torch==1.1.0
+torchvision==0.2.2
+tqdm==4.19.9
+PyYAML==5.1.1
