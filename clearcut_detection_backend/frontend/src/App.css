@@ -1,0 +1,9 @@
+.App {
+  background: #282c34;
+  height: 100%;
+  color: #fff;
+}
+.map_holder {
+  height: 100vh;
+  width: 100vw;
+}
