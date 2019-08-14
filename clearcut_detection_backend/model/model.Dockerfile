@@ -4,8 +4,8 @@ RUN mkdir /model
 
 WORKDIR /model
 
-COPY model_requirements.txt /model
+ADD requirements.txt /model
 
-RUN pip install -r model_requirements.txt
+RUN pip install -r requirements.txt
 
-COPY . /model/
+ADD . /model/

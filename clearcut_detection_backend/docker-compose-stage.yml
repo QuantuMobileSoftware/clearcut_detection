@@ -21,7 +21,7 @@ services:
     working_dir: /model
     ports:
       - "5000:5000"
-    command: /bin/bash -c "python app.py"
+    command: /bin/bash -c "pip install -r requirements.txt && python app.py"
 
   react:
     image: node:10.15.0
