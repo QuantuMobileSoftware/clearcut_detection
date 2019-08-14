@@ -1,0 +1,4 @@
+model-api:
+  host: "model"
+  port: 5000
+  endpoint: "raster_prediction"

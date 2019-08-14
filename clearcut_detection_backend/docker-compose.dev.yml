@@ -22,6 +22,18 @@ services:
       - django
     command: /bin/bash -c "npm install && npm run-script start"
 
+  model:
+    build:
+      context: ./model
+      dockerfile: model.Dockerfile
+    volumes:
+      - ./model/:/model
+      - ./data/:/data
+    working_dir: /model
+    ports:
+      - "5000:5000"
+    command: /bin/bash -c "pip install -r requirements.txt && python app.py"
+
   django:
     build:
       context: ./
@@ -30,6 +42,7 @@ services:
       - DJANGO_SETTINGS_MODULE=clearcut_detection_backend.settings
     volumes:
       - ./:/code
+      - ./data/:/data
     working_dir: /code
     depends_on:
       - db
@@ -52,3 +65,6 @@ services:
       - 443:443
     volumes:
       - ./nginx.conf:/etc/nginx/conf.d/default.conf
+
+volumes:
+  data:
