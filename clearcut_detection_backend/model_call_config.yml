@@ -1,4 +1,4 @@
 model-api:
-  url: "http://192.168.1.201"
+  host: "model"
   port: 5000
-  endpoint: "/raster_prediction"
+  endpoint: "raster_prediction"
