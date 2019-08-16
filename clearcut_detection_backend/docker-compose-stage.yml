@@ -53,17 +53,12 @@ services:
     image: nginx:1.15.8
     depends_on:
       - django
-    extra_hosts:
-      - "react:127.0.0.1"
-    expose:
-      - "9000"
+    ports:
+      - "8080:80"
     environment:
       - VIRTUAL_HOST=clearcut.quantumobile.com
-      - VIRTUAL_PORT=9000
+      - VIRTUAL_PORT=8080
       - LETSENCRYPT_HOST=clearcut.quantumobile.com
       - LETSENCRYPT_EMAIL=i.lukinov@quantumobile.com
-    ports:
-      - 80:80
-      - 443:443
     volumes:
       - ./nginx.conf:/etc/nginx/conf.d/default.conf
