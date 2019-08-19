@@ -32,7 +32,7 @@ services:
       - "3000:3000"
     depends_on:
       - django
-    command: /bin/bash -c "npm install && npm run-script start"
+    command: /bin/bash -c "npm install && npm run-script build"
 
   django:
     build:
@@ -62,3 +62,4 @@ services:
       - LETSENCRYPT_EMAIL=i.lukinov@quantumobile.com
     volumes:
       - ./nginx.conf:/etc/nginx/conf.d/default.conf
+      - ./frontend/build:/frontend/build
