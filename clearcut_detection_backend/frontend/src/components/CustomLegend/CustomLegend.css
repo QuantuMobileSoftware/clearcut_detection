@@ -1,0 +1,40 @@
+.custom-legend {
+  background: #fff;
+  border-radius: 3px;
+  color: #000;
+  opacity: 0.8;
+  font-size: 14px;
+  padding: 10px;
+  position: absolute;
+  bottom: 40px;
+  left: 15px;
+}
+
+.custom-legend-item {
+  display: flex;
+  align-items: center;
+}
+
+.square {
+  float: left;
+  width: 20px;
+  height: 20px;
+  margin: 5px;
+  border: 1px solid rgba(0, 0, 0, .2);
+}
+
+.square.grey {
+  background: #bebebe;
+}
+
+.square.red {
+  background: red;
+}
+
+.square.yellow {
+  background: yellow;
+}
+
+.square.white {
+  background: white;
+}
