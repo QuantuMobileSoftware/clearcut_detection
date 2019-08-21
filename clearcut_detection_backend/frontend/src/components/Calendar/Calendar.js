@@ -1,16 +1,14 @@
-import React, { PureComponent } from "react";
-import "react-dates/initialize";
-import "react-dates/lib/css/_datepicker.css";
-import moment from "moment";
-import { DateRangePicker, isInclusivelyAfterDay } from "react-dates";
-import "./Calendar.css";
+import React, { PureComponent } from 'react';
+import 'react-dates/initialize';
+import 'react-dates/lib/css/_datepicker.css';
+import moment from 'moment';
+import { DateRangePicker, isInclusivelyAfterDay } from 'react-dates';
+import './Calendar.css';
+
 export default class Calendar extends PureComponent {
-  state = {
-    endDate: moment(),
-    focusedInput: null
-  };
   render() {
-    console.log(this.state);
+    const { startDate, endDate, displayFormat = 'DD MMM YYYY', focusedInput, onDatesChange, onFocusChange } = this.props;
+
     return (
       <div className="calendar_wrapper">
         <div className="calendar_inner">
@@ -34,20 +32,18 @@ export default class Calendar extends PureComponent {
           </div>
           <div className="calendar_inputholder">
             <DateRangePicker
-              startDate={this.state.startDate} // momentPropTypes.momentObj or null,
+              startDate={startDate}
               startDateId="startDate"
-              endDate={this.state.endDate}
+              endDate={endDate}
               endDateId="endDate"
-              disabled={"endDate"}
-              displayFormat="DD MMM YYYY"
+              displayFormat={displayFormat}
+              minimumNights={0}
               isOutsideRange={day =>
-                isInclusivelyAfterDay(day, moment().add(1, "days"))
+                isInclusivelyAfterDay(day, moment.utc().add(1, 'days'))
               }
-              onDatesChange={({ startDate, endDate }) =>
-                this.setState({ startDate, endDate })
-              } // PropTypes.func.isRequired,
-              focusedInput={this.state.focusedInput} // PropTypes.oneOf([START_DATE, END_DATE]) or null,
-              onFocusChange={focusedInput => this.setState({ focusedInput })} // PropTypes.func.isRequired,
+              onDatesChange={onDatesChange}
+              focusedInput={focusedInput}
+              onFocusChange={onFocusChange}
             />
           </div>
         </div>
