@@ -9,7 +9,7 @@ import CustomLegend from './components/CustomLegend/CustomLegend';
 
 import api from './utils/api';
 import { URL } from './config/url';
-import { DATE_FORMAT, CUSTOM_LEGEND_DATA } from './config';
+import { DATE_FORMAT, CUSTOM_LEGEND_DATA, CHART_COLORS } from './config';
 
 class App extends Component {
   static fetchData(startDate, endDate) {
@@ -24,10 +24,22 @@ class App extends Component {
       .then(res => res.ok ? res.json() : []);
   }
 
+  static prepareActivePolygonData(data) {
+    return data.map((item, i) => {
+      const INDEX = i % 3;
+
+      return {
+        name: item.image_date,
+        y: item.zone_area,
+        color: CHART_COLORS[INDEX]
+      };
+    });
+  }
+
   constructor(props) {
     super(props);
     this.state = {
-      startDate: moment.utc().subtract(60, 'days'),
+      startDate: moment.utc().subtract(120, 'days'),
       endDate: moment.utc(),
       data: null,
       activePolygonData: [],
@@ -72,7 +84,7 @@ class App extends Component {
       this.setState({ loading: true });
       App.fetchPolygonInfo(id, startDate.format(DATE_FORMAT.default), endDate.format(DATE_FORMAT.default))
          .then(data => this.setState({
-           activePolygonData: data,
+           activePolygonData: App.prepareActivePolygonData(data),
            loading: false
          }))
          .catch(err => console.log(err));
@@ -114,7 +126,7 @@ class App extends Component {
         .then(([allData, polygonInfo]) => {
           this.setState({
             data: allData,
-            activePolygonData: polygonInfo,
+            activePolygonData: App.prepareActivePolygonData(polygonInfo),
             loading: false,
             startDate,
             endDate
