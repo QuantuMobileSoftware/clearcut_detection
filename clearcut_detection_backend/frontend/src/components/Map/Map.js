@@ -3,8 +3,10 @@ import ReactMapGL, { Popup } from 'react-map-gl';
 import Highcharts from 'highcharts';
 import NoDataToDisplay from 'highcharts/modules/no-data-to-display';
 import HighchartsReact from 'highcharts-react-official';
+import darkUnica from "highcharts/themes/dark-unica";
 
 NoDataToDisplay(Highcharts);
+darkUnica(Highcharts);
 
 export default class Map extends Component {
   state = {
@@ -96,33 +98,47 @@ export default class Map extends Component {
 
   // Need a refactor
   _renderTooltip = () => {
-    const { activeItem, position, activePolygonData, onTooltipClose } = this.props;
+    const { position, activePolygonData, onTooltipClose } = this.props;
     const options = {
       chart: {
         type: 'column',
         width: 400,
-        height: 300
+        height: 300,
+        backgroundColor: '#343434'
       },
       credits: {
         enabled: false
       },
       title: {
-        text: 'Cutting Area Changes'
+        text: 'Cutting Area Changes',
+        style: {
+          fontFamily: 'Arial, sans-serif'
+        }
       },
       yAxis: {
         title: {
-          text: 'Area, ㎡'
-        }
+          text: 'Area, ㎡',
+          style: {
+            fontSize: '16px',
+            fontFamily: 'Arial, sans-serif'
+          }
+        },
+        labels: {
+          style: {
+            fontSize: '12px',
+          }
+        },
       },
       xAxis: {
         type: 'category',
         labels: {
           rotation: -45,
           style: {
-            fontSize: '10px',
-            fontFamily: 'Verdana, sans-serif'
+            fontSize: '12px',
+            fontFamily: 'Arial, sans-serif'
           }
-        }
+        },
+        width: '90%'
       },
       legend: {
         enabled: false
@@ -130,34 +146,45 @@ export default class Map extends Component {
       lang: {
         noData: 'No Data'
       },
+      noData: {
+        style: {
+          fontFamily: 'Arial, sans-serif',
+          fontWeight: 'bold',
+          fontSize: '20px'
+        }
+      },
       tooltip: {
-        pointFormat: 'Area: <b>{point.y:.1f}</b> ㎡'
+        formatter: function() {
+          return `${this.key} <br>Area: <b>${this.y}</b>㎡`
+        },
+        style: {
+          fontFamily: 'Arial, sans-serif',
+          fontSize: '14px'
+        }
       },
       series: [{
-        data: activePolygonData.map(item => [item.image_date, item.zone_area]),
+        data: activePolygonData,
         dataLabels: {
           enabled: true,
-          format: '{point.y:.1f}'
+          format: '{point.y}'
         }
       }]
     };
 
     return (
-      activeItem && (
-        <Popup
-          {...position}
-          tipSize={10}
-          closeOnClick={false}
-          onClose={onTooltipClose}
-        >
-          <div className="tooltip">
-            <HighchartsReact
-              highcharts={Highcharts}
-              options={options}
-            />
-          </div>
-        </Popup>
-      )
+      <Popup
+        {...position}
+        tipSize={10}
+        closeOnClick={false}
+        onClose={onTooltipClose}
+      >
+        <div className="tooltip">
+          <HighchartsReact
+            highcharts={Highcharts}
+            options={options}
+          />
+        </div>
+      </Popup>
     );
   };
 
@@ -179,7 +206,7 @@ export default class Map extends Component {
   };
 
   render() {
-    const { viewport, onClick, onViewportChange } = this.props;
+    const { viewport, onClick, onViewportChange, activeItem } = this.props;
 
     return (
       <ReactMapGL
@@ -194,7 +221,7 @@ export default class Map extends Component {
         onClick={onClick}
         onHover={this._onHover}
       >
-        {this._renderTooltip()}
+        {activeItem && this._renderTooltip()}
       </ReactMapGL>
     );
   }

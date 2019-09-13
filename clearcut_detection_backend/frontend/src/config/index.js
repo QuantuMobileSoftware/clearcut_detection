@@ -7,3 +7,5 @@ export const CUSTOM_LEGEND_DATA = [
   { color: 'yellow', label: 'Data has not changed' },
   { color: 'grey', label: 'No data' }
 ];
+
+export const CHART_COLORS = ['#5E95D6', '#55BACF', '#DCA7D3'];
