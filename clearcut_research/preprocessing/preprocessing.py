@@ -1,16 +1,14 @@
 import os
-import sys
 import argparse
 import rasterio
 import numpy as np
 
 from os.path import join, basename
-from image_division import divide_into_pieces
-from binary_mask_converter import poly2mask, split_mask
-from poly_instances_to_mask import filter_poly
+from clearcut_research.preprocessing.image_division import divide_into_pieces
+from clearcut_research.preprocessing.binary_mask_converter import poly2mask, split_mask
+from clearcut_research.preprocessing.poly_instances_to_mask import filter_poly
 
-sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
-from clearcut_research.pytorch import get_folders
+from clearcut_research.pytorch.utils import get_folders
 
 
 def scale_img(img_file, min_value=0, max_value=255, output_type='Byte'):
@@ -167,6 +165,7 @@ def parse_args():
         default=0, help='Chance of passing blank tile'
     )
     return parser.parse_args()
+
 
 if __name__ == '__main__':
     args = parse_args()

@@ -1,6 +1,6 @@
 from catalyst.dl.callbacks.metrics import MetricCallback
 
-from metrics import multi_class_dice
+from clearcut_research.pytorch.metrics import multi_class_dice
 
 
 class MultiClassDiceCallback(MetricCallback):

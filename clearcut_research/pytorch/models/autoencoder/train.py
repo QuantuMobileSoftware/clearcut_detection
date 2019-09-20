@@ -8,8 +8,8 @@ from catalyst.dl.experiments import SupervisedRunner
 from catalyst.dl.utils import UtilsFactory
 from torch.nn import MSELoss
 
-from clearcut_research.pytorch import AutoencoderDataset
-from clearcut_research.pytorch import Autoencoder_Unet
+from clearcut_research.pytorch.models.autoencoder.autoencoder_dataset import AutoencoderDataset
+from clearcut_research.pytorch.models.autoencoder.model import Autoencoder_Unet
 
 
 def parse_args():

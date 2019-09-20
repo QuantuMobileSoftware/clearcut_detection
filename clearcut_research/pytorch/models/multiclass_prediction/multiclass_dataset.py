@@ -7,7 +7,7 @@ from albumentations import (
 )
 from albumentations.pytorch.transforms import ToTensor
 
-from dataset import Dataset
+from clearcut_research.pytorch.dataset import Dataset
 
 
 class MulticlassDataset(Dataset):

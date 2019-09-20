@@ -2,14 +2,15 @@ import argparse
 import os
 
 import torch
+import pandas as pd
+
 from catalyst.dl.metrics import dice
 from catalyst.dl.utils import UtilsFactory
 from torch.nn import functional as F
-import pandas as pd
 
-from clearcut_research.pytorch import SeasonDataset
-from clearcut_research.pytorch import BCE_Dice_Loss
-from clearcut_research.pytorch import get_model, set_random_seed
+from clearcut_research.pytorch.models.season_prediction.season_dataset import SeasonDataset
+from clearcut_research.pytorch.losses import BCE_Dice_Loss
+from clearcut_research.pytorch.models.utils import get_model, set_random_seed
 from statistics import mean
 
 

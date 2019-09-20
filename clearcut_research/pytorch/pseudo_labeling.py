@@ -11,10 +11,10 @@ from PIL import Image
 from catalyst.dl.utils import UtilsFactory
 from tqdm import tqdm
 
-from clearcut_research.pytorch import add_record
-from clearcut_research.pytorch import get_model
-from clearcut_research.pytorch import train
-from clearcut_research.pytorch import get_image_info, count_channels
+from clearcut_research.pytorch.dataset import add_record
+from clearcut_research.pytorch.models.utils import get_model
+from clearcut_research.pytorch.train import train
+from clearcut_research.pytorch.utils import get_image_info, count_channels
 
 
 def parse_args():

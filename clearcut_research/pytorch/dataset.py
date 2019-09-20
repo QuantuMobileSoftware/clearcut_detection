@@ -7,7 +7,7 @@ from albumentations import (
 from albumentations.pytorch.transforms import ToTensor
 from catalyst.dl.utils import UtilsFactory
 
-from clearcut_research.pytorch import get_filepath, read_tensor, filter_by_channels
+from clearcut_research.pytorch.utils import get_filepath, read_tensor, filter_by_channels
 
 
 def add_record(data_info, dataset_folder, name, position):

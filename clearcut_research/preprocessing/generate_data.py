@@ -1,5 +1,4 @@
 import os
-import sys
 import random
 import argparse
 import numpy as np
@@ -9,8 +8,7 @@ import geopandas as gp
 from PIL import Image
 from sklearn.model_selection import StratifiedShuffleSplit
 
-sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
-from clearcut_research.pytorch import get_filepath, read_tensor, get_folders, get_fullname
+from clearcut_research.pytorch.utils import get_filepath, read_tensor, get_folders, get_fullname
 
 
 def parse_args():

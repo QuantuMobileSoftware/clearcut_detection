@@ -2,15 +2,16 @@ import argparse
 import collections
 
 import torch
+import pandas as pd
+
 from catalyst.dl.callbacks import CheckpointCallback, InferCallback
 from catalyst.dl.experiments import SupervisedRunner
 from catalyst.dl.utils import UtilsFactory
-import pandas as pd
 
-from clearcut_research.pytorch import get_model, set_random_seed
-from clearcut_research.pytorch import MultiClass_Dice_Loss
-from clearcut_research.pytorch import MulticlassDataset
-from clearcut_research.pytorch import MultiClassDiceCallback
+from clearcut_research.pytorch.models.utils import get_model, set_random_seed
+from clearcut_research.pytorch.losses import MultiClass_Dice_Loss
+from clearcut_research.pytorch.models.multiclass_prediction.multiclass_dataset import MulticlassDataset
+from clearcut_research.pytorch.models.multiclass_prediction.multiclass_dice_callback import MultiClassDiceCallback
 
 
 def parse_args():

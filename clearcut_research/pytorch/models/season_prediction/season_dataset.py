@@ -8,7 +8,7 @@ from albumentations import (
 )
 from albumentations.pytorch.transforms import ToTensor
 
-from clearcut_research.pytorch import Dataset
+from clearcut_research.pytorch.dataset import Dataset
 
 
 class SeasonDataset(Dataset):
