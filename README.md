@@ -15,13 +15,15 @@ After the app has been launched, swagger for api can be used. Go to http://local
 
 ## Model Development Guide
 ### Data downloading
-1) Specify params in config file clearcut_detection_backend/peps_download_config.ini
+1) Create an account on https://peps.cnes.fr/rocket/#/home
 
-2) Download an archive `python clearcut_detection_backend/peps_download.py`
+2) Specify params in config file clearcut_detection_backend/peps_download_config.ini
 
-3) Unzip the archive
+3) Download an archive `python clearcut_detection_backend/peps_download.py`
 
-4) Merge bands `python clearcut_detection_backend/prepare_tif.py --data_folder … --save_path …`
+4) Unzip the archive
+
+5) Merge bands `python clearcut_detection_backend/prepare_tif.py --data_folder … --save_path …`
 
 ### Data preparation
 1) Create folder in clearcut_research where is stored data:
@@ -31,7 +33,7 @@ After the app has been launched, swagger for api can be used. Go to http://local
 
 2) The source folder contains folders for each image that you downloaded. In that folder you have to store TIFF images of channels (in our case RGB, B2 and B8) named as f”{image_folder}\_{channel}.tif”.
 
-3) If you have already merged bands to a single TIFF, you can just move it to input folder.
+3) If you have already merged bands to a single TIFF, you can just move it to input folder. But you have to create the folder (it can be empty) for this image in the source folder.
 
 4) The polygons folder contains markup that you apply to all images in input folder.
 
@@ -55,9 +57,10 @@ data
 ```
 5) Run preprocessing on this data. You can specify other params if it necessary (add --no_merge if you have already merged channels with prepare_tif.py script).
 ```
-python preprocess.py \
+python preprocessing.py \
  --polys_path ../data/polygons/markup.geojson \
- --tiff_path ../data/input
+ --tiff_path ../data/source
+ --save_path ../data/input
 ```
 
 #### Example of input folder structure after preprocessing:
