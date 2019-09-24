@@ -12,8 +12,9 @@ from datetime import date, datetime, timedelta
 from sentinelhub import WebFeatureService, BBox, CRS
 from shapely.geometry import shape
 
-CONFIG_FILE = 'peps_download_config.ini'
-INSTANCE_ID = 'f6e9655b-9afe-4eb5-a8b2-d37c52e3c7c0'
+config = ConfigParser(allow_no_value=True)
+config.read('peps_download_config.ini')
+
 
 def get_area_id(bbox, crs=CRS.WGS84):
     today = datetime.today()
@@ -26,7 +27,7 @@ def get_area_id(bbox, crs=CRS.WGS84):
     search_bbox = BBox(bbox=bbox, crs=crs)
     wfs_iterator = WebFeatureService(
         search_bbox, time_interval,
-        instance_id=INSTANCE_ID
+        instance_id=config.get('config', 'sentinel_id')
     )
     aoi = search_bbox.get_geometry()
     instances = list(wfs_iterator)
@@ -176,8 +177,6 @@ if len(sys.argv) == -1:
           sys.argv[0])
     sys.exit(-1)
 else:
-    config = ConfigParser(allow_no_value=True)
-    config.read(CONFIG_FILE)
     usage = "usage: %prog [options] "
     parser = OptionParser(usage=usage)
 

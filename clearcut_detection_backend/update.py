@@ -7,6 +7,9 @@ from model_call import raster_prediction
 from django.core.mail.message import EmailMessage
 
 
+DATA_DIR = 'data'
+
+
 def download_tile(data_dir):
     os.system('python peps_download.py')
     for file in os.listdir(data_dir):
@@ -56,5 +59,4 @@ def update_db(data_dir):
 
 
 if __name__ == '__main__':
-    DATA_DIR = '/data'
     update_db(DATA_DIR)
