@@ -8,6 +8,6 @@ models:
     weights: /model/unet_v4.pth
 
 prediction:
-  save_path: /data
+  save_path: data
   threshold: 0.3
   input_size: 224

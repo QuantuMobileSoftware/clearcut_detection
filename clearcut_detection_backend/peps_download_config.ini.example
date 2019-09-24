@@ -1,7 +1,8 @@
 [config]
 location
-auth=
-password=
+auth=##SET ME PLEASE## Login for https://peps.cnes.fr
+password=##SET ME PLEASE## Password for https://peps.cnes.fr
+sentinel_id=##SET ME PLEASE## sentinel-hub ID, you could obtain it here https://apps.sentinel-hub.com
 write_dir=data
 collection=S2ST
 product_type=S2MSI2A
