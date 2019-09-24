@@ -7,8 +7,17 @@
  ## Launch requirements:  
 To start a wev-service, do next:
 * `cd clearcut_detection_backend/`  
+* create peps_download_config.ini based on the peps_download_config.ini.example and setup secure params
+* put unet_v4.pt in to  clearcut_detection_backend/model/unet_v4.pt (trained model can be obtained from maintainers)
 * Run `docker-compose -f docker-compose.dev.yml up` in order to run docker for backend and frontend development.  
 * Run `docker-compose -f docker-compose-stage.yml up` for deployment.
+
+## Credential setup
+
+This project needs several secure credentials, for peps.cnes.fr and sentinel-hub. 
+For correct setup, you need to create peps_download_config.ini 
+(it could be done by example peps_download_config.ini.example) and feel auth, 
+password and sentinel_id parameters. 
 
 ## Swagger:  
 After the app has been launched, swagger for api can be used. Go to http://localhost/api/swagger to access swagger with full description of api endpoints.
