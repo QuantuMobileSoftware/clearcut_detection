@@ -3,31 +3,36 @@ import fiona
 import shutil
 import imageio
 import argparse
-import pandas as pd
-import rasterio as rs
-import geopandas as gp
+import rasterio
 
 from tqdm import tqdm
 from random import random
-from rasterio import features
-from geopandas import GeoSeries
+from pandas import read_csv
 from itertools import combinations
+from rasterio import features
 from shapely.geometry import MultiPolygon
+from geopandas import GeoSeries, read_file, overlay
 
 
-def filter_poly(
-    poly_pieces_path, markup_path,
+def markup_to_separate_polygons(
+    poly_pieces_path, markup_path, save_path,
     pieces_info_path, original_image_path,
     image_pieces_path, mask_pieces_path,
     pxl_size_threshold, pass_chance
 ):
-    original_image = rs.open(original_image_path)
-    geojson_markup = gp.read_file(markup_path)
+    if not os.path.exists(save_path):
+        os.makedirs(save_path)
+        print("Output directory created.")
+
+    original_image = rasterio.open(original_image_path)
+    geojson_markup = read_file(markup_path)
     geojson_markup = geojson_markup.to_crs(original_image.crs)
 
-    pieces_info = pd.read_csv(pieces_info_path)
+    pieces_info = read_csv(pieces_info_path)
 
     for i in tqdm(range(len(pieces_info))):
+        width = pieces_info["width"][i]
+        height = pieces_info["height"][i]
         poly_piece_name = pieces_info['piece_geojson'][i]
         start_x = pieces_info["start_x"][i]
         start_y = pieces_info["start_y"][i]
@@ -36,11 +41,11 @@ def filter_poly(
         filename, _ = os.path.splitext(poly_piece_name)
 
         try:
-            poly_piece = gp.read_file(os.path.join(poly_pieces_path, poly_piece_name))
+            poly_piece = read_file(os.path.join(poly_pieces_path, poly_piece_name))
         except fiona.errors.DriverError:
             print('Polygon is not found.')
             remove_piece(
-                filename, poly_pieces_path,
+                filename, save_path, poly_pieces_path,
                 image_pieces_path, mask_pieces_path
             )
             continue
@@ -48,7 +53,10 @@ def filter_poly(
         if random() < pass_chance:
             continue
 
-        intersection = gp.overlay(geojson_markup, poly_piece, how='intersection')
+        if not os.path.exists(os.path.join(save_path, filename)):
+            os.makedirs(os.path.join(save_path, filename))
+
+        intersection = overlay(geojson_markup, poly_piece, how='intersection')
         adjacency_list = compose_adjacency_list(intersection['geometry'])
         components = get_components(intersection['geometry'], adjacency_list)
 
@@ -60,12 +68,37 @@ def filter_poly(
         
         if len(multi_polys) == 0 or (imageio.imread(png_file)).sum() < 255 * pxl_size_threshold:
             remove_piece(
-                filename, poly_pieces_path,
+                filename, save_path, poly_pieces_path,
                 image_pieces_path, mask_pieces_path
+            )
+            continue
+
+        gs = GeoSeries(multi_polys)
+        gs.crs = original_image.crs
+        piece_geojson_name = "{0}.geojson".format(filename)
+        gs.to_file(
+            "{}/{}/{}".format(save_path, filename, piece_geojson_name),
+            driver='GeoJSON'
+        )
+
+        original_transform = original_image.transform
+        for idx, component in enumerate(components):
+            mask = features.rasterize(
+                shapes=component,
+                out_shape=(width, height),
+                transform=[
+                    original_transform[0], original_transform[1], x,
+                    original_transform[3], original_transform[4], y
+                ]
+            )
+            imageio.imwrite(
+                "{}/{}/{}.png".format(save_path, filename, idx),
+                mask
             )
 
 
-def remove_piece(filename, poly_pieces_path, image_pieces_path, mask_pieces_path):
+def remove_piece(filename, save_path, poly_pieces_path, image_pieces_path, mask_pieces_path):
+    image_save_path = os.path.join(save_path, filename)
     geojson_file = os.path.join(poly_pieces_path, filename + '.geojson')
     tiff_file = os.path.join(image_pieces_path, filename + '.tiff')
     png_file = os.path.join(mask_pieces_path, filename + '.png')
@@ -76,6 +109,8 @@ def remove_piece(filename, poly_pieces_path, image_pieces_path, mask_pieces_path
         os.remove(tiff_file)
     if os.path.exists(png_file):
         os.remove(png_file)
+    if os.path.exists(image_save_path):
+        shutil.rmtree(image_save_path)
 
 
 def compose_adjacency_list(polys):
@@ -151,6 +186,10 @@ def parse_args():
         '--pass_chance', '-pc', dest='pass_chance', type=float,
         default=0, help='Chance of passing blank tile'
     )
+    parser.add_argument(
+        '--save_path', '-sp', dest='save_path',
+        required=True, help='Path to the directory where separate polygons will be stored'
+    )
     return parser.parse_args()
 
 
@@ -158,7 +197,8 @@ if __name__ == "__main__":
     args = parse_args()
     markup_to_separate_polygons(
         args.geojson_pieces, args.geojson_markup,
-        args.pieces_info_path, args.original_image,
-        args.image_pieces_path, args.mask_pieces_path,
-        args.pxl_size_threshold
+        args.save_path, args.pieces_info_path,
+        args.original_image, args.image_pieces_path,
+        args.mask_pieces_path, args.pxl_size_threshold,
+        args.pass_chance
     )

@@ -102,9 +102,10 @@ def preprocess(
 
         geojson_polygons = os.path.join(data_path, "geojson_polygons")
         instance_masks_path = os.path.join(data_path, "instance_masks")
-        filter_poly(
+        markup_to_separate_polygons(
             poly_pieces_path=geojson_polygons, markup_path=polys_path,
-            pieces_info_path=pieces_info, original_image_path=tiff_file,
+            save_path=instance_masks_path, pieces_info_path=pieces_info,
+            original_image_path=tiff_file,
             image_pieces_path=os.path.join(data_path, 'images'),
             mask_pieces_path=pieces_path, 
             pxl_size_threshold=pxl_size_threshold,
