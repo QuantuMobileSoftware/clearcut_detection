@@ -15,13 +15,15 @@ After the app has been launched, swagger for api can be used. Go to http://local
 
 ## Model Development Guide
 ### Data downloading
-1) Specify params in config file clearcut_detection_backend/peps_download_config.ini
+1) Create an account in https://peps.cnes.fr/rocket/#/home
 
-2) Download an archive `python clearcut_detection_backend/peps_download.py`
+2) Specify params in config file clearcut_detection_backend/peps_download_config.ini
 
-3) Unzip the archive
+3) Download an archive `python clearcut_detection_backend/peps_download.py`
 
-4) Merge bands `python clearcut_detection_backend/prepare_tif.py --data_folder … --save_path …`
+4) Unzip the archive
+
+5) Merge bands `python clearcut_detection_backend/prepare_tif.py --data_folder … --save_path …`
 
 ### Data preparation
 1) Create folder in clearcut_research where is stored data:
