@@ -15,7 +15,7 @@ After the app has been launched, swagger for api can be used. Go to http://local
 
 ## Model Development Guide
 ### Data downloading
-1) Create an account in https://peps.cnes.fr/rocket/#/home
+1) Create an account on https://peps.cnes.fr/rocket/#/home
 
 2) Specify params in config file clearcut_detection_backend/peps_download_config.ini
 
