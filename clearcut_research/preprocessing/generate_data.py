@@ -8,12 +8,7 @@ import geopandas as gp
 from PIL import Image
 from sklearn.model_selection import StratifiedShuffleSplit
 
-<<<<<<< HEAD
 from clearcut_research.pytorch.utils import get_filepath, read_tensor, get_folders, get_fullname
-=======
-sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
-from pytorch.utils import get_filepath, read_tensor, get_folders, get_fullname
->>>>>>> 3f12895512896dc72c5904676d10d64f41656057
 
 
 def parse_args():
