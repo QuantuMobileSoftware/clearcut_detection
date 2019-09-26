@@ -76,7 +76,7 @@ class Dataset:
             RandomRotate90(),
             Flip(),
             ToTensor()
-        ])
+        ])  
 
         augmented = aug(image=images_array, mask=masks_array)
         augmented_images = augmented['image']
