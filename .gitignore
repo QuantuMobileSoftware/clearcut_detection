@@ -65,3 +65,4 @@ target/
 clearcut_detection_backend/static/
 
 clearcut_detection_backend/clearcuts/migrations/
+clearcut_research/pytorch/models/mask-rcnn

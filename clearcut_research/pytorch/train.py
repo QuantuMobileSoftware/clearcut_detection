@@ -21,7 +21,7 @@ def parse_args():
     parser = argparse.ArgumentParser()
     arg = parser.add_argument
 
-    arg('--batch_size', type=int, default=8)
+    arg('--batch_size', type=int, default=1)
     arg('--num_workers', type=int, default=4)
     arg('--epochs', '-e', type=int, default=100)
 
@@ -46,13 +46,14 @@ def set_random_seed(seed):
     cudnn.deterministic = True
     cudnn.benchmark = False
     torch.manual_seed(seed)
-    if cuda.is_available():
-        cuda.manual_seed_all(seed)
+    # if cuda.is_available():
+    #     cuda.manual_seed_all(seed)
 
     print('Random seed:', seed)
 
 
 def train(args):
+    os.system('export CUDA_VISIBLE_DEVICES=""')
     set_random_seed(42)
     model = get_model(args.network)
     print('Loading model')

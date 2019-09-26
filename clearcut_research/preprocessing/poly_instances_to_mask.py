@@ -15,10 +15,10 @@ from geopandas import GeoSeries, read_file, overlay
 
 
 def markup_to_separate_polygons(
-    poly_pieces_path, markup_path, save_path,
-    pieces_info_path, original_image_path,
-    image_pieces_path, mask_pieces_path,
-    pxl_size_threshold, pass_chance
+        poly_pieces_path, markup_path, save_path,
+        pieces_info_path, original_image_path,
+        image_pieces_path, mask_pieces_path,
+        pxl_size_threshold, pass_chance
 ):
     if not os.path.exists(save_path):
         os.makedirs(save_path)
@@ -65,7 +65,7 @@ def markup_to_separate_polygons(
             multi_polys.append(MultiPolygon(poly for poly in component))
 
         png_file = os.path.join(mask_pieces_path, filename + '.png')
-        
+
         if len(multi_polys) == 0 or (imageio.imread(png_file)).sum() < 255 * pxl_size_threshold:
             remove_piece(
                 filename, save_path, poly_pieces_path,

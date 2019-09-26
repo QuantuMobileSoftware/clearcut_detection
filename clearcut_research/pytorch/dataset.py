@@ -75,11 +75,6 @@ class Dataset:
         aug = Compose([
             RandomRotate90(),
             Flip(),
-            OneOf([
-                RandomSizedCrop(
-                    min_max_height=(int(self.image_size * 0.7), self.image_size),
-                    height=self.image_size, width=self.image_size)
-            ], p=0.4),
             ToTensor()
         ])
 

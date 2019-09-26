@@ -54,7 +54,7 @@ def parse_args():
         required=True, help='Path to downloaded images'
     )
     parser.add_argument(
-        '--save_path', '-s', dest='save_path', default='data',
+        '--save_path', '-s', dest='save_path', default='.',
         help='Path to directory where results will be stored'
     )
     return parser.parse_args()

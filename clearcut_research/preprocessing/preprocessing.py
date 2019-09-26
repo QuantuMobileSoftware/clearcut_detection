@@ -6,7 +6,7 @@ import numpy as np
 from os.path import join, basename
 from clearcut_research.preprocessing.image_division import divide_into_pieces
 from clearcut_research.preprocessing.binary_mask_converter import poly2mask, split_mask
-from clearcut_research.preprocessing.poly_instances_to_mask import filter_poly
+from clearcut_research.preprocessing.poly_instances_to_mask import markup_to_separate_polygons
 
 from clearcut_research.pytorch.utils import get_folders
 
@@ -19,7 +19,7 @@ def scale_img(img_file, min_value=0, max_value=255, output_type='Byte'):
         std_ = img.std()
         min_ = max(img.min(), mean_ - 2 * std_)
         max_ = min(img.max(), mean_ + 2 * std_)
-        
+
         os.system(
             f"gdal_translate -ot {output_type} \
             -scale {min_} {max_} {min_value} {max_value} \
@@ -52,7 +52,7 @@ def merge_bands(tiff_filepath, save_path, channels):
             break
 
     image_name = '_'.join(tiff_file.split('_')[:2])
-    image_path = os.path.join(save_path, f'{image_name}.tif') 
+    image_path = os.path.join(save_path, f'{image_name}.tif')
     file_list = []
 
     for i, channel in enumerate(channels):
@@ -83,12 +83,12 @@ def preprocess(
 
     for tiff_name in get_folders(tiff_path):
         tiff_filepath = os.path.join(tiff_path, tiff_name)
-        
+
         if no_merge:
             tiff_file = join(save_path, f'{tiff_name}.tif')
         else:
             tiff_file = merge_bands(tiff_filepath, save_path, channels)
-        
+
         data_path = os.path.join(save_path, basename(tiff_file[:-4]))
         divide_into_pieces(tiff_file, data_path, width, height)
 
@@ -107,7 +107,7 @@ def preprocess(
             save_path=instance_masks_path, pieces_info_path=pieces_info,
             original_image_path=tiff_file,
             image_pieces_path=os.path.join(data_path, 'images'),
-            mask_pieces_path=pieces_path, 
+            mask_pieces_path=pieces_path,
             pxl_size_threshold=pxl_size_threshold,
             pass_chance=pass_chance
         )
@@ -163,7 +163,7 @@ def parse_args():
     )
     parser.add_argument(
         '--pass_chance', '-pc', dest='pass_chance', type=float,
-        default=0, help='Chance of passing blank tile'
+        default=0.1, help='Chance of passing blank tile'
     )
     return parser.parse_args()
 

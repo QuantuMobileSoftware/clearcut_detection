@@ -68,7 +68,6 @@ def parse_args():
     )
     parser.add_argument(
         '--markup_path', '-mp', dest='markup_path',
-        required=True,
         help='Path to polygons'
     )
     parser.add_argument(
@@ -381,6 +380,7 @@ if __name__ == '__main__':
         save_split(val_df, 'val_df', args.save_path)
         save_split(test_df, 'test_df', args.save_path)
     elif args.split_function == 'geo_split':
+        assert args.markup_path is not None
         train_df, val_df, test_df = geo_split(
             val_threshold=args.val_threshold,
             val_bottom_threshold=args.val_bottom_threshold,
@@ -390,6 +390,7 @@ if __name__ == '__main__':
         save_split(val_df, 'val_df', args.save_path)
         save_split(test_df, 'test_df', args.save_path)
     elif args.split_function == 'fold_split':
+        assert args.markup_path is not None
         fold_split(
             args.data_path, args.markup_path,
             args.save_path, args.folds, args.test_threshold
