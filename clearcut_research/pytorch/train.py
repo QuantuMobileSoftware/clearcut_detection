@@ -46,8 +46,8 @@ def set_random_seed(seed):
     cudnn.deterministic = True
     cudnn.benchmark = False
     torch.manual_seed(seed)
-    # if cuda.is_available():
-    #     cuda.manual_seed_all(seed)
+    if cuda.is_available():
+        cuda.manual_seed_all(seed)
 
     print('Random seed:', seed)
 
