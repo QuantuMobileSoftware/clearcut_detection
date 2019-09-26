@@ -15,10 +15,17 @@ from geopandas import GeoSeries, read_file, overlay
 
 
 def markup_to_separate_polygons(
+<<<<<<< HEAD
         poly_pieces_path, markup_path, save_path,
         pieces_info_path, original_image_path,
         image_pieces_path, mask_pieces_path,
         pxl_size_threshold, pass_chance
+=======
+    poly_pieces_path, markup_path, save_path,
+    pieces_info_path, original_image_path,
+    image_pieces_path, mask_pieces_path,
+    pxl_size_threshold, pass_chance
+>>>>>>> 3f12895512896dc72c5904676d10d64f41656057
 ):
     if not os.path.exists(save_path):
         os.makedirs(save_path)
@@ -201,4 +208,8 @@ if __name__ == "__main__":
         args.original_image, args.image_pieces_path,
         args.mask_pieces_path, args.pxl_size_threshold,
         args.pass_chance
+<<<<<<< HEAD
     )
+=======
+    )
+>>>>>>> 3f12895512896dc72c5904676d10d64f41656057

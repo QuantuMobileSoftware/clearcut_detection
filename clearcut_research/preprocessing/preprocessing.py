@@ -4,11 +4,20 @@ import rasterio
 import numpy as np
 
 from os.path import join, basename
+<<<<<<< HEAD
 from clearcut_research.preprocessing.image_division import divide_into_pieces
 from clearcut_research.preprocessing.binary_mask_converter import poly2mask, split_mask
 from clearcut_research.preprocessing.poly_instances_to_mask import markup_to_separate_polygons
 
 from clearcut_research.pytorch.utils import get_folders
+=======
+from image_division import divide_into_pieces
+from binary_mask_converter import poly2mask, split_mask
+from poly_instances_to_mask import markup_to_separate_polygons
+
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+from pytorch.utils import get_folders
+>>>>>>> 3f12895512896dc72c5904676d10d64f41656057
 
 
 def scale_img(img_file, min_value=0, max_value=255, output_type='Byte'):
@@ -55,7 +64,7 @@ def merge_bands(tiff_filepath, save_path, channels):
     image_path = os.path.join(save_path, f'{image_name}.tif')
     file_list = []
 
-    for i, channel in enumerate(channels):
+    for channel in channels:
         img = os.path.join(tiff_filepath, '_'.join([image_name, channel]))
         if channel == 'rgb':
             file_list.append(f'{img}.tif')
