@@ -39,7 +39,7 @@ services:
       context: ./
       dockerfile: django.Dockerfile
     environment:
-      - DJANGO_SETTINGS_MODULE=clearcut_detection_backend.settings
+      - DJANGO_SETTINGS_MODULE=clearcut_detection_backend.prod_settings
     volumes:
       - ./:/code
     working_dir: /code

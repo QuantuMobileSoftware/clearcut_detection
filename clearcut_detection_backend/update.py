@@ -1,17 +1,21 @@
 import os
 import shutil
+import traceback
 
 from os.path import join, splitext
 from clearcuts.geojson_save import save
 from model_call import raster_prediction
 from django.core.mail.message import EmailMessage
+from django.conf import settings
 
 
 DATA_DIR = 'data'
 
 
 def download_tile(data_dir):
-    os.system('python peps_download.py')
+    # TODO(flying_pi): peps_download.py must be refactored and added main enterpoint.
+    # os.system('python peps_download.py')
+    import peps_download
     for file in os.listdir(data_dir):
         if file.endswith('.json'):
             os.remove(join(data_dir, file))
@@ -27,20 +31,9 @@ def process_tile(data_dir):
     for file in os.listdir(data_dir):
         if file.endswith('.tif'):
             tiff_path = join(data_dir, file)
+            a = 1/0
             result_paths = raster_prediction(tiff_path)[0]
             return result_paths["polygons"], result_paths["picture"]
-
-
-def send_email(image_path):
-    email = EmailMessage()
-    email.subject = "New clearcuts detected"
-    email.body = "hi"
-    email.from_email = "from@gmail.com"
-    email.to = ["to@gmail.com", ]
-
-    email.attach_file(image_path)
-    email.send()
-    os.remove(image_path)
 
 
 def init_db(data_dir):
@@ -59,4 +52,15 @@ def update_db(data_dir):
 
 
 if __name__ == '__main__':
-    update_db(DATA_DIR)
+    try:
+        update_db(DATA_DIR)
+    except Exception as e:
+        EmailMessage(
+            subject='Pep download issue',
+            body=(
+                f'Deamon can not download peps. Issue information listed bellow: '
+                f'\n\n{str(e)}\n\n {"".join(traceback.format_tb(e.__traceback__))}'
+            ),
+            from_email=settings.EMAIL_HOST_USER,
+            to=settings.EMAIL_ADMIN_MAILS
+        ).send()
