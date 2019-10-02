@@ -28,7 +28,7 @@ services:
       dockerfile: model.Dockerfile
     volumes:
       - ./model/:/model
-      - ./data/:/data
+      - ./data/:/model/data
     working_dir: /model
     ports:
       - "5000:5000"
@@ -42,7 +42,6 @@ services:
       - DJANGO_SETTINGS_MODULE=clearcut_detection_backend.settings
     volumes:
       - ./:/code
-      - ./data/:/data
     working_dir: /code
     depends_on:
       - db
