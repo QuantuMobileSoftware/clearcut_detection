@@ -3,8 +3,9 @@ import yaml
 import imageio
 import numpy as np
 import re
+import traceback
 
-from flask import Flask, abort, request, jsonify
+from flask import Flask, abort, request, jsonify, make_response
 from predict_raster import predict_raster, polygonize, save_polygons
 from os.path import join
 
@@ -14,38 +15,45 @@ app = Flask(__name__)
 @app.route('/raster_prediction', methods=['POST'])
 def raster_prediction():
     data = request.get_json()
-    image_path = data['image_path']
-    if len(image_path) == 0:
-        abort(400)
+    image_path = data.get('image_path', '')
+    if not image_path:
+        abort(make_response(jsonify(message="Invalid request payload. It must contains image_path."), 400))
     if '.' in image_path:
         filename = re.split(r'[./]', image_path)[-2]
     else:
-        abort(400)
-    models, save_path, threshold, input_size = load_config()
-    predicted_directory_name = 'predicted_' + filename
-    result_directory_path = join(save_path, predicted_directory_name)
-    os.makedirs(result_directory_path, exist_ok=True)
-    path_array = []
-    for model in models:
-        predicted_filename = f'predicted_{model}_{filename}'
+        abort(make_response(jsonify(message=f"Invalid image path ({image_path})"), 400))
+    try:
+        models, save_path, threshold, input_size = load_config()
+        predicted_directory_name = 'predicted_' + filename
+        result_directory_path = join(save_path, predicted_directory_name)
+        os.makedirs(result_directory_path, exist_ok=True)
+        path_array = []
+        for model in models:
+            predicted_filename = f'predicted_{model}_{filename}'
 
-        channels = models[model]['channels']
-        network = models[model]['network']
-        model_weights_path = models[model]['weights']
-        raster_array, meta = predict_raster(
-            image_path, channels,
-            network, model_weights_path, input_size=input_size
+            channels = models[model]['channels']
+            network = models[model]['network']
+            model_weights_path = models[model]['weights']
+            raster_array, meta = predict_raster(
+                image_path, channels,
+                network, model_weights_path, input_size=input_size
+            )
+            save_raster(raster_array, result_directory_path, predicted_filename)
+
+            polygons = polygonize(raster_array, meta, threshold)
+            save_polygons(polygons, meta, result_directory_path, predicted_filename)
+
+            path_array.append({
+                'picture': join(predicted_directory_name, predicted_filename + '.png'),
+                'polygons': join(predicted_directory_name, predicted_filename + '.geojson')
+            })
+        return jsonify(path_array)
+    except Exception as e:
+        return make_response(jsonify(
+            message=f'Model fail with next exception: '
+                    f'\n\n{str(e)}\n\n {"".join(traceback.format_tb(e.__traceback__))}'),
+            400
         )
-        save_raster(raster_array, result_directory_path, predicted_filename)
-
-        polygons = polygonize(raster_array, meta, threshold)
-        save_polygons(polygons, meta, result_directory_path, predicted_filename)
-
-        path_array.append({
-            'picture': join(predicted_directory_name, predicted_filename + '.png'),
-            'polygons': join(predicted_directory_name, predicted_filename + '.geojson')
-        })
-    return jsonify(path_array)
 
 
 def save_raster(raster_array, save_path, filename):
