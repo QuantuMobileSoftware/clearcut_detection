@@ -53,6 +53,9 @@ def update_db(data_dir):
 
 if __name__ == '__main__':
     try:
+        # TOOD(flyingpi): Remove or rewrite django stuff after moving it to separate service.
+        import django
+        django.setup()
         update_db(DATA_DIR)
     except Exception as e:
         EmailMessage(
