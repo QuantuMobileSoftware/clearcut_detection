@@ -1,9 +1,10 @@
-version: "2"
+version: "3"
 services:
   db:
     build:
       context: ./
       dockerfile: postgis.Dockerfile
+    image: clearcut_detection/database
     expose:
       - 5432
     env_file:
@@ -26,6 +27,7 @@ services:
     build:
       context: ./model
       dockerfile: model.Dockerfile
+    image: clearcut_detection/model
     volumes:
       - ./model/:/model
       - ./data/:/model/data
@@ -38,6 +40,7 @@ services:
     build:
       context: ./
       dockerfile: django.Dockerfile
+    image: clearcut_detection/backend
     environment:
       - DJANGO_SETTINGS_MODULE=clearcut_detection_backend.settings
     volumes:
