@@ -36,11 +36,26 @@ class App extends Component {
     });
   }
 
+  static parseDate() {
+    let search = window.location.search;
+    let params = new URLSearchParams(search);
+    let startDateParam = parseInt(params.get('startDate'));
+    let endDateParam = parseInt(params.get('endDate'));
+    return {
+      startDate:  moment.unix(startDateParam),
+      endDate:  moment.unix(endDateParam),
+      isDateSet: !isNaN(startDateParam && endDateParam)
+    }
+  }
+
   constructor(props) {
     super(props);
+
+    let {startDate, endDate, isDateSet} = App.parseDate();
+
     this.state = {
-      startDate: moment.utc().subtract(120, 'days'),
-      endDate: moment.utc(),
+      startDate: isDateSet ? startDate : moment.utc().subtract(120, 'days'),
+      endDate: isDateSet ? endDate : moment.utc(),
       data: null,
       activePolygonData: [],
       loading: false,
