@@ -1,0 +1,26 @@
+.sidebar {
+  position: fixed;
+  top: 0;
+  left: 0;
+  flex: 1 0 auto;
+  width: 337px;
+  background-color: inherit;
+  z-index: 100;
+  overflow-x: hidden;
+}
+
+.sidebar-header {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  box-shadow: 0px 4px 4px rgba(0, 0, 0, 0.5);
+  padding: 15px 33px 30px;
+}
+
+.sidebar-body {
+  padding: 0 33px;
+}
+
+.sidebar .switch {
+  margin-left: 30px;
+}
