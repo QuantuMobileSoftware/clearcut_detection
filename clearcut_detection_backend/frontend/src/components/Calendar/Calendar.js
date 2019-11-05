@@ -2,17 +2,43 @@ import React, { PureComponent } from 'react';
 import 'react-dates/initialize';
 import 'react-dates/lib/css/_datepicker.css';
 import moment from 'moment';
+import SidebarTitle from '../SidebarTitle';
 import { DateRangePicker, isInclusivelyAfterDay } from 'react-dates';
+
 import './Calendar.css';
 
 export default class Calendar extends PureComponent {
   render() {
-    const { startDate, endDate, displayFormat = 'DD MMM YYYY', focusedInput, onDatesChange, onFocusChange } = this.props;
+    const {
+      startDate,
+      endDate,
+      displayFormat = 'DD MMM YYYY',
+      focusedInput,
+      onDatesChange,
+      onFocusChange
+    } = this.props;
 
     return (
       <div className="calendar_wrapper">
+        <SidebarTitle>Set a period</SidebarTitle>
         <div className="calendar_inner">
-          <div className="calendar_icon">
+          <div className="calendar_inputholder">
+            <DateRangePicker
+              startDate={startDate}
+              startDateId="startDate"
+              endDate={endDate}
+              endDateId="endDate"
+              displayFormat={displayFormat}
+              minimumNights={0}
+              isOutsideRange={day =>
+                isInclusivelyAfterDay(day, moment.utc().add(1, 'days'))
+              }
+              onDatesChange={onDatesChange}
+              focusedInput={focusedInput}
+              onFocusChange={onFocusChange}
+            />
+          </div>
+          <div className={`calendar_icon${focusedInput ? ' is-focused' : ''}`}>
             <svg
               xmlns="http://www.w3.org/2000/svg"
               width="24"
@@ -29,22 +55,6 @@ export default class Calendar extends PureComponent {
               <line x1="8" y1="2" x2="8" y2="6" />
               <line x1="3" y1="10" x2="21" y2="10" />
             </svg>
-          </div>
-          <div className="calendar_inputholder">
-            <DateRangePicker
-              startDate={startDate}
-              startDateId="startDate"
-              endDate={endDate}
-              endDateId="endDate"
-              displayFormat={displayFormat}
-              minimumNights={0}
-              isOutsideRange={day =>
-                isInclusivelyAfterDay(day, moment.utc().add(1, 'days'))
-              }
-              onDatesChange={onDatesChange}
-              focusedInput={focusedInput}
-              onFocusChange={onFocusChange}
-            />
           </div>
         </div>
       </div>
