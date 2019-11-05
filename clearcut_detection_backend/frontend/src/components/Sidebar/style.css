@@ -6,7 +6,6 @@
   width: 337px;
   background-color: inherit;
   z-index: 100;
-  overflow-x: hidden;
 }
 
 .sidebar-header {
@@ -18,7 +17,21 @@
 }
 
 .sidebar-body {
+  height: 100vh;
+
   padding: 0 33px;
+}
+
+.sidebar .calendar_wrapper {
+  margin-top: 100px;
+}
+
+.sidebar .custom-legend {
+  margin-top: 50px;
+}
+
+.sidebar .menu {
+  margin-top: 50px;
 }
 
 .sidebar .switch {

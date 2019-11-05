@@ -8,7 +8,7 @@ import './style.css';
 
 class Sidebar extends Component {
   state = {
-    isOpened: false
+    isOpened: true
   };
 
   handleClick = () => this.setState({ isOpened: !this.state.isOpened });
