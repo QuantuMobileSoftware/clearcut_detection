@@ -1,0 +1,35 @@
+.about {
+  margin-top: 20px;
+}
+
+.about-description {
+  font-size: 14px;
+  font-weight: 400;
+  color: #fff;
+  max-width: 158px;
+  margin: 0 0 30px 0;
+  opacity: 0.8;
+}
+
+.about-author {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  background-color: #000;
+  position: relative;
+  left: -33px;
+  width: calc(100% + 66px);
+  padding-left: 33px;
+}
+
+.about-author .author-text {
+  font-size: 16px;
+  font-weight: 400;
+  color: #fff;
+  margin: 0;
+}
+
+.about-author .author-logo {
+  padding-top: 7px;
+  margin-left: 39px;
+}
