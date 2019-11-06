@@ -54,3 +54,6 @@
 .calendar_icon.is-focused svg {
   color: #202020;
 }
+
+@media only screen and (max-width: 768px) {
+}

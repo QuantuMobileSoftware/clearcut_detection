@@ -8,7 +8,7 @@ import './style.css';
 
 class Sidebar extends Component {
   state = {
-    isOpened: true
+    isOpened: false
   };
 
   handleClick = () => this.setState({ isOpened: !this.state.isOpened });
@@ -25,7 +25,11 @@ class Sidebar extends Component {
           </div>
           <Switch state={isOpened} handleClick={this.handleClick} />
         </header>
-        {isOpened && <div className="sidebar-body">{children}</div>}
+        {isOpened && (
+          <div className="sidebar-body">
+            <div className="sidebar-inner">{children}</div>
+          </div>
+        )}
       </aside>
     );
   }
