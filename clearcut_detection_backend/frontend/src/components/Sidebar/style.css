@@ -57,10 +57,7 @@
   }
 
   .sidebar-body {
-    /* overflow-y: auto; */
     padding: 98px 23px 30px;
-  }
-
-  .sidebar-inner {
+    overflow-y: auto;
   }
 }
