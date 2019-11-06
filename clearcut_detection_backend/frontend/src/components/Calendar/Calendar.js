@@ -1,14 +1,40 @@
-import React, { PureComponent } from 'react';
+import React, { Component } from 'react';
 import 'react-dates/initialize';
 import 'react-dates/lib/css/_datepicker.css';
 import moment from 'moment';
+import { debounce } from 'lodash';
 import SidebarTitle from '../SidebarTitle';
 import { DateRangePicker, isInclusivelyAfterDay } from 'react-dates';
 
 import './Calendar.css';
 
-export default class Calendar extends PureComponent {
+export default class Calendar extends Component {
+  state = {
+    daySize: null,
+    numberOfMonths: null
+  };
+
+  handleResize = () => this.changeCalendarSize();
+
+  changeCalendarSize = () => {
+    window.innerWidth < 768
+      ? this.setState({ numberOfMonths: 1, daySize: 32 })
+      : this.setState({ numberOfMonths: 2, daySize: 38 });
+  };
+
+  componentDidMount() {
+    this.changeCalendarSize();
+
+    window.addEventListener('resize', debounce(this.handleResize, 300));
+  }
+
+  componentWillUnmount() {
+    window.removeEventListener('resize', this.handleResize);
+  }
+
   render() {
+    const { numberOfMonths, daySize } = this.state;
+
     const {
       startDate,
       endDate,
@@ -24,6 +50,9 @@ export default class Calendar extends PureComponent {
         <div className="calendar_inner">
           <div className="calendar_inputholder">
             <DateRangePicker
+              hideKeyboardShortcutsPanel={true}
+              numberOfMonths={numberOfMonths}
+              daySize={daySize}
               startDate={startDate}
               startDateId="startDate"
               endDate={endDate}
