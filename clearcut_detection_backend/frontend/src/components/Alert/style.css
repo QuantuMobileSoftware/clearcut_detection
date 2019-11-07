@@ -1,0 +1,47 @@
+.Toastify__toast {
+  font-size: 14px;
+  min-height: 44px;
+  border-radius: 5px;
+  padding-left: 15px;
+  border: 2px solid #3f3f3f;
+  background-color: #202020;
+}
+
+.Toastify__toast--error {
+  border-color: #ea5a3a;
+}
+
+.Toastify__toast--success {
+  border-color: #32d888;
+}
+
+.Toastify__close-button {
+  color: #fff;
+}
+
+.alert-content {
+  display: flex;
+  align-items: center;
+}
+
+.alert-icon {
+  font-size: 26px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border: 2px solid #3f3f3f;
+  border-radius: 100%;
+  margin-right: 15px;
+}
+
+.Toastify__toast--error .alert-icon {
+  color: #ea5a3a;
+  border-color: #ea5a3a;
+}
+
+.Toastify__toast--success .alert-icon {
+  color: #32d888;
+  border-color: #32d888;
+}
