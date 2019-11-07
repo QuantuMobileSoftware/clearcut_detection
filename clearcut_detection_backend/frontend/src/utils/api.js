@@ -13,13 +13,10 @@ export default {
     const DATA = dataToQueryParams(body);
     const PREFIX = /\?/.test(path) ? '&' : '?';
 
-    const response = await fetch(
-      `http://localhost${path}${DATA ? `${PREFIX}${DATA}` : ''}`,
-      {
-        credentials: 'same-origin',
-        headers: HEADERS
-      }
-    );
+    const response = await fetch(`${path}${DATA ? `${PREFIX}${DATA}` : ''}`, {
+      credentials: 'same-origin',
+      headers: HEADERS
+    });
 
     if (response.status === 404) throw new Error('404');
 
