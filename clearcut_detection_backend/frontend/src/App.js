@@ -1,7 +1,10 @@
 import React, { Component } from 'react';
 import moment from 'moment';
+import { ToastContainer } from 'react-toastify';
 
+import 'react-toastify/dist/ReactToastify.css';
 import './App.css';
+
 import Sidebar from './components/Sidebar';
 import About from './components/About';
 import Calendar from './components/Calendar';
@@ -14,6 +17,7 @@ import api from './utils/api';
 import { URL } from './config/url';
 import { DATE_FORMAT, CUSTOM_LEGEND_DATA, CHART_COLORS } from './config';
 
+import { alertMessage } from './components/Alert';
 import links from './constants/links';
 
 class App extends Component {
@@ -82,12 +86,12 @@ class App extends Component {
         startDate.format(DATE_FORMAT.default),
         endDate.format(DATE_FORMAT.default)
       )
-        .then(data =>
-          this.setState({ data, loading: false, startDate, endDate })
-        )
-        .catch(err => {
+        .then(data => {
+          this.setState({ data, loading: false, startDate, endDate });
+        })
+        .catch(() => {
           //TODO fix 404 return []
-          alert(err);
+          alertMessage('Unable to load data', 'error');
           this.setState({ loading: false });
         });
     }
@@ -163,6 +167,10 @@ class App extends Component {
             startDate,
             endDate
           });
+        })
+        .catch(() => {
+          alertMessage('Unable to load data', 'error');
+          this.setState({ loading: false });
         });
     } else {
       this.setState({ startDate, endDate });
@@ -214,6 +222,7 @@ class App extends Component {
           />
         </div>
         {loading && <LoadingScreen />}
+        <ToastContainer />
       </div>
     );
   }
