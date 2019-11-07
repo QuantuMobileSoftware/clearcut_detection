@@ -19,8 +19,6 @@
 .sidebar-body {
   height: 100vh;
   padding: 0 33px;
-  overflow-y: auto;
-  
 }
 
 .sidebar .calendar_wrapper {
@@ -60,5 +58,6 @@
 
   .sidebar-body {
     padding: 98px 23px 30px;
+    overflow-y: auto;
   }
 }

@@ -3,7 +3,9 @@ import ReactMapGL, { Popup } from 'react-map-gl';
 import Highcharts from 'highcharts';
 import NoDataToDisplay from 'highcharts/modules/no-data-to-display';
 import HighchartsReact from 'highcharts-react-official';
-import darkUnica from "highcharts/themes/dark-unica";
+import darkUnica from 'highcharts/themes/dark-unica';
+
+import './style.css';
 
 NoDataToDisplay(Highcharts);
 darkUnica(Highcharts);
@@ -16,7 +18,11 @@ export default class Map extends Component {
   componentDidUpdate(prevProps, prevState, snapshot) {
     const { data, startDate, endDate } = this.props;
 
-    if ((!prevProps.data && data) || prevProps.startDate !== startDate || prevProps.endDate !== endDate) {
+    if (
+      (!prevProps.data && data) ||
+      prevProps.startDate !== startDate ||
+      prevProps.endDate !== endDate
+    ) {
       const MAP = this.map.getMap();
 
       if (MAP.style.getLayer('clearcut-polygon')) {
@@ -95,7 +101,6 @@ export default class Map extends Component {
     });
   }
 
-
   // Need a refactor
   _renderTooltip = () => {
     const { position, activePolygonData, onTooltipClose } = this.props;
@@ -125,9 +130,9 @@ export default class Map extends Component {
         },
         labels: {
           style: {
-            fontSize: '12px',
+            fontSize: '12px'
           }
-        },
+        }
       },
       xAxis: {
         type: 'category',
@@ -155,20 +160,22 @@ export default class Map extends Component {
       },
       tooltip: {
         formatter: function() {
-          return `${this.key} <br>Area: <b>${this.y}</b>㎡`
+          return `${this.key} <br>Area: <b>${this.y}</b>㎡`;
         },
         style: {
           fontFamily: 'Arial, sans-serif',
           fontSize: '14px'
         }
       },
-      series: [{
-        data: activePolygonData,
-        dataLabels: {
-          enabled: true,
-          format: '{point.y}'
+      series: [
+        {
+          data: activePolygonData,
+          dataLabels: {
+            enabled: true,
+            format: '{point.y}'
+          }
         }
-      }]
+      ]
     };
 
     return (
@@ -179,10 +186,7 @@ export default class Map extends Component {
         onClose={onTooltipClose}
       >
         <div className="tooltip">
-          <HighchartsReact
-            highcharts={Highcharts}
-            options={options}
-          />
+          <HighchartsReact highcharts={Highcharts} options={options} />
         </div>
       </Popup>
     );

@@ -54,3 +54,13 @@
 .calendar_icon.is-focused svg {
   color: #202020;
 }
+
+@media only screen and (max-width: 768px) {
+  .DateInput_input {
+    font-size: 13px;
+  }
+
+  .DateRangePickerInput_arrow svg {
+    margin: 0 5px;
+  }
+}

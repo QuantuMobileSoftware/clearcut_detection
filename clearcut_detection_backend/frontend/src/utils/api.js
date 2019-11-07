@@ -1,8 +1,7 @@
-
 import { dataToQueryParams } from './util';
 
 const DEFAULT_HEADERS = () => ({
-  'Content-Type': 'application/json',
+  'Content-Type': 'application/json'
 });
 const REQUIRED_HEADERS = {
   'X-Requested-With': 'XMLHttpRequest'
@@ -14,6 +13,9 @@ export default {
     const DATA = dataToQueryParams(body);
     const PREFIX = /\?/.test(path) ? '&' : '?';
 
-    return fetch(`${path}${DATA ? `${PREFIX}${DATA}` : ''}`, { credentials: 'same-origin', headers: HEADERS });
+    return fetch(`${path}${DATA ? `${PREFIX}${DATA}` : ''}`, {
+      credentials: 'same-origin',
+      headers: HEADERS
+    });
   }
 };

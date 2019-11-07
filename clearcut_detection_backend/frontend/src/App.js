@@ -14,6 +14,8 @@ import api from './utils/api';
 import { URL } from './config/url';
 import { DATE_FORMAT, CUSTOM_LEGEND_DATA, CHART_COLORS } from './config';
 
+import links from './constants/links';
+
 class App extends Component {
   static fetchData(startDate, endDate) {
     return api
@@ -84,8 +86,8 @@ class App extends Component {
           this.setState({ data, loading: false, startDate, endDate })
         )
         .catch(err => {
-          // TODO fix 404 return []
-          console.log(err);
+          //TODO fix 404 return []
+          alert(err);
           this.setState({ loading: false });
         });
     }
@@ -194,13 +196,7 @@ class App extends Component {
             }
           />
           <CustomLegend data={CUSTOM_LEGEND_DATA} />
-          <Menu
-            links={[
-              { url: '/', text: 'GitHub repository' },
-              { url: '/', text: 'Licence' },
-              { url: '/', text: 'Partners: GIS' }
-            ]}
-          />
+          <Menu links={links} />
         </Sidebar>
 
         <div className="map_holder">
