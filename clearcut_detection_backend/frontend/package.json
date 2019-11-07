@@ -14,7 +14,8 @@
     "react-dom": "^16.8.6",
     "react-leaflet": "^2.4.0",
     "react-map-gl": "^5.0.7",
-    "react-scripts": "3.0.1"
+    "react-scripts": "3.0.1",
+    "react-toastify": "^5.4.0"
   },
   "scripts": {
     "start": "react-scripts start",
