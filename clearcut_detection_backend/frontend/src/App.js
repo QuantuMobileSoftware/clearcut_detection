@@ -1,5 +1,6 @@
 import React, { Component } from 'react';
 import moment from 'moment';
+import { debounce } from 'lodash';
 import { ToastContainer } from 'react-toastify';
 
 import 'react-toastify/dist/ReactToastify.css';
@@ -73,10 +74,28 @@ class App extends Component {
     this.loadPolygonInfo = this.loadPolygonInfo.bind(this);
   }
 
+  handleResize = () => {
+    this.setState(prevState => {
+      return {
+        viewport: {
+          ...prevState.viewport,
+          width: window.innerWidth,
+          height: window.innerHeight
+        }
+      };
+    });
+  };
+
   componentDidMount() {
     const { startDate, endDate } = this.state;
 
     this.loadData(startDate, endDate);
+
+    window.addEventListener('resize', debounce(this.handleResize), 300);
+  }
+
+  componentWillUnmount() {
+    window.removeEventListener('resize', this.handleResize);
   }
 
   loadData(startDate, endDate) {
