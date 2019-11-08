@@ -11,19 +11,26 @@ import './Calendar.css';
 export default class Calendar extends Component {
   state = {
     daySize: null,
+    openDirection: null,
     numberOfMonths: null
   };
 
-  handleResize = () => this.changeCalendarSize();
+  handleResize = () => {
+    let state = {};
 
-  changeCalendarSize = () => {
-    window.innerWidth < 768
-      ? this.setState({ numberOfMonths: 1, daySize: 32 })
-      : this.setState({ numberOfMonths: 2, daySize: 38 });
+    window.innerWidth < 768 || window.innerHeight < 730
+      ? (state = { ...state, numberOfMonths: 1, daySize: 32 })
+      : (state = { ...state, numberOfMonths: 2, daySize: 38 });
+
+    window.innerHeight < 690
+      ? (state = { ...state, openDirection: 'up' })
+      : (state = { ...state, openDirection: 'down' });
+
+    this.setState(state);
   };
 
   componentDidMount() {
-    this.changeCalendarSize();
+    this.handleResize();
 
     window.addEventListener('resize', debounce(this.handleResize, 300));
   }
@@ -33,7 +40,7 @@ export default class Calendar extends Component {
   }
 
   render() {
-    const { numberOfMonths, daySize } = this.state;
+    const { numberOfMonths, openDirection, daySize } = this.state;
 
     const {
       startDate,
@@ -52,6 +59,7 @@ export default class Calendar extends Component {
             <DateRangePicker
               hideKeyboardShortcutsPanel={true}
               numberOfMonths={numberOfMonths}
+              openDirection={openDirection}
               daySize={daySize}
               startDate={startDate}
               startDateId="startDate"
