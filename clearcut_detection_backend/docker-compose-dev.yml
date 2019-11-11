@@ -1,4 +1,4 @@
-version: "3"
+version: '3'
 services:
   db:
     build:
@@ -18,7 +18,7 @@ services:
       - ./frontend:/frontend
     working_dir: /frontend
     ports:
-      - "3000:3000"
+      - '3000:3000'
     depends_on:
       - django
     command: /bin/bash -c "npm install && npm run-script start"
@@ -33,7 +33,7 @@ services:
       - ./data/:/model/data
     working_dir: /model
     ports:
-      - "5000:5000"
+      - '5000:5000'
     command: /bin/bash -c "pip install -r requirements.txt && python app.py"
 
   django:
@@ -57,9 +57,9 @@ services:
     depends_on:
       - django
     extra_hosts:
-      - "react:127.0.0.1"
+      - 'react:127.0.0.1'
     expose:
-      - "9000"
+      - '9000'
     environment:
       - VIRTUAL_PORT=9000
     ports:

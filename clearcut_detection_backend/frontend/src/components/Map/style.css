@@ -1,0 +1,51 @@
+.mapboxgl-popup-content {
+  background: #202020;
+  border: none;
+}
+
+.highcharts-root {
+  padding: 10px;
+}
+
+.highcharts-background {
+  fill: #202020;
+}
+
+.mapboxgl-popup-tip {
+  border-top-color: #202020 !important;
+}
+
+.highcharts-point {
+  fill: #f99d49;
+  stroke: none;
+}
+
+.mapboxgl-popup-close-button {
+  font-size: 32px;
+  margin-right: 5px;
+  z-index: 10;
+}
+
+@media only screen and (max-width: 576px) {
+  .mapboxgl-popup {
+    position: fixed !important;
+    top: auto !important;
+    bottom: -10px !important;
+    left: 0 !important;
+    width: 100vw;
+    transform: none !important;
+  }
+
+  .mapboxgl-popup-tip {
+    display: none;
+  }
+
+  .mapboxgl-popup-content {
+    width: 100%;
+    padding-left: 0;
+  }
+
+  .highcharts-container {
+    margin: 0 auto;
+  }
+}
