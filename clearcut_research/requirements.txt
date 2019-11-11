@@ -16,7 +16,7 @@ configparser==3.7.4
 crc32c==1.7
 cycler==0.10.0
 decorator==4.4.0
-Django==2.2.3
+Django==2.2.4
 djangorestframework==3.10.1
 docutils==0.15
 Fiona==1.8.6
