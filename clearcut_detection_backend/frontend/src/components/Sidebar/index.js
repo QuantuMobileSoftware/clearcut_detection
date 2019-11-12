@@ -20,10 +20,12 @@ class Sidebar extends Component {
   }
 
   handleSidebarClick = e => {
+    const { handleSidebarClose } = this.props;
     const { isOpened } = this.state;
 
     if (isOpened && e.target.classList.contains("overlays")) {
       this.setState({ isOpened: false });
+      handleSidebarClose();
     }
   };
 

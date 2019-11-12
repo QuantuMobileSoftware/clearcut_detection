@@ -56,6 +56,7 @@ class App extends Component {
       loading: false,
       activeItem: null,
       focusedFilterInput: null,
+      isCalendarOpen: false,
       position: {
         longitude: 0,
         latitude: 0
@@ -206,24 +207,47 @@ class App extends Component {
       focusedFilterInput,
       loading,
       activeItem,
-      position
+      position,
+      isCalendarOpen
     } = this.state;
 
     return (
       <div className="App">
-        <Sidebar>
+        <Sidebar
+          handleSidebarClose={() => {
+            if (isCalendarOpen) {
+              this.setState({
+                focusedFilterInput: null,
+                isCalendarOpen: false
+              });
+            }
+          }}
+        >
           <About />
           <Calendar
             startDate={startDate}
             endDate={endDate}
             focusedInput={focusedFilterInput}
             onDatesChange={this.onDatesChange}
-            onFocusChange={focusedInput =>
-              this.setState({ focusedFilterInput: focusedInput })
-            }
-            onCalendarIconClick={() =>
-              this.setState({ focusedFilterInput: "startDate" })
-            }
+            onFocusChange={focusedInput => {
+              this.setState({
+                focusedFilterInput: focusedInput,
+                isCalendarOpen: true
+              });
+            }}
+            onCalendarIconClick={() => {
+              if (isCalendarOpen) {
+                return this.setState({
+                  focusedFilterInput: null,
+                  isCalendarOpen: false
+                });
+              }
+
+              this.setState({
+                focusedFilterInput: "startDate",
+                isCalendarOpen: true
+              });
+            }}
           />
           <CustomLegend data={CUSTOM_LEGEND_DATA} />
           <Menu links={links} />
