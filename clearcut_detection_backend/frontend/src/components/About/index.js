@@ -1,8 +1,8 @@
-import React from 'react';
+import React from "react";
 
-import { ReactComponent as Logo } from '../../assets/images/logo-company.svg';
+import { ReactComponent as Logo } from "../../assets/images/logo-company.svg";
 
-import './style.css';
+import "./style.css";
 
 const About = () => {
   const renderDescription = () => (
@@ -15,7 +15,13 @@ const About = () => {
     <div className="about-author">
       <p className="author-text">Powered by</p>
       <div className="author-logo">
-        <Logo />
+        <a
+          href="https://www.quantumobile.com/"
+          target="_blank"
+          rel="noopener noreferrer"
+        >
+          <Logo />
+        </a>
       </div>
     </div>
   );

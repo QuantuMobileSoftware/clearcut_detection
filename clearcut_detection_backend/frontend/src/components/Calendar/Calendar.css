@@ -45,6 +45,7 @@
   border-radius: 0 5px 5px 0;
   background: rgba(255, 255, 255, 0.2);
   padding: 8px;
+  cursor: pointer;
 }
 
 .calendar_icon.is-focused {

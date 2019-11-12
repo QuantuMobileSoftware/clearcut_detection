@@ -1,14 +1,30 @@
-import React, { Component } from 'react';
+import React, { Component } from "react";
 
-import { ReactComponent as Logo } from '../../assets/images/logo.svg';
+import { ReactComponent as Logo } from "../../assets/images/logo.svg";
 
-import Switch from '../Switch';
+import Switch from "../Switch";
 
-import './style.css';
+import "./style.css";
 
 class Sidebar extends Component {
   state = {
     isOpened: false
+  };
+
+  componentDidMount() {
+    window.addEventListener("click", this.handleSidebarClick);
+  }
+
+  componentWillUnmount() {
+    window.removeEventListener("click", this.handleSidebarClick);
+  }
+
+  handleSidebarClick = e => {
+    const { isOpened } = this.state;
+
+    if (isOpened && e.target.classList.contains("overlays")) {
+      this.setState({ isOpened: false });
+    }
   };
 
   handleClick = () => this.setState({ isOpened: !this.state.isOpened });

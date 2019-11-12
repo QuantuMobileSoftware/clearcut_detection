@@ -1,12 +1,12 @@
-import React, { Component } from 'react';
-import 'react-dates/initialize';
-import 'react-dates/lib/css/_datepicker.css';
-import moment from 'moment';
-import { debounce } from 'lodash';
-import SidebarTitle from '../SidebarTitle';
-import { DateRangePicker, isInclusivelyAfterDay } from 'react-dates';
+import React, { Component } from "react";
+import "react-dates/initialize";
+import "react-dates/lib/css/_datepicker.css";
+import moment from "moment";
+import { debounce } from "lodash";
+import SidebarTitle from "../SidebarTitle";
+import { DateRangePicker, isInclusivelyAfterDay } from "react-dates";
 
-import './Calendar.css';
+import "./Calendar.css";
 
 export default class Calendar extends Component {
   state = {
@@ -14,6 +14,16 @@ export default class Calendar extends Component {
     openDirection: null,
     numberOfMonths: null
   };
+
+  componentDidMount() {
+    this.handleResize();
+
+    window.addEventListener("resize", debounce(this.handleResize, 300));
+  }
+
+  componentWillUnmount() {
+    window.removeEventListener("resize", this.handleResize);
+  }
 
   handleResize = () => {
     let state = {};
@@ -23,21 +33,11 @@ export default class Calendar extends Component {
       : (state = { ...state, numberOfMonths: 2, daySize: 38 });
 
     window.innerHeight < 690
-      ? (state = { ...state, openDirection: 'up' })
-      : (state = { ...state, openDirection: 'down' });
+      ? (state = { ...state, openDirection: "up" })
+      : (state = { ...state, openDirection: "down" });
 
     this.setState(state);
   };
-
-  componentDidMount() {
-    this.handleResize();
-
-    window.addEventListener('resize', debounce(this.handleResize, 300));
-  }
-
-  componentWillUnmount() {
-    window.removeEventListener('resize', this.handleResize);
-  }
 
   render() {
     const { numberOfMonths, openDirection, daySize } = this.state;
@@ -45,10 +45,11 @@ export default class Calendar extends Component {
     const {
       startDate,
       endDate,
-      displayFormat = 'DD MMM YYYY',
+      displayFormat = "DD MMM YYYY",
       focusedInput,
       onDatesChange,
-      onFocusChange
+      onFocusChange,
+      onCalendarIconClick
     } = this.props;
 
     return (
@@ -68,14 +69,17 @@ export default class Calendar extends Component {
               displayFormat={displayFormat}
               minimumNights={0}
               isOutsideRange={day =>
-                isInclusivelyAfterDay(day, moment.utc().add(1, 'days'))
+                isInclusivelyAfterDay(day, moment.utc().add(1, "days"))
               }
               onDatesChange={onDatesChange}
               focusedInput={focusedInput}
               onFocusChange={onFocusChange}
             />
           </div>
-          <div className={`calendar_icon${focusedInput ? ' is-focused' : ''}`}>
+          <div
+            onClick={onCalendarIconClick}
+            className={`calendar_icon${focusedInput ? " is-focused" : ""}`}
+          >
             <svg
               xmlns="http://www.w3.org/2000/svg"
               width="24"

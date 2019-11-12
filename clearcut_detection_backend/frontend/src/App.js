@@ -1,25 +1,25 @@
-import React, { Component } from 'react';
-import moment from 'moment';
-import { debounce } from 'lodash';
-import { ToastContainer } from 'react-toastify';
+import React, { Component } from "react";
+import moment from "moment";
+import { debounce } from "lodash";
+import { ToastContainer } from "react-toastify";
 
-import 'react-toastify/dist/ReactToastify.css';
-import './App.css';
+import "react-toastify/dist/ReactToastify.css";
+import "./App.css";
 
-import Sidebar from './components/Sidebar';
-import About from './components/About';
-import Calendar from './components/Calendar';
-import CustomLegend from './components/CustomLegend/CustomLegend';
-import Menu from './components/Menu';
-import MapWrapper from './components/Map';
-import LoadingScreen from './components/LoadingScreen/LoadingScreen';
+import Sidebar from "./components/Sidebar";
+import About from "./components/About";
+import Calendar from "./components/Calendar";
+import CustomLegend from "./components/CustomLegend/CustomLegend";
+import Menu from "./components/Menu";
+import MapWrapper from "./components/Map";
+import LoadingScreen from "./components/LoadingScreen/LoadingScreen";
 
-import api from './utils/api';
-import { URL } from './config/url';
-import { DATE_FORMAT, CUSTOM_LEGEND_DATA, CHART_COLORS } from './config';
+import api from "./utils/api";
+import { URL } from "./config/url";
+import { DATE_FORMAT, CUSTOM_LEGEND_DATA, CHART_COLORS } from "./config";
 
-import { alertMessage } from './components/Alert';
-import links from './constants/links';
+import { alertMessage } from "./components/Alert";
+import links from "./constants/links";
 
 class App extends Component {
   static fetchData(startDate, endDate) {
@@ -49,7 +49,7 @@ class App extends Component {
   constructor(props) {
     super(props);
     this.state = {
-      startDate: moment.utc().subtract(120, 'days'),
+      startDate: moment.utc().subtract(120, "days"),
       endDate: moment.utc(),
       data: null,
       activePolygonData: [],
@@ -61,8 +61,8 @@ class App extends Component {
         latitude: 0
       },
       viewport: {
-        width: '100%',
-        height: '100%',
+        width: "100%",
+        height: "100%",
         latitude: 49.988358,
         longitude: 36.232845,
         zoom: 9
@@ -91,11 +91,11 @@ class App extends Component {
 
     this.loadData(startDate, endDate);
 
-    window.addEventListener('resize', debounce(this.handleResize), 300);
+    window.addEventListener("resize", debounce(this.handleResize), 300);
   }
 
   componentWillUnmount() {
-    window.removeEventListener('resize', this.handleResize);
+    window.removeEventListener("resize", this.handleResize);
   }
 
   loadData(startDate, endDate) {
@@ -110,7 +110,7 @@ class App extends Component {
         })
         .catch(() => {
           //TODO fix 404 return []
-          alertMessage('Unable to load data', 'error');
+          alertMessage("Unable to load data", "error");
           this.setState({ loading: false });
         });
     }
@@ -139,7 +139,7 @@ class App extends Component {
     const { features, lngLat } = e;
     const [longitude, latitude] = lngLat;
     const activeItem =
-      features && features.find(f => f.layer.id === 'clearcut-polygon');
+      features && features.find(f => f.layer.id === "clearcut-polygon");
 
     if (activeItem) {
       this.loadPolygonInfo(activeItem.properties.pk, startDate, endDate);
@@ -188,7 +188,7 @@ class App extends Component {
           });
         })
         .catch(() => {
-          alertMessage('Unable to load data', 'error');
+          alertMessage("Unable to load data", "error");
           this.setState({ loading: false });
         });
     } else {
@@ -220,6 +220,9 @@ class App extends Component {
             onDatesChange={this.onDatesChange}
             onFocusChange={focusedInput =>
               this.setState({ focusedFilterInput: focusedInput })
+            }
+            onCalendarIconClick={() =>
+              this.setState({ focusedFilterInput: "startDate" })
             }
           />
           <CustomLegend data={CUSTOM_LEGEND_DATA} />
