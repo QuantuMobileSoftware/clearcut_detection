@@ -49,7 +49,8 @@ export default class Calendar extends Component {
       focusedInput,
       onDatesChange,
       onFocusChange,
-      onCalendarIconClick
+      onCalendarIconClick,
+      onClose
     } = this.props;
 
     return (
@@ -74,6 +75,7 @@ export default class Calendar extends Component {
               onDatesChange={onDatesChange}
               focusedInput={focusedInput}
               onFocusChange={onFocusChange}
+              onClose={onClose}
             />
           </div>
           <div

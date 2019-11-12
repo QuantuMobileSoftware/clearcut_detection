@@ -213,40 +213,30 @@ class App extends Component {
 
     return (
       <div className="App">
-        <Sidebar
-          handleSidebarClose={() => {
-            if (isCalendarOpen) {
-              this.setState({
-                focusedFilterInput: null,
-                isCalendarOpen: false
-              });
-            }
-          }}
-        >
+        <Sidebar handleSidebarClose={() => {}}>
           <About />
           <Calendar
             startDate={startDate}
             endDate={endDate}
             focusedInput={focusedFilterInput}
             onDatesChange={this.onDatesChange}
-            onFocusChange={focusedInput => {
-              this.setState({
-                focusedFilterInput: focusedInput,
-                isCalendarOpen: true
-              });
-            }}
+            onFocusChange={focusedInput =>
+              this.setState({ focusedFilterInput: focusedInput })
+            }
             onCalendarIconClick={() => {
-              if (isCalendarOpen) {
+              if (!focusedFilterInput && !isCalendarOpen) {
                 return this.setState({
-                  focusedFilterInput: null,
-                  isCalendarOpen: false
+                  focusedFilterInput: "startDate",
+                  isCalendarOpen: true
                 });
               }
-
-              this.setState({
-                focusedFilterInput: "startDate",
-                isCalendarOpen: true
-              });
+            }}
+            onClose={() => {
+              setTimeout(() => {
+                this.setState({
+                  isCalendarOpen: false
+                });
+              }, 0);
             }}
           />
           <CustomLegend data={CUSTOM_LEGEND_DATA} />
