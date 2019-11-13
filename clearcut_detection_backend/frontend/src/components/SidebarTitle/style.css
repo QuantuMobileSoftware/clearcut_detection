@@ -10,3 +10,9 @@
   font-weight: inherit;
   margin: 0;
 }
+
+@media only screen and (max-width: 768px) {
+  .sidebar-title {
+    font-size: 14px;
+  }
+}

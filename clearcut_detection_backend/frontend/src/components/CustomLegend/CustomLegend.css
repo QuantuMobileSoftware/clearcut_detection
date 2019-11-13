@@ -31,3 +31,13 @@
 .square.white {
   background: white;
 }
+
+@media only screen and (max-width: 768px) {
+  .custom-legend-item {
+    font-size: 14px;
+  }
+
+  .square {
+    margin-right: 16px;
+  }
+}

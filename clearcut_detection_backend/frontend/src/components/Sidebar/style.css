@@ -4,7 +4,7 @@
   left: 0;
   display: flex;
   flex-direction: column;
-  width: 337px;
+  width: 320px;
   background-color: #202020;
   z-index: 100;
 }
@@ -52,6 +52,7 @@
 @media only screen and (max-height: 730px) {
   .sidebar-body {
     overflow-y: auto;
+    padding-bottom: 80px;
   }
 }
 
@@ -78,7 +79,7 @@
   }
 
   .sidebar-body {
-    padding: 98px 23px 30px;
+    padding: 98px 23px 80px;
     overflow-y: auto;
   }
 }
