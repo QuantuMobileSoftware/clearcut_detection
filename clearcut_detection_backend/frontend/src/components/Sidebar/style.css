@@ -52,6 +52,7 @@
 @media only screen and (max-height: 730px) {
   .sidebar-body {
     overflow-y: auto;
+    padding-bottom: 80px;
   }
 }
 
