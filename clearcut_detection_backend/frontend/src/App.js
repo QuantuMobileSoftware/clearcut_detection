@@ -207,8 +207,6 @@ class App extends Component {
       isCalendarOpen
     } = this.state;
 
-    console.log(moment('2019-04-01'));
-
     return (
       <div className="App">
         <Sidebar handleSidebarClose={() => {}}>

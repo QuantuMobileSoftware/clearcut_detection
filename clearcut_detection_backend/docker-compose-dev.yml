@@ -17,8 +17,8 @@ services:
     volumes:
       - ./frontend:/frontend
     working_dir: /frontend
-    ports:
-      - '3000:3000'
+    expose:
+      - 3000
     depends_on:
       - django
     command: /bin/bash -c "npm install && npm run-script start"
@@ -56,17 +56,11 @@ services:
     image: nginx:1.15.8
     depends_on:
       - django
-    extra_hosts:
-      - 'react:127.0.0.1'
-    expose:
-      - '9000'
-    environment:
-      - VIRTUAL_PORT=9000
     ports:
       - 80:80
       - 443:443
     volumes:
-      - ./nginx.conf:/etc/nginx/conf.d/default.conf
+      - ./nginx/dev.nginx.conf:/etc/nginx/conf.d/default.conf
 
 volumes:
   data:

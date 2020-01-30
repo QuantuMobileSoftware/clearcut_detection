@@ -64,5 +64,5 @@ services:
       - LETSENCRYPT_HOST=clearcut.quantumobile.com
       - LETSENCRYPT_EMAIL=i.lukinov@quantumobile.com
     volumes:
-      - ./nginx.conf:/etc/nginx/conf.d/default.conf
+      - ./nginx/nginx.conf:/etc/nginx/conf.d/default.conf
       - ./frontend/build:/frontend/build

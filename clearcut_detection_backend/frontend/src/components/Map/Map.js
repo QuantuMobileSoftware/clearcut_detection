@@ -211,13 +211,14 @@ export default class Map extends Component {
 
   render() {
     const { viewport, onClick, onViewportChange, activeItem } = this.props;
+    const mapboxApiKey = "pk.eyJ1IjoiYXZha2luIiwiYSI6ImNqeXk1cTk5aTAwcmszZnA4MjF0d2Fic3AifQ.-KMWEhdsLQ4dQIiC3p0KoA";
 
     return (
       <ReactMapGL
         {...viewport}
         mapStyle="mapbox://styles/mapbox/satellite-streets-v9"
         ref={node => (this.map = node)}
-        mapboxApiAccessToken="pk.eyJ1IjoiYXZha2luIiwiYSI6ImNqeXk1cTk5aTAwcmszZnA4MjF0d2Fic3AifQ.-KMWEhdsLQ4dQIiC3p0KoA"
+        mapboxApiAccessToken={ mapboxApiKey }
         onViewportChange={onViewportChange}
         interactiveLayerIds={['clearcut-polygon']}
         getCursor={this._getCursor}
