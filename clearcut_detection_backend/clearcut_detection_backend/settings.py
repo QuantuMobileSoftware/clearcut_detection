@@ -120,6 +120,7 @@ AUTH_PASSWORD_VALIDATORS = [
     },
 ]
 
+MAXIMUM_CLOUD_PERCENTAGE_ALLOWED = 50.0
 
 # Internationalization
 # https://docs.djangoproject.com/en/2.2/topics/i18n/

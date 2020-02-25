@@ -1,15 +1,17 @@
 import os
 import shutil
 import traceback
-
 from os.path import join, splitext
-from clearcuts.geojson_save import save
-from model_call import raster_prediction
+
 from django.core.mail.message import EmailMessage
 from django.conf import settings
 
+from clearcuts.geojson_save import save
+from model_call import raster_prediction
+from sentinel_download import SentinelDownload
 
 DATA_DIR = 'data'
+
 
 
 def download_tile(data_dir):
@@ -56,7 +58,9 @@ if __name__ == '__main__':
         # TOOD(flyingpi): Remove or rewrite django stuff after moving it to separate service.
         import django
         django.setup()
-        update_db(DATA_DIR)
+        sd = SentinelDownload()
+        sd.process_process_download()
+        # update_db(DATA_DIR)
     except Exception as e:
         EmailMessage(
             subject='Pep download issue',
