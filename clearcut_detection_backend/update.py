@@ -59,7 +59,7 @@ if __name__ == '__main__':
         import django
         django.setup()
         sd = SentinelDownload()
-        sd.process_process_download()
+        sd.process_download()
         # update_db(DATA_DIR)
     except Exception as e:
         EmailMessage(

@@ -1,3 +1,4 @@
+import logging
 import os
 import subprocess
 
@@ -8,6 +9,9 @@ from google.cloud import storage
 from xml.dom import minidom
 
 from clearcuts.models import TileInformation
+
+logger = logging.getLogger(__name__)
+DATA_DIR = 'data'
 
 
 class SentinelDownload:
@@ -73,7 +77,7 @@ class SentinelDownload:
         for blob in blobs:
             band, download_needed = self.file_need_to_be_downloaded(blob.name)
             if download_needed:
-                filename = f'{tile_name}_{band}.jp2'
+                filename = os.path.join(DATA_DIR, f'{tile_name}_{band}.jp2')
                 self.download_file_from_storage(blob, filename)
                 tile_info = TileInformation.objects.get(tile_name=tile_name)
                 tile_info.tile_location = filename
@@ -127,7 +131,7 @@ class SentinelDownload:
         if not created:
             update_needed = blob.md5_hash != tile_info.tile_metadata_hash
             if update_needed:
-                filename = f'{tile_name}_{metadata_file}'
+                filename = os.path.join(DATA_DIR, '{tile_name}_{metadata_file}')
                 self.download_file_from_storage(blob, filename)
                 cloud_coverage_value = self.define_cloud_coverage_value(filename)
                 if float(cloud_coverage_value) <= settings.MAXIMUM_CLOUD_PERCENTAGE_ALLOWED:
@@ -136,13 +140,14 @@ class SentinelDownload:
                     tile_info.tile_metadata_hash = blob.md5_hash
                     tile_info.save()
         else:
-            filename = f'{tile_name}_{metadata_file}'
+            filename = os.path.join(DATA_DIR, f'{tile_name}_{metadata_file}')
             self.download_file_from_storage(blob, filename)
             cloud_coverage_value = self.define_cloud_coverage_value(filename)
             update_status = True
             tile_info.cloud_coverage = cloud_coverage_value
             tile_info.tile_metadata_hash = blob.md5_hash
             tile_info.save()
+            os.remove(filename)
 
         return update_status
 
