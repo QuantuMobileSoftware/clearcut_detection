@@ -1,4 +1,3 @@
-import logging
 import os
 import subprocess
 
@@ -10,7 +9,6 @@ from xml.dom import minidom
 
 from clearcuts.models import TileInformation
 
-logger = logging.getLogger(__name__)
 DATA_DIR = 'data'
 
 
@@ -18,6 +16,7 @@ class SentinelDownload:
 
     def __init__(self):
         os.environ['GOOGLE_APPLICATION_CREDENTIALS'] = './key.json'
+        self.tile_dates_count = settings.MAXIMUM_DATES_REVIEWED_FOR_TILE
         self.storage_client = storage.Client()
         self.storage_bucket = self.storage_client.get_bucket('gcp-public-data-sentinel-2')
         self.config = ConfigParser(allow_no_value=True)
@@ -66,11 +65,7 @@ class SentinelDownload:
         :param tile_path:
         :return:
         """
-        command = f'gsutil ls -l {tile_path}/GRANULE/ | sort -k2n | tail -n1'
-        granule_id = self.find_granule_id(command)
-        decomposed_tile_uri = tile_path.split('/')
-        tile_prefix_start = '/'.join(decomposed_tile_uri[3:])
-        tile_prefix = f'{tile_prefix_start}/GRANULE/{granule_id}/IMG_DATA/R{self.resolution}/'
+        tile_prefix = f'{tile_path}/IMG_DATA/R{self.resolution}/'
         blobs = self.storage_bucket.list_blobs(prefix=tile_prefix)
         # check_blob = lambda value: any([value.endswith(f'_{band}_{self.resolution}.jp2')
         #                                 for band in self.bands_to_download])
@@ -103,53 +98,69 @@ class SentinelDownload:
         """
         tiles_to_be_downloaded = {}
         for tile_name, tile_path in tiles_path.items():
+            print('====== TILE NAME ======')
+            print(tile_name)
             base_uri = 'gs://gcp-public-data-sentinel-2'
             tile_uri = f'L2/tiles/{tile_path}'
-            metadata_file = 'MTD_MSIL2A.xml'
-            command = f'gsutil ls -l {base_uri}/{tile_uri}/ | sort -k2n | tail -n1'
-            granule_id = self.find_granule_id(command)
-
-            blob = self.storage_bucket.get_blob(f'{tile_uri}/{granule_id}/{metadata_file}')
-            update_needed = self.define_if_tile_update_needed(blob, tile_name, metadata_file)
-            if update_needed:
-                tiles_to_be_downloaded[f'{tile_name}'] = f'{base_uri}/{tile_uri}/{granule_id}'
+            metadata_file = 'MTD_TL.xml'
+            command = f'gsutil ls -l {base_uri}/{tile_uri}/ | sort -k2n | tail -n{self.tile_dates_count}'
+            granule_id_list = self.find_granule_id(command)
+            granule_id_list.reverse()
+            for granule_id in granule_id_list:
+                print('====== GRANULE ID ======')
+                print(granule_id)
+                nested_command = f'gsutil ls -l {base_uri}/{tile_uri}/{granule_id}/GRANULE/ | sort -k2n | tail -n1'
+                nested_granule_id_list = self.find_granule_id(nested_command)
+                nested_granule_id = nested_granule_id_list[0]
+                updated_tile_uri = f'{tile_uri}/{granule_id}/GRANULE/{nested_granule_id}'
+                filename = os.path.join(DATA_DIR, f'{tile_name}_{metadata_file}')
+                try:
+                    blob = self.storage_bucket.get_blob(f'{updated_tile_uri}/{metadata_file}')
+                    update_needed = self.define_if_tile_update_needed(blob, tile_name, filename)
+                    print('====== IS UPDATE NEEDED ======')
+                    print(update_needed)
+                    if update_needed:
+                        tiles_to_be_downloaded[f'{tile_name}'] = f'{updated_tile_uri}'
+                        os.remove(filename)
+                except Exception as e:
+                    print(e)
+                    print(dir(e))
 
         return tiles_to_be_downloaded
 
-    def define_if_tile_update_needed(self, blob, tile_name, metadata_file) -> bool:
+    def define_if_tile_update_needed(self, blob, tile_name, filename) -> bool:
         """
         Checks hash of the metadata file for latest image and information from DB
         Downloads metadata file if hash is not equal
         Checks cloud coverage value from metadata file if it lower then one from settings - allows to download images
         :param blob:
         :param tile_name:
-        :param metadata_file:
+        :param filename:
         :return:
         """
-        update_status = False
         tile_info, created = TileInformation.objects.get_or_create(tile_name=tile_name)
         if not created:
             update_needed = blob.md5_hash != tile_info.tile_metadata_hash
-            if update_needed:
-                filename = os.path.join(DATA_DIR, '{tile_name}_{metadata_file}')
-                self.download_file_from_storage(blob, filename)
-                cloud_coverage_value = self.define_cloud_coverage_value(filename)
-                if float(cloud_coverage_value) <= settings.MAXIMUM_CLOUD_PERCENTAGE_ALLOWED:
-                    update_status = True
-                    tile_info.cloud_coverage = cloud_coverage_value
-                    tile_info.tile_metadata_hash = blob.md5_hash
-                    tile_info.save()
-        else:
-            filename = os.path.join(DATA_DIR, f'{tile_name}_{metadata_file}')
-            self.download_file_from_storage(blob, filename)
-            cloud_coverage_value = self.define_cloud_coverage_value(filename)
-            update_status = True
+            if not update_needed:
+                return False
+
+        self.download_file_from_storage(blob, filename)
+        nodata_pixel_value = self.define_xml_node_value(filename, 'NODATA_PIXEL_PERCENTAGE')
+        print('====== NO DATA PIXEL VALUE ======')
+        print(nodata_pixel_value)
+        print(nodata_pixel_value >= settings.MAXIMUM_EMPTY_PIXEL_PERCENTAGE)
+        if nodata_pixel_value >= settings.MAXIMUM_EMPTY_PIXEL_PERCENTAGE:
+            return False
+        cloud_coverage_value = self.define_xml_node_value(filename, 'CLOUDY_PIXEL_PERCENTAGE')
+        print('====== CLOUD COVERAGE VALUE ======')
+        print(cloud_coverage_value)
+        if cloud_coverage_value <= settings.MAXIMUM_CLOUD_PERCENTAGE_ALLOWED:
             tile_info.cloud_coverage = cloud_coverage_value
             tile_info.tile_metadata_hash = blob.md5_hash
             tile_info.save()
-            os.remove(filename)
-
-        return update_status
+            return True
+        else:
+            return False
 
     def find_granule_id(self, command):
         """
@@ -158,16 +169,19 @@ class SentinelDownload:
         :param command:
         :return:
         """
+        # print(command)
+        granule_id_list = []
         process = subprocess.Popen(command, stdout=subprocess.PIPE, shell=True)
-        process_stdout = process.communicate()[0].strip()
-        stdout_string = process_stdout.decode('utf8').split()[-1]
-        stdout_string_path = stdout_string.split('/')[-1]
-        if stdout_string_path.endswith('_$folder$'):
-            granule_id = stdout_string_path[:-9]
-        else:
-            granule_id = stdout_string_path
+        process_stdout = process.communicate()[0].decode('utf8')
+        for tile_output in process_stdout.strip().split('\n'):
+            tile_output_path = tile_output.strip().split()[-1]
+            if tile_output_path.endswith('_$folder$'):
+                tile_output = tile_output_path[:-9].split('/')[-1]
+                granule_id_list.append(tile_output)
+            else:
+                granule_id_list = tile_output_path.split('/')[-1]
 
-        return granule_id
+        return granule_id_list
 
     def download_file_from_storage(self, blob, filename):
         """
@@ -179,17 +193,18 @@ class SentinelDownload:
         with open(filename, 'wb') as new_file:
             blob.download_to_file(new_file)
 
-    def define_cloud_coverage_value(self, xml_file):
+    def define_xml_node_value(self, xml_file, node):
         """
-        Parsing XML file for HIGH_PROBA_CLOUDS_PERCENTAGE value
+        Parsing XML file for passed node name
         :param xml_file:
+        :param node:
         :return:
         """
         xml_dom = minidom.parse(xml_file)
         try:
-            high_proba_cloud_node = xml_dom.getElementsByTagName('HIGH_PROBA_CLOUDS_PERCENTAGE')
-            cloud_percentage_value = high_proba_cloud_node[0].firstChild.data
-            return cloud_percentage_value
+            xml_node = xml_dom.getElementsByTagName(node)
+            xml_node_value = xml_node[0].firstChild.data
+            return float(xml_node_value)
         except Exception as e:
             print(e)
             return None

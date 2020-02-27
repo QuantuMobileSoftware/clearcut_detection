@@ -121,6 +121,8 @@ AUTH_PASSWORD_VALIDATORS = [
 ]
 
 MAXIMUM_CLOUD_PERCENTAGE_ALLOWED = 50.0
+MAXIMUM_EMPTY_PIXEL_PERCENTAGE = 5.0
+MAXIMUM_DATES_REVIEWED_FOR_TILE = 6
 
 # Internationalization
 # https://docs.djangoproject.com/en/2.2/topics/i18n/
