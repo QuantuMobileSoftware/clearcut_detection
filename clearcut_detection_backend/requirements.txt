@@ -20,7 +20,8 @@ Pillow==6.1.0
 psycopg2-binary==2.8.3
 pyproj==2.2.1
 PyYAML==5.1.1
-rasterio==1.0.24
+rasterio==1.1.2
+rio-mbtiles==1.4.2
 sentinelhub==2.5.3
 Shapely==1.6.4.post2
 six==1.12.0
