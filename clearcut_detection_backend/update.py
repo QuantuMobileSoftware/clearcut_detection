@@ -8,7 +8,9 @@ from django.conf import settings
 
 from clearcuts.geojson_save import save
 from model_call import raster_prediction
+from jp2_to_tiff_conversion import jp2_to_tiff
 from sentinel_download import SentinelDownload
+from upload_to_mapbox import start_upload
 
 DATA_DIR = 'data'
 
@@ -46,8 +48,8 @@ def init_db(data_dir):
 
 def update_db(data_dir):
     # TODO download of satellite imagery can be moved to model api in order to reduce amount of times that it is
-    # downloaded, but it also means that model instance will spend time downloading data(which is not correct behavior
-    # for model instance with gpu)
+    #  downloaded, but it also means that model instance will spend time downloading data(which is not correct behavior
+    #  for model instance with gpu)
     download_tile(data_dir)
     poly_path, image_path = process_tile(data_dir)
     save(os.path.join(data_dir, poly_path), init_db=False)
@@ -55,11 +57,16 @@ def update_db(data_dir):
 
 if __name__ == '__main__':
     try:
-        # TOOD(flyingpi): Remove or rewrite django stuff after moving it to separate service.
+        # TODO(flyingpi): Remove or rewrite django stuff after moving it to separate service.
         import django
         django.setup()
         sd = SentinelDownload()
         sd.process_download()
+        # TODO: need a proper schedule
+        # jp2_to_tiff()
+        # start_upload()
+
+        # older version
         # update_db(DATA_DIR)
     except Exception as e:
         EmailMessage(
