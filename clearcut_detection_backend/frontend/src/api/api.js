@@ -1,4 +1,4 @@
-import { dataToQueryParams } from './util';
+import { dataToQueryParams } from '../utils/util';
 
 const DEFAULT_HEADERS = () => ({
   'Content-Type': 'application/json'

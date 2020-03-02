@@ -4,8 +4,8 @@ import { debounce } from 'lodash';
 import { ToastContainer } from 'react-toastify';
 
 import 'react-toastify/dist/ReactToastify.css';
-import './App.css';
 
+import './App.css';
 import Sidebar from './components/Sidebar';
 import About from './components/About';
 import Calendar from './components/Calendar';
@@ -13,37 +13,14 @@ import CustomLegend from './components/CustomLegend/CustomLegend';
 import Menu from './components/Menu';
 import MapWrapper from './components/Map';
 import LoadingScreen from './components/LoadingScreen/LoadingScreen';
-
-import api from './utils/api';
-import { URL } from './config/url';
-import { DATE_FORMAT, CUSTOM_LEGEND_DATA, CHART_COLORS } from './config';
-
 import links from './constants/links';
 
+import api from './api/api';
+import { URL } from './config/url';
+import { DATE_FORMAT, CUSTOM_LEGEND_DATA } from './config';
+import { fetchData, fetchPolygonInfo, prepareActivePolygonData } from "./api/maps";
+
 class App extends Component {
-  static fetchData(startDate, endDate) {
-    return api
-      .get(URL.map.get(startDate, endDate))
-      .then(res => (res.ok ? res.json() : null));
-  }
-
-  static fetchPolygonInfo(id, startDate, endDate) {
-    return api
-      .get(URL.map.polygon.get(id, startDate, endDate))
-      .then(res => (res.ok ? res.json() : []));
-  }
-
-  static prepareActivePolygonData(data) {
-    return data.map((item, i) => {
-      const INDEX = i % 3;
-
-      return {
-        name: item.image_date,
-        y: item.zone_area,
-        color: CHART_COLORS[INDEX]
-      };
-    });
-  }
 
   constructor(props) {
     super(props);
@@ -101,7 +78,7 @@ class App extends Component {
   loadData(startDate, endDate) {
     if (startDate && endDate) {
       this.setState({ loading: true });
-      App.fetchData(
+      fetchData(
         startDate.format(DATE_FORMAT.default),
         endDate.format(DATE_FORMAT.default)
       )
@@ -116,16 +93,14 @@ class App extends Component {
 
   loadPolygonInfo(id, startDate, endDate) {
     if (id && startDate && endDate) {
-      this.setState({ loading: true });
-      App.fetchPolygonInfo(
+      fetchPolygonInfo(
         id,
         startDate.format(DATE_FORMAT.default),
         endDate.format(DATE_FORMAT.default)
       )
         .then(data =>
           this.setState({
-            activePolygonData: App.prepareActivePolygonData(data),
-            loading: false
+            activePolygonData: prepareActivePolygonData(data),
           })
         )
         .catch(err => console.log(err));
@@ -179,7 +154,7 @@ class App extends Component {
         .then(([allData, polygonInfo]) => {
           this.setState({
             data: allData,
-            activePolygonData: App.prepareActivePolygonData(polygonInfo),
+            activePolygonData: prepareActivePolygonData(polygonInfo),
             loading: false,
             startDate,
             endDate
@@ -206,8 +181,6 @@ class App extends Component {
       position,
       isCalendarOpen
     } = this.state;
-
-    console.log(moment('2019-04-01'));
 
     return (
       <div className="App">
