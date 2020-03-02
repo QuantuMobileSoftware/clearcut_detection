@@ -34,8 +34,6 @@ export default class Map extends Component {
       if (MAP.getSource('clearcut')) {
         MAP.removeSource('clearcut');
       }
-
-      this._loadMap();
     }
   }
 
@@ -203,28 +201,20 @@ export default class Map extends Component {
     }
   };
 
-  _onHover = (event, map) => {
-    // TODO
-    // const { features } = event;
-    // const hoveredItem = features && features.find(f => f.layer.id === 'clearcut-polygon');
-  };
-
   render() {
     const { viewport, onClick, onViewportChange, activeItem } = this.props;
-    const mapboxApiKey = "pk.eyJ1IjoiYXZha2luIiwiYSI6ImNqeXk1cTk5aTAwcmszZnA4MjF0d2Fic3AifQ.-KMWEhdsLQ4dQIiC3p0KoA";
 
     return (
       <ReactMapGL
         {...viewport}
-        mapStyle="mapbox://styles/mapbox/satellite-streets-v9"
+        mapStyle={ process.env.REACT_APP_MAPBOX_STYLE_URL }
         ref={node => (this.map = node)}
-        mapboxApiAccessToken={ mapboxApiKey }
+        mapboxApiAccessToken={ process.env.REACT_APP_MAPBOX_API_KEY }
         onViewportChange={onViewportChange}
         interactiveLayerIds={['clearcut-polygon']}
         getCursor={this._getCursor}
         onLoad={this._loadMap}
         onClick={onClick}
-        onHover={this._onHover}
       >
         {activeItem && this._renderTooltip()}
       </ReactMapGL>
