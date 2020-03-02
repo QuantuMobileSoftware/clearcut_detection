@@ -19,16 +19,28 @@ url_upload = f'https://api.mapbox.com/uploads/v1/{mapbox_username}?access_token=
 
 
 def start_upload():
+    """
+    Get all tiles elegible for upload
+    Start upload in threads
+    :return:
+    """
     executor = ThreadPoolExecutor(max_workers=10)
     tiles = list(TileInformation.objects
                  .filter(tile_location__contains='tiff')
                  .filter(tile_location__contains='TCI')
                  .values_list('tile_location', flat=True))
     for tile in tiles:
+        # Upload can be done in single thread.
         executor.submit(upload_to_mapbox, tile)
 
 
 def upload_to_mapbox(tile):
+    """
+    Get temp creds for S3.
+    Multipart upload tile
+    :param tile:
+    :return:
+    """
     s3_creds = json.loads(requests.post(url_credentials).content)
     multi_part_upload_with_s3(s3_creds, tile)
     file_name = tile.rsplit('/')[-1].rsplit('.', 1)[0]

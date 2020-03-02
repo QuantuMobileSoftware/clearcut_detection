@@ -55,6 +55,7 @@ class SentinelDownload:
         :return:
         """
         for tile_name, tile_path in tiles_to_update.items():
+            # TODO: try to handle result of threading
             threads = self.executor.submit(self.download_images_from_tiles, tile_name, tile_path)
 
     def download_images_from_tiles(self, tile_name, tile_path):
@@ -148,7 +149,6 @@ class SentinelDownload:
         nodata_pixel_value = self.define_xml_node_value(filename, 'NODATA_PIXEL_PERCENTAGE')
         print('====== NO DATA PIXEL VALUE ======')
         print(nodata_pixel_value)
-        print(nodata_pixel_value >= settings.MAXIMUM_EMPTY_PIXEL_PERCENTAGE)
         if nodata_pixel_value >= settings.MAXIMUM_EMPTY_PIXEL_PERCENTAGE:
             return False
         cloud_coverage_value = self.define_xml_node_value(filename, 'CLOUDY_PIXEL_PERCENTAGE')
