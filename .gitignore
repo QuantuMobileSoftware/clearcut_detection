@@ -65,3 +65,6 @@ target/
 clearcut_detection_backend/static/
 
 peps_download_config.ini
+
+django.env
+key.json
