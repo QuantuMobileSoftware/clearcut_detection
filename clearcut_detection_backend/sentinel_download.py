@@ -55,7 +55,6 @@ class SentinelDownload:
         :return:
         """
         for tile_name, tile_path in tiles_to_update.items():
-            # TODO: try to handle result of threading
             threads = self.executor.submit(self.download_images_from_tiles, tile_name, tile_path)
 
     def download_images_from_tiles(self, tile_name, tile_path):

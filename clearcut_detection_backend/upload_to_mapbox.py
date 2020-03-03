@@ -31,6 +31,7 @@ def start_upload():
     for tile in tiles:
         # Upload can be done in single thread.
         executor.submit(upload_to_mapbox, tile)
+    return executor
 
 
 def upload_to_mapbox(tile):

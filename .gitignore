@@ -66,5 +66,6 @@ clearcut_detection_backend/static/
 
 peps_download_config.ini
 
+# Env files
 django.env
 key.json
