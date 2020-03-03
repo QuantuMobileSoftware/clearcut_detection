@@ -23,7 +23,7 @@ if __name__ == '__main__':
         EmailMessage(
             subject='Pep download issue',
             body=(
-                f'Deamon can not download peps. Issue information listed bellow: '
+                f'Daemon can not download Sentinel2 data. Issue information listed bellow: '
                 f'\n\n{str(error)}\n\n {"".join(traceback.format_tb(error.__traceback__))}'
             ),
             from_email=settings.EMAIL_HOST_USER,
