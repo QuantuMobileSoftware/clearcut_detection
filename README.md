@@ -5,7 +5,7 @@
  * `clearcut_research` - investigation about model approach, model training and model evaluation of clearcut detection
  
  ## Launch requirements:  
-To start a wev-service, do next:
+To start a web-service, do next:
 * `cd clearcut_detection_backend/`  
 * create peps_download_config.ini based on the peps_download_config.ini.example and setup secure params
 * put unet_v4.pt in to  clearcut_detection_backend/model/unet_v4.pt (trained model can be obtained from maintainers)
