@@ -25,10 +25,9 @@ def start_upload():
     :return:
     """
     executor = ThreadPoolExecutor(max_workers=10)
-    tiles = list(TileInformation.objects
-                 .filter(tile_location__contains='tiff')
-                 .filter(tile_location__contains='TCI')
-                 .values_list('tile_location', flat=True))
+    tiles = TileInformation.objects\
+        .filter(tile_location__contains='tiff')\
+        .filter(tile_location__contains='TCI')
     for tile in tiles:
         # Upload can be done in single thread.
         executor.submit(upload_to_mapbox, tile)
@@ -39,24 +38,31 @@ def upload_to_mapbox(tile):
     """
     Get temp creds for S3.
     Multipart upload tile
+    Mapping mapbox info into the model
     :param tile:
     :return:
     """
     s3_creds = json.loads(requests.post(url_credentials).content)
-    multi_part_upload_with_s3(s3_creds, tile)
-    file_name = tile.rsplit('/')[-1].rsplit('.', 1)[0]
+    multi_part_upload_with_s3(s3_creds, tile.tile_location)
+    file_name = tile.tile_location.rsplit('/')[-1].rsplit('.', 1)[0]
     payload = {
         "url": f"{s3_creds['url']}",
         "tileset": f"{mapbox_username}.{file_name}",
-        "name": f"{file_name}_{datetime.datetime.now().strftime('%Y-%M-%d_%H-%M-%S')}",
+        "name": f"{file_name}_{datetime.datetime.now().strftime('%Y-%m-%d_%H-%M-%S')}",
     }
-    return json.loads(
+    mapbox_tile_info = json.loads(
         requests.post(
             url=url_upload,
             data=json.dumps(payload),
             headers={'Content-type': 'application/json', 'Accept': 'text/plain'}
         ).content
     )
+
+    tile.mapbox_tile_id = mapbox_tile_info.get('id')
+    tile.mapbox_tile_name = mapbox_tile_info.get('name')
+    tile.mapbox_tile_layer = mapbox_tile_info.get('tileset')
+
+    return mapbox_tile_info
 
 
 def multi_part_upload_with_s3(aws_creds, uploaded_file_path):
