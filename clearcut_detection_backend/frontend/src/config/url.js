@@ -1,5 +1,6 @@
 
-export const URL_PREFIX = '/api';
+// local only
+export const URL_PREFIX = 'https://clearcut.quantumobile.com/api';
 
 export const URL = {
   map: {

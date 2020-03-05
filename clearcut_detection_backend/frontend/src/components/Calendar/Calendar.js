@@ -3,7 +3,6 @@ import "react-dates/initialize";
 import "react-dates/lib/css/_datepicker.css";
 import moment from "moment";
 import { debounce } from "lodash";
-import SidebarTitle from "../SidebarTitle";
 import { DateRangePicker, isInclusivelyAfterDay } from "react-dates";
 
 import "./Calendar.css";
@@ -55,7 +54,6 @@ export default class Calendar extends Component {
 
     return (
       <div className="calendar_wrapper">
-        <SidebarTitle>Set a period</SidebarTitle>
         <div className="calendar_inner">
           <div className="calendar_inputholder">
             <DateRangePicker

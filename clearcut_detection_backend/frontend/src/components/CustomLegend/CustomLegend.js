@@ -6,7 +6,7 @@ import './CustomLegend.css';
 
 const CustomLegend = ({ data }) => (
   <div className="custom-legend">
-    <SidebarTitle>Satellite image data</SidebarTitle>
+    <SidebarTitle>Legend</SidebarTitle>
     {data.map((item, i) => (
       <div key={i} className="custom-legend-item">
         <span className={`square ${item.color}`} />

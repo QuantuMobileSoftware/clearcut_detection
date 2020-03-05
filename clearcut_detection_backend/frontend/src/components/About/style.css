@@ -2,22 +2,13 @@
   margin-top: 20px;
 }
 
-.about-description {
-  font-size: 14px;
-  font-weight: 400;
-  color: #fff;
-  max-width: 158px;
-  margin: 0 0 30px 0;
-  opacity: 0.8;
-}
-
 .about-author {
   display: flex;
   align-items: center;
   justify-content: flex-start;
   background-color: #000;
-  margin: 0 -33px;
-  padding-left: 33px;
+  margin: 0 -36px;
+  padding-left: 36px;
 }
 
 .about-author .author-text {

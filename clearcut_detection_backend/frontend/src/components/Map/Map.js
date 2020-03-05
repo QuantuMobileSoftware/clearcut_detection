@@ -34,6 +34,8 @@ export default class Map extends Component {
       if (MAP.getSource('clearcut')) {
         MAP.removeSource('clearcut');
       }
+
+      this._loadMap();
     }
   }
 
@@ -42,6 +44,10 @@ export default class Map extends Component {
 
     if (!MAP.getSource('clearcut')) {
       this.initMapData(MAP, this.props.data, 'clearcut');
+    }
+
+    if(MAP.style.getLayer('clearcut-polygon')) {
+      return;
     }
 
     MAP.addLayer({
