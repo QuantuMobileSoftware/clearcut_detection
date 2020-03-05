@@ -3,8 +3,9 @@ import React from "react";
 import { ReactComponent as Logo } from "../../assets/images/logo-company.svg";
 
 import "./style.css";
+import Menu from "../Menu";
 
-const About = () => {
+const About = ({ links }) => {
   const renderDescription = () => (
     <p className="about-description">
       Illegal logging detection and alerting system
@@ -29,6 +30,7 @@ const About = () => {
   return (
     <div className="about">
       {renderDescription()}
+      <Menu links={links} />
       {renderAuthor()}
     </div>
   );

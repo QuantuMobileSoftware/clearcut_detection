@@ -10,8 +10,8 @@
 
 .square {
   display: block;
-  width: 30px;
-  height: 30px;
+  min-width: 30px;
+  min-height: 30px;
   border-radius: 5px;
   margin-right: 26px;
 }
@@ -21,11 +21,11 @@
 }
 
 .square.red {
-  background: red;
+  background: #ff394a;
 }
 
 .square.yellow {
-  background: yellow;
+  background: #ffed57;
 }
 
 .square.white {

@@ -10,7 +10,6 @@ import Sidebar from './components/Sidebar';
 import About from './components/About';
 import Calendar from './components/Calendar';
 import CustomLegend from './components/CustomLegend/CustomLegend';
-import Menu from './components/Menu';
 import MapWrapper from './components/Map';
 import LoadingScreen from './components/LoadingScreen/LoadingScreen';
 import links from './constants/links';
@@ -111,8 +110,7 @@ class App extends Component {
     const { startDate, endDate } = this.state;
     const { features, lngLat } = e;
     const [longitude, latitude] = lngLat;
-    const activeItem =
-      features && features.find(f => f.layer.id === 'clearcut-polygon');
+    const activeItem = features && features.find(f => f.layer.id === 'clearcut-polygon');
 
     if (activeItem) {
       this.loadPolygonInfo(activeItem.properties.pk, startDate, endDate);
@@ -161,7 +159,7 @@ class App extends Component {
           });
         })
         .catch(() => {
-          this.setState({ loading: false });
+          this.setState({ loading: false, startDate, endDate });
         });
     } else {
       this.setState({ startDate, endDate });
@@ -185,7 +183,6 @@ class App extends Component {
     return (
       <div className="App">
         <Sidebar handleSidebarClose={() => {}}>
-          <About />
           <Calendar
             startDate={startDate}
             endDate={endDate}
@@ -211,7 +208,8 @@ class App extends Component {
             }}
           />
           <CustomLegend data={CUSTOM_LEGEND_DATA} />
-          <Menu links={links} />
+          <div className="spacer"></div>
+          <About links={links} />
         </Sidebar>
 
         <div className="map_holder">

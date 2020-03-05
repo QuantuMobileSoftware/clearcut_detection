@@ -13,19 +13,24 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  background-color: inherit;
-  box-shadow: 0px 4px 4px rgba(0, 0, 0, 0.5);
-  padding: 15px 33px 30px;
+  background-color: #202020;
+  padding: 16px 24px;
+  height: 10%;
   z-index: 5;
 }
 
+.spacer {
+  flex: 1 1;
+}
+
 .sidebar-body {
-  position: absolute;
-  top: 0;
-  left: 0;
-  height: 100vh;
-  background-color: inherit;
-  padding: 98px 33px 30px;
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  position: fixed;
+  max-width: 320px;
+  background-color: #202020;
+  padding: 0 36px;
 }
 
 .sidebar .calendar_wrapper {
@@ -33,11 +38,11 @@
 }
 
 .sidebar .custom-legend {
-  margin-top: 50px;
+  margin-top: 48px;
 }
 
 .sidebar .menu {
-  margin-top: 50px;
+  margin: 48px 0;
 }
 
 .sidebar .switch {
@@ -79,7 +84,6 @@
   }
 
   .sidebar-body {
-    padding: 98px 23px 80px;
     overflow-y: auto;
   }
 }

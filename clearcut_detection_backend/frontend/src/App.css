@@ -1,7 +1,10 @@
+@import url('./assets/fonts/inter/inter.css');
+
 .App {
   background: #202020;
   height: 100%;
   color: #fff;
+  font-family: 'Inter var', sans-serif;
 }
 .map_holder {
   display: flex;
@@ -9,6 +12,25 @@
   justify-content: center;
   height: 100vh;
   width: 100vw;
+}
+
+.about-description {
+  font-size: 14px;
+  font-weight: 400;
+  color: #fff;
+  max-width: 158px;
+  margin: 0 0 30px 0;
+  opacity: 0.8;
+}
+
+.DateInput_input {
+  font-family: 'Inter var', sans-serif;
+  font-weight: 400!important;
+  font-size: 12px!important;
+}
+
+.DateRangePickerInput_arrow {
+  margin-bottom: 5px;
 }
 
 .mapboxgl-popup-content {
