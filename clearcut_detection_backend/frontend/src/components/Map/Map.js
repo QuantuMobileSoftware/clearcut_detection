@@ -61,9 +61,9 @@ export default class Map extends Component {
         'fill-color': [
           'case',
           ['==', ['get', 'color'], 0],
-          'red',
+          '#ff394a',
           ['==', ['get', 'color'], 1],
-          'yellow',
+          '#ffed57',
           ['==', ['get', 'color'], 2],
           '#bebebe',
           '#fff'

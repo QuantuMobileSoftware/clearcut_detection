@@ -3,9 +3,9 @@ export const DATE_FORMAT = {
 };
 
 export const CUSTOM_LEGEND_DATA = [
-  { color: 'red', label: 'Data has changed' },
-  { color: 'yellow', label: 'Data has not changed' },
-  { color: 'grey', label: 'No data' }
+  { color: 'red', label: 'Clear cut that recently increased in size' },
+  { color: 'yellow', label: 'Clear cut that has not changed in size' },
+  { color: 'grey', label: 'Clear cut with no data available' }
 ];
 
 export const CHART_COLORS = ['#5E95D6', '#55BACF', '#DCA7D3'];
