@@ -25,11 +25,11 @@ def clearcuts_info(request, start_date, end_date):
     NO_DATA = 2
 
     if Clearcut.objects.all().count() == 0:
-        return HttpResponse(status=404)
+        return JsonResponse({})
 
     date_filtered_clearcuts = Clearcut.objects.filter(image_date__range=[start_date, end_date])
     if date_filtered_clearcuts.count() == 0:
-        return HttpResponse(status=404)
+        return JsonResponse({})
 
     zone_max_min_date_clearcuts = \
         date_filtered_clearcuts \
