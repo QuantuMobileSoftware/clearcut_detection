@@ -120,6 +120,13 @@ AUTH_PASSWORD_VALIDATORS = [
     },
 ]
 
+# In summer can lower cloud percentage to 5-10, amd enlarge nodata pixel threshold to 50 and dates reviewed to 20-25
+MAXIMUM_CLOUD_PERCENTAGE_ALLOWED = 20.0
+MAXIMUM_EMPTY_PIXEL_PERCENTAGE = 5.0
+MAXIMUM_DATES_REVIEWED_FOR_TILE = 12
+
+MAPBOX_USER = 'quantum-inc'
+MAPBOX_ACCESS_TOKEN = os.environ.get('MAPBOX_SECRET_KEY')
 
 # Internationalization
 # https://docs.djangoproject.com/en/2.2/topics/i18n/
