@@ -65,7 +65,7 @@ export default class Map extends Component {
           ['==', ['get', 'color'], 1],
           '#ffed57',
           ['==', ['get', 'color'], 2],
-          '#bebebe',
+          '#2d4ab9',
           '#fff'
         ],
         'fill-opacity': [

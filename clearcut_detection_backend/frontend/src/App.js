@@ -107,6 +107,7 @@ class App extends Component {
   }
 
   onClick(e) {
+    this.setState({ activeItem: null });
     const { startDate, endDate } = this.state;
     const { features, lngLat } = e;
     const [longitude, latitude] = lngLat;
