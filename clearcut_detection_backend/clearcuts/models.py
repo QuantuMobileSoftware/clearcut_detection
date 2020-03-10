@@ -15,3 +15,16 @@ class Clearcut(models.Model):
 
     def __str__(self):
         return f"Clearcut {self.id}"
+
+
+class TileInformation(models.Model):
+    tile_name = models.CharField(max_length=5, blank=False, null=False)
+    tile_location = models.CharField(max_length=60, blank=True, null=True)
+    tile_metadata_hash = models.CharField(max_length=32, default=0, blank=True, null=True)
+    cloud_coverage = models.FloatField(default=0, blank=False, null=False)
+    mapbox_tile_id = models.CharField(max_length=32, blank=True, null=True)
+    mapbox_tile_name = models.CharField(max_length=32, blank=True, null=True)
+    mapbox_tile_layer = models.CharField(max_length=32, blank=True, null=True)
+    coordinates = models.PolygonField(blank=True, null=True)
+
+    objects = models.Manager()
