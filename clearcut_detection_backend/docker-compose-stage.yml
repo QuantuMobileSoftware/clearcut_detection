@@ -43,6 +43,8 @@ services:
     image: clearcut_detection/backend
     environment:
       - DJANGO_SETTINGS_MODULE=clearcut_detection_backend.prod_settings
+    env_file:
+      - django.env
     volumes:
       - ./:/code
     working_dir: /code
