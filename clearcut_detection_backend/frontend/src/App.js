@@ -119,8 +119,16 @@ class App extends Component {
     this.setState({ activeItem, position: { longitude, latitude } });
   }
 
+  handleFocusChange() {
+    const { startDate, endDate } = this.state;
+    if (startDate && endDate) {
+      this.setState({ startDate: null, endDate: null })
+    }
+  }
+
   onDatesChange({ startDate, endDate }) {
     const { activeItem } = this.state;
+
 
     if (startDate && endDate) {
       const FORMATTED_START_DATE = startDate.format(DATE_FORMAT.default);
@@ -189,8 +197,10 @@ class App extends Component {
             endDate={endDate}
             focusedInput={focusedFilterInput}
             onDatesChange={this.onDatesChange}
-            onFocusChange={focusedInput =>
-              this.setState({ focusedFilterInput: focusedInput })
+            onFocusChange={focusedInput => {
+                this.handleFocusChange();
+                this.setState({focusedFilterInput: focusedInput})
+              }
             }
             onCalendarIconClick={() => {
               if (!focusedFilterInput && !isCalendarOpen) {
