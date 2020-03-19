@@ -10,7 +10,9 @@ MAPBOX_TIFFS_DIR = path_exists_or_create('data/mapbox_tiffs')
 
 
 def jp2_to_tiff():
-
+    """
+    Conversion raw satellite jp2 images to tiffs for mapbox
+    """
     jp2files = list(TileInformation.objects
                     .filter(tile_location__contains='jp2')
                     .filter(tile_location__contains='TCI')
@@ -20,13 +22,14 @@ def jp2_to_tiff():
         logging.warning('Converting %s to TIFF format', file)
         geo_tiff_file = os.path.join(MAPBOX_TIFFS_DIR, f'{filename}.tiff')
         command_jp2_to_tiff = f'gdalwarp -of GTiff -overwrite -ot Byte -t_srs EPSG:4326 ' \
-            f'-wm 4096 -multi -wo NUM_THREADS=ALL_CPUS ' \
-            f'-co COMPRESS=DEFLATE -co PREDICTOR=2 {file} {geo_tiff_file}'
+                              f'-wm 4096 -multi -wo NUM_THREADS=ALL_CPUS ' \
+                              f'-co COMPRESS=DEFLATE -co PREDICTOR=2 {file} {geo_tiff_file}'
 
         # TODO: compressing and renaming dataset for backup reasons
         """
-        rio calc "(asarray (take a 1) (take a 2) (take a 3))" 
-        --co compress=lzw --co tiled=true --co blockxsize=256 --co blockysize=256 --name a={src_tile} {dst_tile}
+        rio calc "(asarray (take a 1) (take a 2) (take a 3))"
+        --co compress=lzw --co tiled=true --co blockxsize=256 --co blockysize=256
+        --name a={src_tile} {dst_tile}
         """
         # removing empty data pixels from dataset
         command_cutoff_nodata = f'rio edit-info --nodata 0 {geo_tiff_file}'
