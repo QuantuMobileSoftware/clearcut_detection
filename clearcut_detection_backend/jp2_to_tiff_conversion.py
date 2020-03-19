@@ -3,9 +3,10 @@ import os
 import subprocess
 
 from clearcuts.models import TileInformation
+from utils import path_exists_or_create
 
 logging.basicConfig(format='%(asctime)s %(message)s')
-DATA_DIR = 'data'
+MAPBOX_TIFFS_DIR = path_exists_or_create('data/mapbox_tiffs')
 
 
 def jp2_to_tiff():
@@ -17,7 +18,7 @@ def jp2_to_tiff():
     for file in jp2files:
         filename = os.path.basename(file).split('.')[0]
         logging.warning('Converting %s to TIFF format', file)
-        geo_tiff_file = os.path.join(DATA_DIR, f'{filename}.tiff')
+        geo_tiff_file = os.path.join(MAPBOX_TIFFS_DIR, f'{filename}.tiff')
         command_jp2_to_tiff = f'gdalwarp -of GTiff -overwrite -ot Byte -t_srs EPSG:4326 ' \
             f'-wm 4096 -multi -wo NUM_THREADS=ALL_CPUS ' \
             f'-co COMPRESS=DEFLATE -co PREDICTOR=2 {file} {geo_tiff_file}'
