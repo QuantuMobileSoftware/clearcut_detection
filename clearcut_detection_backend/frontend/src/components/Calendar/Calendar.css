@@ -56,6 +56,12 @@
   color: #202020;
 }
 
+@media only screen and (max-height: 724px) {
+  .DateRangePicker_picker, .DateRangePicker_picker_1, .DateRangePicker_picker__directionLeft, .DateRangePicker_picker__directionLeft_2 {
+    bottom: -270px !important;
+  }
+}
+
 @media only screen and (max-width: 768px) {
   .DateInput_input {
     font-size: 13px;

@@ -55,7 +55,7 @@ export default class Calendar extends Component {
     return (
       <div className="calendar_wrapper">
         <div className="calendar_inner">
-          <div className="calendar_inputholder">
+          <div>
             <DateRangePicker
               hideKeyboardShortcutsPanel={true}
               numberOfMonths={numberOfMonths}
