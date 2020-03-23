@@ -8,8 +8,9 @@ from google.cloud import storage
 from xml.dom import minidom
 
 from clearcuts.models import TileInformation
+from utils import path_exists_or_create
 
-DATA_DIR = 'data'
+DOWNLOADED_IMAGES_DIR = path_exists_or_create('data/source_images/')
 
 
 class SentinelDownload:
@@ -72,7 +73,7 @@ class SentinelDownload:
         for blob in blobs:
             band, download_needed = self.file_need_to_be_downloaded(blob.name)
             if download_needed:
-                filename = os.path.join(DATA_DIR, f'{tile_name}_{band}.jp2')
+                filename = os.path.join(DOWNLOADED_IMAGES_DIR, f'{tile_name}_{band}.jp2')
                 self.download_file_from_storage(blob, filename)
                 tile_info = TileInformation.objects.get(tile_name=tile_name)
                 tile_info.tile_location = filename
@@ -113,7 +114,7 @@ class SentinelDownload:
                 nested_granule_id_list = self.find_granule_id(nested_command)
                 nested_granule_id = nested_granule_id_list[0]
                 updated_tile_uri = f'{tile_uri}/{granule_id}/GRANULE/{nested_granule_id}'
-                filename = os.path.join(DATA_DIR, f'{tile_name}_{metadata_file}')
+                filename = os.path.join(DOWNLOADED_IMAGES_DIR, f'{tile_name}_{metadata_file}')
                 try:
                     blob = self.storage_bucket.get_blob(f'{updated_tile_uri}/{metadata_file}')
                     update_needed = self.define_if_tile_update_needed(blob, tile_name, filename)

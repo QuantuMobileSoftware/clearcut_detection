@@ -8,6 +8,8 @@ from django.conf import settings
 from django.core.mail import EmailMessage
 
 django.setup()
+
+from prepare_tif import prepare_tiff
 from sentinel_download import SentinelDownload
 from upload_to_mapbox import start_upload
 from jp2_to_tiff_conversion import jp2_to_tiff
@@ -18,6 +20,7 @@ if __name__ == '__main__':
         sentinel_downloader.process_download()
         sentinel_downloader.executor.shutdown()
         jp2_to_tiff()
+        prepare_tiff()
         start_upload().shutdown()
     except Exception as error:
         EmailMessage(

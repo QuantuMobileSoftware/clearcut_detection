@@ -1,29 +1,37 @@
-import os
-import imageio
+"""
+Conversion raw satellite images to prepared model images
+"""
 import argparse
+import os
+from os.path import join, splitext
+
+import imageio
 import rasterio
 import numpy as np
 
 from tqdm import tqdm
-from os.path import join, splitext, basename
+
+from clearcuts.models import TileInformation
+from sentinel_download import DOWNLOADED_IMAGES_DIR
+from utils import path_exists_or_create
 
 
 def search_band(band, folder, file_type):
     for file in os.listdir(folder):
         if band in file and file.endswith(file_type):
             return splitext(file)[0]
-    
+
     return None
 
 
-def to_tiff(img_file, output_type='Float32'):
+def to_tiff(input_jp2_file, output_tiff_file, output_type='Float32'):
     os.system(
         f'gdal_translate -ot {output_type} \
-        {img_file} {splitext(img_file)[0]}.tif'
+        {input_jp2_file} {output_tiff_file}'
     )
 
 
-def scale_img(img_file, min_value=0, max_value=255, output_type='Byte'):
+def scale_img(img_file, output_file=None, min_value=0, max_value=255, output_type='Byte'):
     with rasterio.open(img_file) as src:
         img = src.read(1)
         img = np.nan_to_num(img)
@@ -31,11 +39,13 @@ def scale_img(img_file, min_value=0, max_value=255, output_type='Byte'):
         std_ = img.std()
         min_ = max(img.min(), mean_ - 2 * std_)
         max_ = min(img.max(), mean_ + 2 * std_)
-        
+
+        output_file = os.path.splitext(img_file)[0] if output_file is None else output_file
+
         os.system(
             f'gdal_translate -ot {output_type} \
             -scale {min_} {max_} {min_value} {max_value} \
-            {img_file} {os.path.splitext(img_file)[0]}_scaled.tif'
+            {img_file} {output_file}_scaled.tif'
         )
 
 
@@ -60,61 +70,72 @@ def parse_args():
     return parser.parse_args()
 
 
+MODEL_TIFFS_DIR = path_exists_or_create('data/model_tiffs')
+
+
+def prepare_tiff(data_folder=DOWNLOADED_IMAGES_DIR, save_path=MODEL_TIFFS_DIR):
+    for tile_name in TileInformation.objects.values_list('tile_name', flat=True):
+
+        source_files = {'b4_name': join(data_folder, f'{tile_name}_B04.jp2'),
+                        'b8_name': join(data_folder, f'{tile_name}_B08.jp2'),
+                        'rgb_name': join(data_folder, f'{tile_name}_TCI.jp2')}
+
+        output_tiffs = {'tiff_b4_name': join(save_path, f'{tile_name}_B04.tif'),
+                        'tiff_b8_name': join(save_path, f'{tile_name}_B08.tif'),
+                        'tiff_rgb_name': join(save_path, f'{tile_name}_TCI.tif'),
+                        'tiff_ndvi_name': join(save_path, f'{tile_name}_ndvi.tif'),
+                        'tiff_output_name': join(save_path, f'{tile_name}.tif'),
+                        'scaled_b8_name': join(save_path, f'{tile_name}_B08'),
+                        'scaled_ndvi_name': join(save_path, f'{tile_name}_ndvi')}
+
+        print('\nb4 and b8 bands are converting to *tif...\n')
+
+        to_tiff(source_files.get('b4_name'), output_tiffs.get('tiff_b4_name'))
+        to_tiff(source_files.get('b8_name'), output_tiffs.get('tiff_b8_name'))
+        to_tiff(source_files.get('rgb_name'), output_tiffs.get('tiff_rgb_name'), 'Byte')
+
+        print('\nndvi band is processing...')
+
+        get_ndvi(output_tiffs.get('tiff_b4_name'),
+                 output_tiffs.get('tiff_b8_name'),
+                 output_tiffs.get('tiff_ndvi_name'))
+
+        print('\nall bands are scaling to 8-bit images...\n')
+
+        scale_img(output_tiffs.get('tiff_ndvi_name'), output_tiffs.get('scaled_ndvi_name'))
+        scale_img(source_files.get('b8_name'), output_tiffs.get('scaled_b8_name'))
+
+        print('\nall bands are being merged...\n')
+
+        os.system(
+            f"gdal_merge.py -separate -o {output_tiffs.get('tiff_output_name')} \
+            {output_tiffs.get('tiff_rgb_name')} {output_tiffs.get('scaled_ndvi_name')}_scaled.tif "
+            f"{output_tiffs.get('scaled_b8_name')}_scaled.tif"
+        )
+
+        print('\nsaving in png...\n')
+
+        png_folder = path_exists_or_create(os.path.join(MODEL_TIFFS_DIR, f'{tile_name}_png'))
+
+        bands = {
+            f'{join(png_folder, "rgb.png")}': output_tiffs.get('tiff_rgb_name'),
+            f'{join(png_folder, "ndvi.png")}': output_tiffs.get('tiff_ndvi_name'),
+            f'{join(png_folder, "b8.png")}': f"{output_tiffs.get('scaled_b8_name')}_scaled.tif"
+        }
+
+        for dest, source in tqdm(bands.items()):
+            with rasterio.open(source) as src:
+                imageio.imwrite(dest, np.moveaxis(src.read(), 0, -1))
+                src.close()
+
+        for item in os.listdir(save_path):
+            if item.endswith('.tif'):
+                os.remove(join(save_path, item))
+
+        print('\ntemp files have been deleted\n')
+
+
 if __name__ == '__main__':
-    
     args = parse_args()
 
-    granule_folder = join(args.data_folder, 'GRANULE')
-    tile_folder = list(os.walk(granule_folder))[0][1][-1]
-    img_folder = join(granule_folder, tile_folder, 'IMG_DATA', 'R10m')
-    
-    save_file = join(args.save_path, f'{tile_folder}.tif')
-    png_folder = join(args.save_path, tile_folder)
-
-    b4_name = join(img_folder, search_band('B04', img_folder, 'jp2'))
-    b8_name = join(img_folder, search_band('B08', img_folder, 'jp2'))
-    rgb_name = join(img_folder, search_band('TCI', img_folder, 'jp2'))
-    ndvi_name = join(img_folder, 'ndvi')
-
-    print('\nb4 and b8 bands are converting to *tif...\n')
-
-    to_tiff(f'{b4_name}.jp2')
-    to_tiff(f'{b8_name}.jp2')
-    to_tiff(f'{rgb_name}.jp2', 'Byte')
-
-    print('\nndvi band is processing...')    
-
-    get_ndvi(f'{b4_name}.tif', f'{b8_name}.tif', f'{ndvi_name}.tif')
-
-    print('\nall bands are scaling to 8-bit images...\n')
-
-    scale_img(f'{ndvi_name}.tif')
-    scale_img(f'{b8_name}.jp2')
-
-    print('\nall bands are being merged...\n')
-
-    os.system(
-        f'gdal_merge.py -separate -o {save_file} \
-        {rgb_name}.tif {ndvi_name}_scaled.tif {b8_name}_scaled.tif'
-    )
-    
-    print('\nsaving in png...\n')
-
-    os.mkdir(png_folder)
-
-    bands = {
-        f'{join(png_folder, "rgb.png")}': f'{rgb_name}.tif',
-        f'{join(png_folder, "ndvi.png")}': f'{ndvi_name}_scaled.tif',
-        f'{join(png_folder, "b8.png")}': f'{b8_name}_scaled.tif'
-    }
-
-    for dest, source in tqdm(bands.items()):
-        with rasterio.open(source) as src:
-            imageio.imwrite(dest, np.moveaxis(src.read(), 0, -1))
-            src.close()
-
-    for item in os.listdir(img_folder):
-        if item.endswith('.tif'):
-            os.remove(join(img_folder, item))
-
-    print('\ntemp files have been deleted\n')
+    prepare_tiff(args.data_folder, args.save_path)
