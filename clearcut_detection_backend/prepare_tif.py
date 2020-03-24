@@ -74,7 +74,7 @@ def prepare_tiff(save_path=MODEL_TIFFS_DIR):
         .filter(tile_name__isnull=False,
                 source_b04_location__isnull=False,
                 source_b08_location__isnull=False,
-                source_tci_location__isnull=False) \
+                source_tci_location__isnull=False)
 
     for tile in query:
         # defining temporary files names
@@ -110,6 +110,7 @@ def prepare_tiff(save_path=MODEL_TIFFS_DIR):
         )
 
         tile.model_tiff_location = tiff_output_name
+        tile.save()
 
         print('\nsaving in png...\n')
         bands = {
