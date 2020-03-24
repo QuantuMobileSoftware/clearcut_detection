@@ -19,7 +19,13 @@ class Clearcut(models.Model):
 
 class TileInformation(models.Model):
     tile_name = models.CharField(max_length=5, blank=False, null=False)
+
     tile_location = models.CharField(max_length=60, blank=True, null=True)
+    source_tci_location = models.CharField(max_length=60, blank=True, null=True)
+    source_b04_location = models.CharField(max_length=60, blank=True, null=True)
+    source_b08_location = models.CharField(max_length=60, blank=True, null=True)
+    model_tiff_location = models.CharField(max_length=60, blank=True, null=True)
+
     tile_metadata_hash = models.CharField(max_length=32, default=0, blank=True, null=True)
     cloud_coverage = models.FloatField(default=0, blank=False, null=False)
     mapbox_tile_id = models.CharField(max_length=32, blank=True, null=True)

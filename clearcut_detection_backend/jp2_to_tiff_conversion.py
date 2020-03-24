@@ -14,9 +14,9 @@ def jp2_to_tiff():
     Conversion raw satellite jp2 images to tiffs for mapbox
     """
     jp2files = list(TileInformation.objects
-                    .filter(tile_location__contains='jp2')
-                    .filter(tile_location__contains='TCI')
-                    .values_list('tile_location', flat=True))
+                    .filter(source_tci_location__contains='jp2')
+                    .filter(source_tci_location__contains='TCI')
+                    .values_list('source_tci_location', flat=True))
     for file in jp2files:
         filename = os.path.basename(file).split('.')[0]
         logging.warning('Converting %s to TIFF format', file)
@@ -37,7 +37,7 @@ def jp2_to_tiff():
         for command in [command_jp2_to_tiff, command_cutoff_nodata]:
             result = process_command(command)
         if result:
-            tile_info = TileInformation.objects.get(tile_location=file)
+            tile_info = TileInformation.objects.get(source_tci_location=file)
             tile_info.tile_location = geo_tiff_file
             tile_info.save()
 

@@ -8,7 +8,7 @@ from google.cloud import storage
 from xml.dom import minidom
 
 from clearcuts.models import TileInformation
-from utils import path_exists_or_create
+from utils import path_exists_or_create, Bands
 
 DOWNLOADED_IMAGES_DIR = path_exists_or_create('data/source_images/')
 
@@ -76,7 +76,12 @@ class SentinelDownload:
                 filename = os.path.join(DOWNLOADED_IMAGES_DIR, f'{tile_name}_{band}.jp2')
                 self.download_file_from_storage(blob, filename)
                 tile_info = TileInformation.objects.get(tile_name=tile_name)
-                tile_info.tile_location = filename
+                if band == Bands.B04.value:
+                    tile_info.source_b04_location = filename
+                elif band == Bands.B08.value:
+                    tile_info.source_b08_location = filename
+                else:
+                    tile_info.source_tci_location = filename
                 tile_info.save()
 
     def file_need_to_be_downloaded(self, name):
