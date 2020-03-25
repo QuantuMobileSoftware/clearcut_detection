@@ -1,6 +1,7 @@
 """
 Updating mapbox tiles
 """
+import threading
 import traceback
 
 import django
@@ -19,8 +20,16 @@ if __name__ == '__main__':
         sentinel_downloader = SentinelDownload()
         sentinel_downloader.process_download()
         sentinel_downloader.executor.shutdown()
-        jp2_to_tiff()
-        prepare_tiff()
+
+        prepare_tiff_thread = threading.Thread(target=prepare_tiff)
+        jp2_to_tiff_thread = threading.Thread(target=jp2_to_tiff)
+
+        prepare_tiff_thread.start()
+        jp2_to_tiff_thread.start()
+
+        prepare_tiff_thread.join()
+        jp2_to_tiff_thread.join()
+
         start_upload().shutdown()
     except Exception as error:
         EmailMessage(

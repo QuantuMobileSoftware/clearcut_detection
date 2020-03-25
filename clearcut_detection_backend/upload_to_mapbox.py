@@ -61,6 +61,7 @@ def upload_to_mapbox(tile):
     tile.mapbox_tile_id = mapbox_tile_info.get('id')
     tile.mapbox_tile_name = mapbox_tile_info.get('name')
     tile.mapbox_tile_layer = mapbox_tile_info.get('tileset')
+    tile.save()
 
     return mapbox_tile_info
 
