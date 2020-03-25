@@ -80,8 +80,10 @@ class SentinelDownload:
                     tile_info.source_b04_location = filename
                 elif band == Bands.B08.value:
                     tile_info.source_b08_location = filename
-                else:
+                elif band == Bands.TCI.value:
                     tile_info.source_tci_location = filename
+                else:
+                    print('Tile with unknown band has been downloaded')
                 tile_info.save()
 
     def file_need_to_be_downloaded(self, name):
