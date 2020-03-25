@@ -67,5 +67,10 @@ clearcut_detection_backend/static/
 peps_download_config.ini
 
 # Env files
-django.env
+*.env
 key.json
+credentials.json
+
+# Model's weights
+*.pth
+

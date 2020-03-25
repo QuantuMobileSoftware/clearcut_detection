@@ -28,6 +28,8 @@ services:
       context: ./model
       dockerfile: model.Dockerfile
     image: clearcut_detection/model
+    env_file:
+      - ./model/model.env
     volumes:
       - ./model/:/model
       - ./data/:/model/data
