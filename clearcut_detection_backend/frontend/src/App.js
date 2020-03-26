@@ -1,4 +1,5 @@
 import React, { Component } from 'react';
+import ReactGA from 'react-ga';
 import moment from 'moment';
 import { debounce } from 'lodash';
 import { ToastContainer } from 'react-toastify';
@@ -18,6 +19,10 @@ import api from './api/api';
 import { URL } from './config/url';
 import { DATE_FORMAT, CUSTOM_LEGEND_DATA } from './config';
 import { fetchData, fetchPolygonInfo, prepareActivePolygonData } from "./api/maps";
+
+const trackingId = process.env.REACT_APP_GOOGLE_ANALYTICS_TRACKING_ID;
+ReactGA.initialize(trackingId);
+ReactGA.pageview(window.location.pathname + window.location.search);
 
 class App extends Component {
 
