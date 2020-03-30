@@ -9,6 +9,8 @@ from flask import Flask, abort, request, jsonify, make_response
 from predict_raster import predict_raster, polygonize, save_polygons
 from os.path import join
 
+from utils import weights_exists_or_download
+
 app = Flask(__name__)
 
 
@@ -33,7 +35,8 @@ def raster_prediction():
 
             channels = models[model]['channels']
             network = models[model]['network']
-            model_weights_path = models[model]['weights']
+            model_weights_path = weights_exists_or_download(models[model]['weights'],
+                                                            os.environ.get('GOOGLE_DRIVE_FILE_ID'))
             raster_array, meta = predict_raster(
                 image_path, channels,
                 network, model_weights_path, input_size=input_size
