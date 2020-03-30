@@ -1,7 +1,6 @@
 """
 Updating mapbox tiles
 """
-import threading
 import traceback
 
 import django
@@ -10,10 +9,10 @@ from django.core.mail import EmailMessage
 
 django.setup()
 
-from prepare_tif import prepare_tiff
+from jp2_to_tiff_conversion import jp2_to_tiff
+from model_call import ModelCaller
 from sentinel_download import SentinelDownload
 from upload_to_mapbox import start_upload
-from jp2_to_tiff_conversion import jp2_to_tiff
 
 if __name__ == '__main__':
     try:
@@ -21,16 +20,14 @@ if __name__ == '__main__':
         sentinel_downloader.process_download()
         sentinel_downloader.executor.shutdown()
 
-        prepare_tiff_thread = threading.Thread(target=prepare_tiff)
-        jp2_to_tiff_thread = threading.Thread(target=jp2_to_tiff)
+        model_caller = ModelCaller()
+        model_caller.start()
 
-        prepare_tiff_thread.start()
-        jp2_to_tiff_thread.start()
+        jp2_to_tiff()
+        uploader = start_upload()
 
-        prepare_tiff_thread.join()
-        jp2_to_tiff_thread.join()
-
-        start_upload().shutdown()
+        uploader.shutdown()
+        model_caller.executor.shutdown()
     except Exception as error:
         EmailMessage(
             subject='Pep download issue',
