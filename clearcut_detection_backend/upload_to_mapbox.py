@@ -29,7 +29,6 @@ def start_upload():
         .filter(tile_location__contains='tiff')\
         .filter(tile_location__contains='TCI')
     for tile in tiles:
-        # Upload can be done in single thread.
         executor.submit(upload_to_mapbox, tile)
     return executor
 
@@ -61,6 +60,9 @@ def upload_to_mapbox(tile):
     tile.mapbox_tile_id = mapbox_tile_info.get('id')
     tile.mapbox_tile_name = mapbox_tile_info.get('name')
     tile.mapbox_tile_layer = mapbox_tile_info.get('tileset')
+
+    os.remove(tile.tile_location)
+    tile.tile_location = None
     tile.save()
 
     return mapbox_tile_info
