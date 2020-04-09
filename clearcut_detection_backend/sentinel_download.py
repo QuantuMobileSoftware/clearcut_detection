@@ -22,7 +22,7 @@ class SentinelDownload:
         self.storage_bucket = self.storage_client.get_bucket('gcp-public-data-sentinel-2')
         self.config = ConfigParser(allow_no_value=True)
         self.config.read('gcp_config.ini')
-        self.area_tile_set = self.config.get('config', 'KHARKIV_OBLAST_TILE_SET').split()
+        self.area_tile_set = self.config.get('config', 'AREA_TILE_SET').split()
         self.bands_to_download = self.config.get('config', 'BANDS_TO_DOWNLOAD').split()
         self.resolution = self.config.get('config', 'RESOLUTION')
         self.executor = ThreadPoolExecutor(max_workers=10)

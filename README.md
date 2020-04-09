@@ -8,6 +8,11 @@
 To start a web-service, do next:
 * `cd clearcut_detection_backend/`  
 * create peps_download_config.ini based on the peps_download_config.ini.example and setup secure params
+* update `gcp_config.ini`, `AREA_TILE_SET` value is responsible for region that should be fetched and processed.
+ In order to use Google Cloud Storage you need to generate service account key and put this file inside /clercut_detection_backend folder, file name should be specified inside gcp_config file(key.json by default).
+ Update it if needed. To get tiles Ids you can use https://mappingsupport.com/p2/gissurfer.php?center=14SQH05239974&zoom=4&basemap=USA_basemap   
+* create django.env file based on django.env.dist 
+* create model.env file based on model.env.dist should be inside /model folder, use same service account key generated earlier  
 * put unet_v4.pt in to  clearcut_detection_backend/model/unet_v4.pt (trained model can be obtained from maintainers)
 * Run `docker-compose -f docker-compose.dev.yml up` in order to run docker for backend and frontend development.  
 * Run `docker-compose -f docker-compose-stage.yml up` for deployment.
