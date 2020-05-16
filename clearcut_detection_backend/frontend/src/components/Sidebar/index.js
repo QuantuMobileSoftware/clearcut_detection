@@ -39,7 +39,10 @@ class Sidebar extends Component {
       <aside className="sidebar">
         <header className="sidebar-header">
           <div className="logo">
-            <Logo />
+            {/* <Logo />  */}
+            <span class="logo-soil">
+              <span class="firstletter">S</span>oil <span class="firstletter">E</span>rosion
+              </span>
           </div>
           <Switch state={isOpened} handleClick={this.handleClick} />
         </header>

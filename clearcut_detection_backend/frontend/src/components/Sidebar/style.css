@@ -93,3 +93,10 @@
     overflow-y: auto;
   }
 }
+
+.logo-soil{
+  font-size: 28px;
+}
+.firstletter{
+  color: #a67005;
+}
