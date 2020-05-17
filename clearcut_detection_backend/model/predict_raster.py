@@ -69,8 +69,8 @@ def predict_raster(tiff_file, channels, network, model_weights_path, input_size=
                     [col, step_col]
                 ]
 
-                for channel in range(res.shape[0]):
-                    res[channel] = scale(res[channel], 255)
+                #for channel in range(res.shape[0]):
+                #    res[channel] = scale(res[channel], 255)
 
                 res = transforms.ToTensor()(res.astype(np.uint8)).to(device)
                 pred = predict(model, res, (1, count_channels(channels), input_size, input_size), device)
@@ -93,13 +93,13 @@ def predict_raster(tiff_file, channels, network, model_weights_path, input_size=
 
 
 def get_model(name='fpn50', model_weights_path=None):
-    if name == 'unet50':
+    if 'unet50' in name:
         return smp.Unet('resnet50', encoder_weights='imagenet')
-    elif name == 'unet101':
+    elif 'unet101' in name:
         return smp.Unet('resnet101', encoder_weights='imagenet')
-    elif name == 'fpn50':
+    elif 'fpn50' in name:
         return smp.FPN('resnet50', encoder_weights='imagenet')
-    elif name == 'fpn101':
+    elif 'fpn101' in name:
         return smp.FPN('resnet101', encoder_weights='imagenet')
     else:
         raise ValueError("Unknown network")
@@ -108,7 +108,7 @@ def get_model(name='fpn50', model_weights_path=None):
 def count_channels(channels):
     count = 0
     for ch in channels:
-        if ch == 'rgb':
+        if ch == 'rgb' or ch == 'nrg':
             count += 3
         elif ch in ['ndvi', 'b8']:
             count += 1
@@ -121,7 +121,7 @@ def count_channels(channels):
 def filter_by_channels(image_tensor, channels):
     result = []
     for ch in channels:
-        if ch == 'rgb':
+        if ch == 'rgb' or ch == 'nrg':
             result.append(image_tensor[:, :, :3])
         elif ch == 'ndvi':
             result.append(image_tensor[:, :, 3:4])
@@ -152,10 +152,12 @@ def save_raster(raster_array, meta, save_path, filename):
 
     with rasterio.open(f'{save_path}.tif', 'w', **meta) as dst:
         for i in range(1, meta['count'] + 1):
+            meta.update(driver='GTiff')
+            meta.update(dtype=rasterio.float32)
             dst.write(raster_array, i)
 
 
-def polygonize(raster_array, meta, threshold=0.5, transform=True):
+def polygonize(raster_array, meta, threshold=0.7, transform=True):
     raster_array = raster_array > threshold
     raster_array = (raster_array * 255).astype(np.uint8)
 
@@ -209,7 +211,7 @@ def parse_args():
     )
     parser.add_argument(
         '--channels', '-ch', dest='channels',
-        default=['rgb', 'ndvi', 'ndvi_color', 'b2'],
+        default=['nrg'],
         help='Channel list', nargs='+'
     )
     parser.add_argument(

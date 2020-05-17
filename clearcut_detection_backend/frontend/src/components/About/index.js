@@ -8,7 +8,7 @@ import Menu from "../Menu";
 const About = ({ links }) => {
   const renderDescription = () => (
     <p className="about-description">
-      Illegal logging detection and alerting system
+      Soils most likely suffering from erosion
     </p>
   );
 

@@ -3,9 +3,9 @@ export const DATE_FORMAT = {
 };
 
 export const CUSTOM_LEGEND_DATA = [
-  { color: 'red', label: 'Deforestation zone where increase of deforestation area was detected.' },
-  { color: 'yellow', label: 'Deforestation zone that is not changed during the specified period.' },
-  { color: 'blue', label: 'Zones with uncertainty about deforestation' }
+  { color: 'red', label: 'Erosion zone where increase of erosion area was detected.' },
+  { color: 'yellow', label: 'Erosion zone that is not changed during the specified period.' },
+  { color: 'blue', label: 'Zones with uncertainty about erosion' }
 ];
 
 export const CHART_COLORS = ['#5E95D6', '#55BACF', '#DCA7D3'];
