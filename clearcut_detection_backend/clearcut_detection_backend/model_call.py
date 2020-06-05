@@ -24,7 +24,7 @@ class ModelCaller:
         self.executor = ThreadPoolExecutor(max_workers=10)
 
     def start(self):
-        for tile in self.query[:2]:
+        for tile in self.query[:1]:
             self.executor.submit(self.process, tile)
 
     def process(self, tile):
@@ -32,7 +32,11 @@ class ModelCaller:
         Converting jp2file to tiff, then sending its to model and saving results to db
         """
         prepare_tiff(tile)
+        print("!!!!!!!!!!!!!!!!!!!!!!")
+        print("prepare_tiff finished")
+
         results = raster_prediction(tile.model_tiff_location)
+        print("results: ", results)
 
         results_path = os.path.join(self.data_dir, results[0].get('polygons'))
         save(results_path)
@@ -51,7 +55,10 @@ def raster_prediction(tif_path):
         endpoint=model_api_cfg["endpoint"]
     )
     data = {"image_path": tif_path}
+    print(f"calling {api_endpoint}")
     response = requests.post(url=api_endpoint, json=data)
+    print(f"response {response.text}")
+
     result = response.text
     datastore = json.loads(result)
     return datastore
