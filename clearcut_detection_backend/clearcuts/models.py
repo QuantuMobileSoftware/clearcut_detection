@@ -1,5 +1,5 @@
 from django.contrib.gis.db import models
-
+import datetime
 
 class Zone(models.Model):
     def __str__(self):
@@ -7,8 +7,10 @@ class Zone(models.Model):
 
 
 class Clearcut(models.Model):
-    image_date = models.DateField()
+    image_date_0 = models.DateField(default=datetime.date.today)
+    image_date_1 = models.DateField(default=datetime.date.today)
     area = models.FloatField()
+    forest = models.PositiveIntegerField(default=1)
     centroid = models.PointField()
     zone = models.ForeignKey(Zone, on_delete=models.CASCADE)
     mpoly = models.PolygonField()
@@ -18,12 +20,18 @@ class Clearcut(models.Model):
 
 
 class TileInformation(models.Model):
-    tile_name = models.CharField(max_length=5, blank=False, null=False)
+    tile_name   = models.CharField(max_length=7, blank=False, null=False)
+    tile_index  = models.CharField(max_length=5, blank=False, null=False)
+    tile_date   = models.DateField(default=datetime.date.today)
 
     tile_location = models.CharField(max_length=60, blank=True, null=True)
     source_tci_location = models.CharField(max_length=60, blank=True, null=True)
     source_b04_location = models.CharField(max_length=60, blank=True, null=True)
     source_b08_location = models.CharField(max_length=60, blank=True, null=True)
+    source_b8a_location = models.CharField(max_length=60, blank=True, null=True)
+    source_b11_location = models.CharField(max_length=60, blank=True, null=True)
+    source_b12_location = models.CharField(max_length=60, blank=True, null=True)
+    source_clouds_location = models.CharField(max_length=60, blank=True, null=True)
     model_tiff_location = models.CharField(max_length=60, blank=True, null=True)
 
     tile_metadata_hash = models.CharField(max_length=32, default=0, blank=True, null=True)
