@@ -13,26 +13,22 @@ from jp2_to_tiff_conversion import jp2_to_tiff
 from model_call import ModelCaller
 from sentinel_download import SentinelDownload
 from upload_to_mapbox import start_upload
-from utils import get_landcover
 
 if __name__ == '__main__':
-    try: 
-        get_landcover()
+    try:
         sentinel_downloader = SentinelDownload()
         sentinel_downloader.process_download()
         sentinel_downloader.executor.shutdown()
-        
+
         model_caller = ModelCaller()
         model_caller.start()
-        
+
         jp2_to_tiff()
         uploader = start_upload()
+
         uploader.shutdown()
-
         model_caller.executor.shutdown()
-
     except Exception as error:
-        pass
         EmailMessage(
             subject='Pep download issue',
             body=(

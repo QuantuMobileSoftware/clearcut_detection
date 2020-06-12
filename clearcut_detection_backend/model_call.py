@@ -17,55 +17,29 @@ class ModelCaller:
     """
     def __init__(self):
         self.query = TileInformation.objects.filter(tile_name__isnull=False,
-                                                    tile_index__isnull=False,
                                                     source_b04_location__isnull=False,
                                                     source_b08_location__isnull=False,
-                                                    source_b8a_location__isnull=False,
-                                                    source_b11_location__isnull=False,
-                                                    source_b12_location__isnull=False,
-                                                    source_tci_location__isnull=False,
-                                                    source_clouds_location__isnull=False)
-       
-        self.distinct = TileInformation.objects.values('tile_index').distinct()
-
+                                                    source_tci_location__isnull=False)
         self.data_dir = 'data'
-        self.executor = ThreadPoolExecutor(max_workers=1)
-
-    def select_by_index(self, tile_index):
-        return TileInformation.objects.filter(tile_index__exact=tile_index)
+        self.executor = ThreadPoolExecutor(max_workers=10)
 
     def start(self):
         for tile in self.query:
-            self.executor.submit(self.preprocess, tile)
-        for unique_tile_index in list(TileInformation.objects.values('tile_index').distinct()):
-            tile_index = unique_tile_index['tile_index']
-            self.model_predict(self.select_by_index(tile_index))
+            self.executor.submit(self.process, tile)
 
-    def preprocess(self, tile):
+    def process(self, tile):
         """
-        Converting jp2file to tiff
+        Converting jp2file to tiff, then sending its to model and saving results to db
         """
         prepare_tiff(tile)
-    
-    def model_predict(self, tile):
-        """
-        Sending unique tile_index to model and saving results to db
-        """
-        src_tile = tile.first()
-        tif_path = src_tile.model_tiff_location.split('/')[:-2]
-        tif_path = os.path.join(*tif_path)
-        results = raster_prediction(tif_path)
-        
-        results_path = os.path.join(self.data_dir, results[0].get('polygons'))
-        if os.path.exists(results_path):
-            save(tile, results_path, forest=1)
+        results = raster_prediction(tile.model_tiff_location)
 
-        results_path = os.path.join(self.data_dir, results[0].get('polygons_not_forest'))
-        if os.path.exists(results_path):
-            save(tile, results_path, forest=0)
-        
-        #rmtree(os.path.dirname(tile.tile_index))
-        #rmtree(os.path.dirname(results_path))
+        results_path = os.path.join(self.data_dir, results[0].get('polygons'))
+        save(results_path)
+        # clean up
+        rmtree(os.path.dirname(tile.model_tiff_location))
+        rmtree(os.path.dirname(results_path))
+
 
 def raster_prediction(tif_path):
     with open('model_call_config.yml', 'r') as config:

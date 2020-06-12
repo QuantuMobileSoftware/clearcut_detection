@@ -20,9 +20,8 @@ def raster_prediction():
     image_path = data.get('image_path', '')
     if not image_path:
         abort(make_response(jsonify(message="Invalid request payload. It must contains image_path."), 400))
-    if '/' in image_path:
-        filename = re.split(r'[./]', image_path)[-1]
-        print(f"Valid image path ({image_path}), filename {filename}")
+    if '.' in image_path:
+        filename = re.split(r'[./]', image_path)[-2]
     else:
         abort(make_response(jsonify(message=f"Invalid image path ({image_path})"), 400))
     try:
@@ -44,16 +43,12 @@ def raster_prediction():
             )
             save_raster(raster_array, result_directory_path, predicted_filename)
 
-            polygons = polygonize(raster_array > threshold, meta)
-            polygons_not_forest = polygonize(raster_array < -threshold, meta)
-            
+            polygons = polygonize(raster_array, meta, threshold)
             save_polygons(polygons, meta, result_directory_path, predicted_filename)
-            save_polygons(polygons_not_forest, meta, result_directory_path, predicted_filename+'_not_forest')
 
             path_array.append({
                 'picture': join(predicted_directory_name, predicted_filename + '.png'),
-                'polygons': join(predicted_directory_name, predicted_filename + '.geojson'),
-                'polygons_not_forest': join(predicted_directory_name, predicted_filename + '_not_forest.geojson')
+                'polygons': join(predicted_directory_name, predicted_filename + '.geojson')
             })
         return jsonify(path_array)
     except Exception as e:
@@ -66,7 +61,7 @@ def raster_prediction():
 
 def save_raster(raster_array, save_path, filename):
     save_path = join(save_path, filename)
-    imageio.imwrite(f'{save_path}.png', (np.abs(raster_array) * 255).astype(np.uint8))
+    imageio.imwrite(f'{save_path}.png', (raster_array * 255).astype(np.uint8))
 
 
 def load_config():
