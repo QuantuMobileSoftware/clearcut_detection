@@ -29,7 +29,7 @@ class ModelCaller:
         self.distinct = TileInformation.objects.values('tile_index').distinct()
 
         self.data_dir = 'data'
-        self.executor = ThreadPoolExecutor(max_workers=1)
+        self.executor = ThreadPoolExecutor(max_workers=10)
 
     def select_by_index(self, tile_index):
         return TileInformation.objects.filter(tile_index__exact=tile_index)

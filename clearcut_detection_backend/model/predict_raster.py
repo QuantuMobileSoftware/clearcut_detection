@@ -2,6 +2,7 @@ import os
 import re
 import cv2
 import torch
+import logging
 import rasterio
 import argparse
 import numpy as np
@@ -20,6 +21,8 @@ import matplotlib.pyplot as plt
 
 import warnings
 warnings.filterwarnings('ignore')
+
+logging.basicConfig(format='%(asctime)s %(message)s')
 
 def load_model(network, model_weights_path, channels, neighbours):
     device = 'gpu' if torch.cuda.is_available() else 'cpu'
@@ -188,7 +191,7 @@ def scale(tensor, max_value):
 def save_raster(raster_array, meta, save_path, filename):
     if not os.path.exists(save_path):
         os.makedirs(save_path, exist_ok=True)
-        print("Data directory created.")
+        logging.info("Data directory created.")
 
     save_path = os.path.join(save_path, f'predicted_{filename}')
 
@@ -220,16 +223,16 @@ def polygonize(raster_array, meta, transform=True):
 
 def save_polygons(polygons, meta, save_path, filename):
     if len(polygons) == 0:
-        print('no_polygons detected')
+        logging.info('no_polygons detected')
         return
 
     if not os.path.exists(save_path):
         os.makedirs(save_path, exist_ok=True)
-        print("Data directory created.")
+        logging.info("Data directory created.")
 
     gc = GeoSeries(polygons)
     gc.crs = meta['crs']
-    print(f'{filename}.geojson saved.')
+    logging.info(f'{filename}.geojson saved.')
     gc.to_file(os.path.join(save_path, f'{filename}.geojson'), driver='GeoJSON')
 
 

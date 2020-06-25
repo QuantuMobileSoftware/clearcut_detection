@@ -74,3 +74,5 @@ credentials.json
 # Model's weights
 *.pth
 
+# External files
+landcover.zip

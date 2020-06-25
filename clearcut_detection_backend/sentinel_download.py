@@ -148,7 +148,7 @@ class SentinelDownload:
             granule_id_list.reverse()
             granule_num = 0
             for granule_id in granule_id_list:
-                if granule_num<self.sequential_dates_count:
+                if granule_num < self.sequential_dates_count:
                     print('====== GRANULE ID ======')
                     print(granule_id)
                     nested_command = f'gsutil ls -l {base_uri}/{tile_uri}/{granule_id}/GRANULE/ | sort -k2n | tail -n1'
