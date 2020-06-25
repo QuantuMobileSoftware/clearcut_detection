@@ -16,11 +16,8 @@ import easyargs
 
 
 @easyargs
-def main(input_file="data.json", api_key="15b12471bb40493487a6e041d22d7ec0", verbose=False):
-
+def main(api_key, input_file="data.json", verbose=False):
     path = "data.json"
-    # quantum
-    # api_key = "15b12471bb40493487a6e041d22d7ec0"
 
     with open(path) as data:
         request_data = json.load(data)
