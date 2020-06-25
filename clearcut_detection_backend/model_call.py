@@ -35,7 +35,7 @@ class ModelCaller:
         return TileInformation.objects.filter(tile_index__exact=tile_index)
 
     def start(self):
-        for tile in self.query:
+        for tile in self.query[:2]:
             self.executor.submit(self.preprocess, tile)
         for unique_tile_index in list(TileInformation.objects.values('tile_index').distinct()):
             tile_index = unique_tile_index['tile_index']

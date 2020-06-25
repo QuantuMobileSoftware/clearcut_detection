@@ -22,7 +22,7 @@ def jp2_to_tiff():
         logging.warning('Converting %s to TIFF format', file)
         geo_tiff_file = os.path.join(MAPBOX_TIFFS_DIR, f'{filename}.tiff')
         command_jp2_to_tiff = f'gdalwarp -of GTiff -overwrite -ot Byte -t_srs EPSG:4326 ' \
-                              f'-wm 4096 -multi -wo NUM_THREADS=ALL_CPUS ' \
+                              f'-wm 4096 -multi -wo NUM_THREADS=12 ' \
                               f'-co COMPRESS=DEFLATE -co PREDICTOR=2 {file} {geo_tiff_file}'
 
         # TODO: compressing and renaming dataset for backup reasons
