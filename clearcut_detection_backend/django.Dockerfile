@@ -1,5 +1,8 @@
 FROM python:3.6
 
+# Set environment variables
+#ENV PYTHONDONTWRITEBYTECODE 1
+ENV PYTHONUNBUFFERED 1
 ENV ROOTDIR /usr/local/
 ENV GDAL_VERSION 2.2.4
 ENV OPENJPEG_VERSION 2.2.0
@@ -33,7 +36,7 @@ RUN apt-get update -y && apt-get install -y \
     bash-completion \
     cmake
 
-RUN /bin/bash -c "pip install numpy"
+RUN /bin/bash -c "pip install numpy==1.16.4"
 
 # Compile and install OpenJPEG
 RUN cd src && tar -xvf openjpeg-${OPENJPEG_VERSION}.tar.gz && cd openjpeg-${OPENJPEG_VERSION}/ \
@@ -58,20 +61,22 @@ CMD gdalinfo --version && gdalinfo --formats && ogrinfo --formats
 
 RUN apt-get install -y libgdal-dev
 
-RUN mkdir /code
-
-WORKDIR /code
-
 RUN apt-get update -y \
     && apt-get upgrade -y \
     && apt-get install -y postgresql-client locales \
     && apt-get install -y gdal-bin python-gdal python3-gdal \
     && apt-get update && apt-get install -y gettext libgettextpo-dev \
     # Cleanup
-    && apt-get clean && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
+    && apt-get clean && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/* \
+    # mkdir for app
+    && mkdir /code
 
-ADD requirements.txt /code
+# Set work directory
+WORKDIR /code
 
+# Install dependencies
+COPY requirements.txt /code
 RUN pip install -r requirements.txt
 
-ADD . /code/
+# Copy project
+COPY . /code
