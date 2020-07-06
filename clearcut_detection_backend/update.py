@@ -2,22 +2,30 @@
 Updating mapbox tiles
 """
 import traceback
-
+from pathlib import Path
 import django
 from django.conf import settings
 from django.core.mail import EmailMessage
-
+from services.landcover import Landcover
 django.setup()
 
 from jp2_to_tiff_conversion import jp2_to_tiff
 from model_call import ModelCaller
 from sentinel_download import SentinelDownload
 from upload_to_mapbox import start_upload
-from utils import get_landcover
+
+LANDCOVER_URL = 'https://s3-eu-west-1.amazonaws.com/vito.landcover.global/2015/E020N60_ProbaV_LC100_epoch2015_global_v2.0.2_products_EPSG-4326.zip'
+
 
 if __name__ == '__main__':
     try: 
-        get_landcover()
+        landcover = Landcover()
+        raw_file = landcover.download_landcover(LANDCOVER_URL)
+        # raw_file = landcover.data_path / 'landcover.zip'
+        landcover.extract_file(raw_file, landcover.tif, landcover.data_path)
+        landcover.copy_file(landcover.data_path / landcover.tif, landcover.forest_tiff)
+        Path.unlink(landcover.data_path / landcover.tif)
+        exit(0)
         sentinel_downloader = SentinelDownload()
         sentinel_downloader.process_download()
         sentinel_downloader.executor.shutdown()
