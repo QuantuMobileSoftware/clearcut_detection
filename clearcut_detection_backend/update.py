@@ -14,18 +14,22 @@ from model_call import ModelCaller
 from sentinel_download import SentinelDownload
 from upload_to_mapbox import start_upload
 
-LANDCOVER_URL = 'https://s3-eu-west-1.amazonaws.com/vito.landcover.global/2015/E020N60_ProbaV_LC100_epoch2015_global_v2.0.2_products_EPSG-4326.zip'
+LANDCOVER_URL = 'https://s3-eu-west-1.amazonaws.com\
+/vito.landcover.global/2015/E020N60_ProbaV_LC100_epoch2015_global_v2.0.2_products_EPSG-4326.zipa'
 
 
 if __name__ == '__main__':
     try: 
         landcover = Landcover()
-        raw_file = landcover.download_landcover(LANDCOVER_URL)
-        # raw_file = landcover.data_path / 'landcover.zip'
-        landcover.extract_file(raw_file, landcover.tif, landcover.data_path)
-        landcover.copy_file(landcover.data_path / landcover.tif, landcover.forest_tiff)
-        Path.unlink(landcover.data_path / landcover.tif)
-        exit(0)
+        if not landcover.forest_tiff.exists():
+            raw_file = landcover.download_landcover(LANDCOVER_URL)
+            # raw_file = landcover.data_path / 'landcover.zip'
+            landcover.extract_file(raw_file, landcover.tif, landcover.data_path)
+            landcover.copy_file(landcover.data_path / landcover.tif, landcover.forest_tiff)
+            Path.unlink(landcover.data_path / landcover.tif)
+        else:
+            print(f'file {landcover.forest_tiff} already exists')
+        # exit(0)
         sentinel_downloader = SentinelDownload()
         sentinel_downloader.process_download()
         sentinel_downloader.executor.shutdown()
