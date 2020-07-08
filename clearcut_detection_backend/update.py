@@ -3,6 +3,7 @@ Updating mapbox tiles
 """
 import traceback
 from pathlib import Path
+import logging
 import django
 from django.conf import settings
 from django.core.mail import EmailMessage
@@ -17,6 +18,7 @@ from upload_to_mapbox import start_upload
 LANDCOVER_URL = 'https://s3-eu-west-1.amazonaws.com\
 /vito.landcover.global/2015/E020N60_ProbaV_LC100_epoch2015_global_v2.0.2_products_EPSG-4326.zip'
 
+logger = logging.getLogger('update')
 
 if __name__ == '__main__':
     try: 
@@ -28,8 +30,8 @@ if __name__ == '__main__':
             landcover.copy_file(landcover.data_path / landcover.tif, landcover.forest_tiff)
             Path.unlink(landcover.data_path / landcover.tif)
         else:
-            print(f'file {landcover.forest_tiff} already exists')
-        # exit(0)
+            logger.info(f'file {landcover.forest_tiff} already exists,\n skip loading {LANDCOVER_URL}')
+
         sentinel_downloader = SentinelDownload()
         sentinel_downloader.process_download()
         sentinel_downloader.executor.shutdown()
@@ -44,7 +46,7 @@ if __name__ == '__main__':
         model_caller.executor.shutdown()
 
     except Exception as error:
-        pass
+        logger.error('Error\n\n', exc_info=True)
         EmailMessage(
             subject='Pep download issue',
             body=(

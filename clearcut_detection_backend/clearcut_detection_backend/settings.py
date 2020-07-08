@@ -148,3 +148,31 @@ USE_TZ = True
 
 STATIC_URL = '/static/'
 STATIC_ROOT = os.path.join(BASE_DIR, "static")
+
+LOGGING = {
+    'version': 1,
+    'disable_existing_loggers': False,
+    'handlers': {
+        'file': {
+            'level': 'WARNING',
+            'class': 'logging.FileHandler',
+            'filename': 'WARNING-ERROR.log',
+        },
+        'console': {
+            'class': 'logging.StreamHandler',
+        },
+    },
+    'loggers': {
+        'update': {
+            'handlers': ['file', 'console'],
+            # 'level': 'DEBUG',
+            'propagate': False,
+            'level': os.getenv('DJANGO_LOG_LEVEL', 'INFO')
+        },
+        'landcover': {
+            'handlers': ['file', 'console'],
+            'propagate': False,
+            'level': os.getenv('DJANGO_LOG_LEVEL', 'INFO')
+        },
+    },
+}
