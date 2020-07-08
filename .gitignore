@@ -4,6 +4,7 @@
 data/
 logs/
 venv/
+_install/
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
