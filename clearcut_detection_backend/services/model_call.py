@@ -1,7 +1,7 @@
 import json
 import os
 import logging
-from concurrent.futures import ProcessPoolExecutor
+from concurrent.futures import ProcessPoolExecutor, as_completed
 import requests
 import yaml
 from clearcuts.geojson_save import save
@@ -35,21 +35,19 @@ class ModelCaller:
                                         )
 
     def start(self):
-        with ProcessPoolExecutor(max_workers=4) as executor:
-            for tile in self.query[:2]:  # TODO rm list slice
-                logger.info(f'ProcessPoolExecutor submit {tile}')
-                executor.submit(self.preprocess, tile)
-
-        for unique_tile_index in self.tile_index_distinct:
-            logger.info(f'start model_predict for {unique_tile_index}')
-            self.model_predict(self.query.filter(tile_index__exact=unique_tile_index))
-
-    def preprocess(self, tile):
-        """
-        Converting jp2file to tiff
-        """
         try:
-            prepare_tiff(tile)
+            with ProcessPoolExecutor(max_workers=4) as executor:
+                future_list = []
+                for tile in self.query[:2]:  # TODO rm list slice
+                    logger.info(f'ProcessPoolExecutor submit {tile}')
+                    future = executor.submit(prepare_tiff, tile)
+                    future_list.append(future)
+                    for f in as_completed(future_list):
+                        logger.info(f.result())  # TODO
+
+            for unique_tile_index in self.tile_index_distinct:
+                logger.info(f'start model_predict for {unique_tile_index}')
+                self.model_predict(self.query.filter(tile_index__exact=unique_tile_index))
         except Exception as e:
             logger.error('Error\n\n', exc_info=True)
             subject = self.preprocess.__qualname__
