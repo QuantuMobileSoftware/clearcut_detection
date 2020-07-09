@@ -5,6 +5,7 @@ import traceback
 from pathlib import Path
 import logging
 import django
+django.setup()
 from django.conf import settings
 from django.core.mail import EmailMessage
 from services.landcover import Landcover
@@ -15,7 +16,7 @@ from upload_to_mapbox import start_upload
 
 LANDCOVER_URL = 'https://s3-eu-west-1.amazonaws.com\
 /vito.landcover.global/2015/E020N60_ProbaV_LC100_epoch2015_global_v2.0.2_products_EPSG-4326.zip'
-django.setup()
+
 
 sentinel_download = 0
 logger = logging.getLogger('update')
