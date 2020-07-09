@@ -77,3 +77,4 @@ credentials.json
 
 # External files
 landcover.zip
+docker-compose-django-debug.yml
