@@ -57,9 +57,9 @@ nginx:
   expose:
     - "8080"
   environment:
-    - VIRTUAL_HOST=clearcut1.quantumobile.com
-    - VIRTUAL_PORT=8087
-    - LETSENCRYPT_HOST=clearcut1.quantumobile.com
+    - VIRTUAL_HOST=clearcut.quantumobile.com
+    - VIRTUAL_PORT=8080
+    - LETSENCRYPT_HOST=clearcut.quantumobile.com
     - LETSENCRYPT_EMAIL=o.tsiapa@quantumobile.com
   volumes:
     - ./nginx/nginx.conf:/etc/nginx/conf.d/default.conf
