@@ -4,7 +4,8 @@ import argparse
 import rasterio
 from rasterio.warp import calculate_default_transform, reproject, Resampling
 
-def transform_crs(data_path, save_path, dst_crs = 'epsg:32636'):
+
+def transform_crs(data_path, save_path, dst_crs='epsg:32636'):
     with rasterio.open(data_path) as src:
         transform, width, height = calculate_default_transform(src.crs,
                                                                dst_crs,

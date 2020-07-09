@@ -2,9 +2,10 @@ import os
 import csv
 import datetime
 import subprocess
+import logging
 
 from django.conf import settings
-from concurrent.futures import ThreadPoolExecutor
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from configparser import ConfigParser
 from google.cloud import storage
 from xml.dom import minidom
@@ -12,7 +13,11 @@ from xml.dom import minidom
 from clearcuts.models import TileInformation
 from utils import path_exists_or_create, Bands
 
-DOWNLOADED_IMAGES_DIR = path_exists_or_create('data/source_images/')
+from services.email_on_error import emaile_on_service_error
+
+DOWNLOADED_IMAGES_DIR = path_exists_or_create('./data/source_images/')
+
+logger = logging.getLogger('sentinel')
 
 
 class SentinelDownload:
@@ -27,7 +32,7 @@ class SentinelDownload:
         self.config.read('gcp_config.ini')
         self.area_tile_set = self.config.get('config', 'AREA_TILE_SET').split()
         self.bands_to_download = self.config.get('config', 'BANDS_TO_DOWNLOAD').split()
-        self.executor = ThreadPoolExecutor(max_workers=10)
+        # self.executor = ThreadPoolExecutor(max_workers=10)
 
     def process_download(self):
         """
@@ -46,10 +51,16 @@ class SentinelDownload:
         Creates URI for full tile path
         :return:
         """
-        tile_location_uri_part_list = \
-            {tile_name: f'{tile_name[:2]}/{tile_name[2:3]}/{tile_name[3:]}' for tile_name in self.area_tile_set}
+        try:
+            tile_location_uri_part_list = \
+                {tile_name: f'{tile_name[:2]}/{tile_name[2:3]}/{tile_name[3:]}' for tile_name in self.area_tile_set}
 
-        return tile_location_uri_part_list
+            return tile_location_uri_part_list
+        except Exception as e:
+            logger.error('Error\n\n', exc_info=True)
+            subject = self.tile_uri_composer.__qualname__
+            emaile_on_service_error(subject, e)
+            exit(1)
 
     def launch_download_pool(self, tiles_to_update):
         """
@@ -57,8 +68,19 @@ class SentinelDownload:
         :param tiles_to_update:
         :return:
         """
-        for tile_name, tile_path in tiles_to_update.items():
-            threads = self.executor.submit(self.download_images_from_tiles, tile_name, tile_path)
+        try:
+            with ThreadPoolExecutor(max_workers=10) as executor:
+                future_list = []
+                for tile_name, tile_path in tiles_to_update.items():
+                    future = executor.submit(self.download_images_from_tiles, tile_name, tile_path)
+                    future_list.append(future)
+                for f in as_completed(future_list):
+                    logger.info(f.result())  # TODO
+        except Exception as e:
+            logger.error('Error\n\n', exc_info=True)
+            subject = self.launch_download_pool.__qualname__
+            emaile_on_service_error(subject, e)
+            exit(1)
 
     def download_images_from_tiles(self, tile_name, tile_path):
         """
@@ -117,6 +139,7 @@ class SentinelDownload:
                 tile_info.save()
         #print(TileInformation.objects.values())
         #print(list(TileInformation.objects.values('tile_index').distinct()))
+        return tile_name, tile_path
 
     def file_need_to_be_downloaded(self, name):
         """
@@ -137,20 +160,20 @@ class SentinelDownload:
         :return:
         """
         tiles_to_be_downloaded = {}
+        base_uri = 'gs://gcp-public-data-sentinel-2'
+        metadata_file = 'MTD_TL.xml'
+
         for tile_name, tile_path in tiles_path.items():
-            print('====== TILE NAME ======')
-            print(tile_name)
-            base_uri = 'gs://gcp-public-data-sentinel-2'
+            logger.info(f'TILE NAME\n {tile_name}')
             tile_uri = f'L2/tiles/{tile_path}'
-            metadata_file = 'MTD_TL.xml'
             command = f'gsutil ls -l {base_uri}/{tile_uri}/ | sort -k2n | tail -n{self.tile_dates_count}'
             granule_id_list = self.find_granule_id(command)
             granule_id_list.reverse()
             granule_num = 0
             for granule_id in granule_id_list:
                 if granule_num < self.sequential_dates_count:
-                    print('====== GRANULE ID ======')
-                    print(granule_id)
+                    # print('====== GRANULE ID ======')
+                    # print(granule_id)
                     nested_command = f'gsutil ls -l {base_uri}/{tile_uri}/{granule_id}/GRANULE/ | sort -k2n | tail -n1'
                     nested_granule_id_list = self.find_granule_id(nested_command)
                     nested_granule_id = nested_granule_id_list[0]
@@ -159,18 +182,19 @@ class SentinelDownload:
                     try:
                         blob = self.storage_bucket.get_blob(f'{updated_tile_uri}/{metadata_file}')
                         update_needed = self.define_if_tile_update_needed(blob, f'{tile_name}_{granule_num}', filename)
-                        print('====== IS UPDATE NEEDED ======')
-                        print(update_needed)
+                        logger.info(f'IS UPDATE NEEDED for {tile_name}_{granule_num}\n {update_needed}')
                         if update_needed:
                             tiles_to_be_downloaded[f'{tile_name}_{granule_num}'] = f'{updated_tile_uri}'
                             os.remove(filename)
-                            granule_num+=1
+                            granule_num += 1
                     except Exception as e:
-                        print(e)
-                        print(dir(e))
+                        logger.error('Error\n\n', exc_info=True)
+                        subject = self.request_google_cloud_storage_for_latest_acquisition.__qualname__
+                        emaile_on_service_error(subject, e)
+                        # print(dir(e))
                 else:
                     break
-        print(tiles_to_be_downloaded)
+        logger.info(f'tiles_to_be_downloaded\n {tiles_to_be_downloaded}')
         return tiles_to_be_downloaded
 
     def define_if_tile_update_needed(self, blob, tile_name, filename) -> bool:
@@ -193,13 +217,13 @@ class SentinelDownload:
 
         self.download_file_from_storage(blob, filename)
         nodata_pixel_value = self.define_xml_node_value(filename, 'NODATA_PIXEL_PERCENTAGE')
-        print('====== NO DATA PIXEL VALUE ======')
-        print(nodata_pixel_value)
+        # print('====== NO DATA PIXEL VALUE ======')
+        # print(nodata_pixel_value)
         if nodata_pixel_value >= settings.MAXIMUM_EMPTY_PIXEL_PERCENTAGE:
             return False
         cloud_coverage_value = self.define_xml_node_value(filename, 'CLOUDY_PIXEL_PERCENTAGE')
-        print('====== CLOUD COVERAGE VALUE ======')
-        print(cloud_coverage_value)
+        # print('====== CLOUD COVERAGE VALUE ======')
+        # print(cloud_coverage_value)
         if cloud_coverage_value <= settings.MAXIMUM_CLOUD_PERCENTAGE_ALLOWED:
             tile_info.cloud_coverage = cloud_coverage_value
             tile_info.tile_metadata_hash = blob.md5_hash
@@ -254,5 +278,5 @@ class SentinelDownload:
             xml_node_value = xml_node[0].firstChild.data
             return float(xml_node_value)
         except Exception as e:
-            print(e)
+            logger.error('Error\n\n', exc_info=True)
             return None

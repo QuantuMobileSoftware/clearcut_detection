@@ -15,7 +15,6 @@ import os
 # Build paths inside the project like this: os.path.join(BASE_DIR, ...)
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
-
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/2.2/howto/deployment/checklist/
 
@@ -26,7 +25,6 @@ SECRET_KEY = 't@wm3&fh5l(w)cb+(9zk%s4r-bmeunos5)&+4)-k2ubxnq+lt4'
 DEBUG = True
 
 ALLOWED_HOSTS = ['*']
-
 
 ROOT_URLCONF = 'clearcut_detection_backend.urls'
 WSGI_APPLICATION = 'clearcut_detection_backend.wsgi.application'
@@ -165,11 +163,30 @@ LOGGING = {
     'loggers': {
         'update': {
             'handlers': ['file', 'console'],
-            # 'level': 'DEBUG',
             'propagate': False,
             'level': os.getenv('DJANGO_LOG_LEVEL', 'INFO')
         },
         'landcover': {
+            'handlers': ['file', 'console'],
+            'propagate': False,
+            'level': os.getenv('DJANGO_LOG_LEVEL', 'INFO')
+        },
+        'sentinel': {
+            'handlers': ['file', 'console'],
+            'propagate': False,
+            'level': os.getenv('DJANGO_LOG_LEVEL', 'INFO')
+        }, 
+        'prepare_tif': {
+            'handlers': ['file', 'console'],
+            'propagate': False,
+            'level': os.getenv('DJANGO_LOG_LEVEL', 'INFO')
+        }, 
+        'jp2_to_tiff_conversion': {
+            'handlers': ['file', 'console'],
+            'propagate': False,
+            'level': os.getenv('DJANGO_LOG_LEVEL', 'INFO')
+        },
+        'model_call': {
             'handlers': ['file', 'console'],
             'propagate': False,
             'level': os.getenv('DJANGO_LOG_LEVEL', 'INFO')

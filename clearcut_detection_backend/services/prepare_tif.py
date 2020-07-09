@@ -13,9 +13,13 @@ import numpy as np
 from tqdm import tqdm
 
 from utils import path_exists_or_create
-from prepare_landcover import transform_crs
+from services.prepare_landcover import transform_crs
 
-logging.basicConfig(format='%(asctime)s %(message)s')
+logger = logging.getLogger('prepare_tif')
+
+MODEL_TIFFS_DIR = path_exists_or_create('./data/model_tiffs')
+LAND_TIFF_DIR = './data/landcover'
+
 
 def search_band(band, folder, file_type):
     for file in os.listdir(folder):
@@ -49,6 +53,7 @@ def scale_img(img_file, output_file=None, min_value=0, max_value=255, output_typ
             {img_file} {output_file}_scaled.tif'
         )
 
+
 def get_ndvi(b4_file, b8_file, ndvi_file):
     os.system(
         f'gdal_calc.py -A {b4_file} -B {b8_file} \
@@ -65,9 +70,6 @@ def parse_args():
     )
     return parser.parse_args()
 
-
-MODEL_TIFFS_DIR = path_exists_or_create('data/model_tiffs')
-LAND_TIFF_DIR = 'data/landcover'
 
 def prepare_tiff(tile):
     save_path = path_exists_or_create(join(MODEL_TIFFS_DIR, f"{tile.tile_index}"))
@@ -89,7 +91,7 @@ def prepare_tiff(tile):
                     'scaled_ndvi_name': join(save_path, f'{tile.tile_name}_ndvi.tif'),
                     'scaled_ndmi_name': join(save_path, f'{tile.tile_name}_ndmi.tif')}
 
-    logging.info('\nbands are converting to *tif...\n')
+    logger.info('\nbands are converting to *tif...\n')
     to_tiff(tile.source_b04_location, output_tiffs.get('tiff_b4_name'))
     to_tiff(tile.source_b08_location, output_tiffs.get('tiff_b8_name'))
     to_tiff(tile.source_b8a_location, output_tiffs.get('tiff_b8a_name'))
@@ -97,17 +99,17 @@ def prepare_tiff(tile):
     to_tiff(tile.source_b12_location, output_tiffs.get('tiff_b12_name'))
     to_tiff(tile.source_tci_location, output_tiffs.get('tiff_rgb_name'), 'Byte')
 
-    logging.info('\nndvi band is processing...')
+    logger.info('\nndvi band is processing...')
     get_ndvi(output_tiffs.get('tiff_b4_name'),
              output_tiffs.get('tiff_b8_name'),
              output_tiffs.get('tiff_ndvi_name'))
 
-    logging.info('\nndmi band is processing...')
+    logger.info('\nndmi band is processing...')
     get_ndvi(output_tiffs.get('tiff_b11_name'),
              output_tiffs.get('tiff_b8a_name'),
              output_tiffs.get('tiff_ndmi_name'))
 
-    logging.info('\nall bands are scaling to 8-bit images...\n')
+    logger.info('\nall bands are scaling to 8-bit images...\n')
     scale_img(output_tiffs.get('tiff_ndvi_name'), output_tiffs.get('scaled_ndvi_name'))
     scale_img(output_tiffs.get('tiff_ndmi_name'), output_tiffs.get('scaled_ndmi_name'))
     scale_img(tile.source_b08_location, output_tiffs.get('scaled_b8_name'))
@@ -118,7 +120,7 @@ def prepare_tiff(tile):
     output_folder = path_exists_or_create(os.path.join(save_path, tile.tile_name))
     tiff_output_name = os.path.join(output_folder, f'{tile.tile_name}.tif')
 
-    logging.info('\nall bands are being merged...\n')
+    logger.info('\nall bands are being merged...\n')
     os.system(
         f"gdal_merge.py -separate -o {tiff_output_name} \
         {output_tiffs.get('tiff_rgb_name')} \
@@ -130,7 +132,7 @@ def prepare_tiff(tile):
     tile.model_tiff_location = tiff_output_name
     tile.save()
 
-    logging.info('\nsaving in png...\n')
+    logger.info('\nsaving in png...\n')
     bands = {
         f'{join(output_folder, "rgb.png")}': output_tiffs.get('tiff_rgb_name'),
         f'{join(output_folder, "b8.png")}': f"{output_tiffs.get('scaled_b8_name')}_scaled.tif",
@@ -146,10 +148,11 @@ def prepare_tiff(tile):
             imageio.imwrite(dest, np.moveaxis(src.read(), 0, -1))
             src.close()
 
-    for item in os.listdir(save_path):
-        if item.endswith('.tif'):
-            os.remove(join(save_path, item))
-    logging.info('\ntemp files have been deleted\n')
+    # TODO fix rm files
+    # for item in os.listdir(save_path):
+    #     if item.endswith('.tif'):
+    #         os.remove(join(save_path, item))
+    # logger.info('\ntemp files have been deleted\n')
     
     save_path = path_exists_or_create(join(MODEL_TIFFS_DIR, f"{tile.tile_name.split('_')[0]}"))
     output_folder = path_exists_or_create(os.path.join(save_path, tile.tile_name))
@@ -160,7 +163,7 @@ def prepare_tiff(tile):
     if not os.path.isfile(join(LAND_TIFF_DIR, 'forest_corr.tiff')):
         src = rasterio.open(tiff_output_name)
         lnd = rasterio.open(join(LAND_TIFF_DIR, 'forest.tiff'))
-        if src.crs!=lnd.crs:
+        if src.crs != lnd.crs:
             transform_crs(join(LAND_TIFF_DIR, 'forest.tiff'), join(LAND_TIFF_DIR, 'forest_corr.tiff'), dst_crs=src.crs)
         src.close()
         lnd.close()
