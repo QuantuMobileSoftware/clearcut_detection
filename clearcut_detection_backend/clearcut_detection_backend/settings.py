@@ -154,7 +154,6 @@ LANDCOVER_URL = 'https://s3-eu-west-1.amazonaws.com\
 MAX_WORKERS = 6
 
 DATA_DIR = Path('data')
-LAND_TIFF_DIR = Path('./data/landcover')
 DOWNLOADED_IMAGES_DIR = Path('./data/source_images/')
 MODEL_TIFFS_DIR = Path('./data/model_tiffs')
 MAPBOX_TIFFS_DIR = Path('./data/mapbox_tiffs')
@@ -176,11 +175,6 @@ LOGGING = {
     },
     'loggers': {
         'update': {
-            'handlers': ['file', 'console'],
-            'propagate': False,
-            'level': os.getenv('DJANGO_LOG_LEVEL', 'INFO')
-        },
-        'landcover': {
             'handlers': ['file', 'console'],
             'propagate': False,
             'level': os.getenv('DJANGO_LOG_LEVEL', 'INFO')
