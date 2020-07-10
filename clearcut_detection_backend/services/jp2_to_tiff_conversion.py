@@ -3,10 +3,10 @@ import os
 import subprocess
 
 from clearcuts.models import TileInformation
-from utils import path_exists_or_create
+from services.constants_path import MAPBOX_TIFFS_DIR
 
 logger = logging.getLogger('jp2_to_tiff_conversion')
-MAPBOX_TIFFS_DIR = path_exists_or_create('./data/mapbox_tiffs')
+MAPBOX_TIFFS_DIR.mkdir(parents=True, exist_ok=True)
 
 
 def jp2_to_tiff():
