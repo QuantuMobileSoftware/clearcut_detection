@@ -18,7 +18,9 @@ LANDCOVER_URL = 'https://s3-eu-west-1.amazonaws.com\
 /vito.landcover.global/2015/E020N60_ProbaV_LC100_epoch2015_global_v2.0.2_products_EPSG-4326.zip'
 
 
-sentinel_download = 0
+sentinel_download = 1
+call_model = 1
+
 logger = logging.getLogger('update')
 
 if __name__ == '__main__':
@@ -37,8 +39,10 @@ if __name__ == '__main__':
         sentinel_downloader.process_download()
     logger.info('Sentinel pictures were downloaded')
 
-    model_caller = ModelCaller()
-    model_caller.start()
+    if call_model:
+        model_caller = ModelCaller()
+        model_caller.start()
+
     try:
         logger.info('Start convert jp2_to_tiff')
         jp2_to_tiff()
