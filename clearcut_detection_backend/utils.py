@@ -5,7 +5,6 @@ from enum import Enum
 from zipfile import ZipFile
 from io import BytesIO
 import requests
-from shutil import copyfile
 
 
 class Bands(Enum):
@@ -57,13 +56,3 @@ def fetch_file_from_zip(file, source, destination):
     """
     with ZipFile(file) as zip_file:
         zip_file.extract(source, destination)
-
-
-def copy_file(source, destination):
-    """
-    copy file from source to destination
-    :param source: path to source file
-    :param destination: path to destination file
-    :return:
-    """
-    copyfile(source, destination)
