@@ -11,6 +11,7 @@ https://docs.djangoproject.com/en/2.2/ref/settings/
 """
 
 import os
+from pathlib import Path
 
 # Build paths inside the project like this: os.path.join(BASE_DIR, ...)
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -146,6 +147,19 @@ USE_TZ = True
 
 STATIC_URL = '/static/'
 STATIC_ROOT = os.path.join(BASE_DIR, "static")
+
+LANDCOVER_URL = 'https://s3-eu-west-1.amazonaws.com\
+/vito.landcover.global/2015/E020N60_ProbaV_LC100_epoch2015_global_v2.0.2_products_EPSG-4326.zip'
+
+MAX_WORKERS = 6
+
+DATA_DIR = Path('data')
+LAND_TIFF_DIR = Path('./data/landcover')
+DOWNLOADED_IMAGES_DIR = Path('./data/source_images/')
+MODEL_TIFFS_DIR = Path('./data/model_tiffs')
+MAPBOX_TIFFS_DIR = Path('./data/mapbox_tiffs')
+
+SAVE_IN_PNG = False
 
 LOGGING = {
     'version': 1,

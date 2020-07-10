@@ -1,5 +1,4 @@
 import os
-import csv
 import datetime
 import subprocess
 import logging
@@ -9,16 +8,14 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 from configparser import ConfigParser
 from google.cloud import storage
 from xml.dom import minidom
+from xml.etree.ElementTree import ParseError
 
 from clearcuts.models import TileInformation
-from utils import path_exists_or_create, Bands
+from utils import Bands
 
-from services.email_on_error import emaile_on_service_error
-
-DOWNLOADED_IMAGES_DIR = path_exists_or_create('./data/source_images/')
 
 logger = logging.getLogger('sentinel')
-
+settings.DOWNLOADED_IMAGES_DIR.mkdir(parents=True, exist_ok=True)
 
 class SentinelDownload:
 
@@ -32,7 +29,6 @@ class SentinelDownload:
         self.config.read('gcp_config.ini')
         self.area_tile_set = self.config.get('config', 'AREA_TILE_SET').split()
         self.bands_to_download = self.config.get('config', 'BANDS_TO_DOWNLOAD').split()
-        # self.executor = ThreadPoolExecutor(max_workers=10)
 
     def process_download(self):
         """
@@ -51,16 +47,10 @@ class SentinelDownload:
         Creates URI for full tile path
         :return:
         """
-        try:
-            tile_location_uri_part_list = \
-                {tile_name: f'{tile_name[:2]}/{tile_name[2:3]}/{tile_name[3:]}' for tile_name in self.area_tile_set}
+        tile_location_uri_part_list = \
+            {tile_name: f'{tile_name[:2]}/{tile_name[2:3]}/{tile_name[3:]}' for tile_name in self.area_tile_set}
 
-            return tile_location_uri_part_list
-        except Exception as e:
-            logger.error('Error\n\n', exc_info=True)
-            subject = self.tile_uri_composer.__qualname__
-            emaile_on_service_error(subject, e)
-            exit(1)
+        return tile_location_uri_part_list
 
     def launch_download_pool(self, tiles_to_update):
         """
@@ -68,19 +58,13 @@ class SentinelDownload:
         :param tiles_to_update:
         :return:
         """
-        try:
-            with ThreadPoolExecutor(max_workers=10) as executor:
-                future_list = []
-                for tile_name, tile_path in tiles_to_update.items():
-                    future = executor.submit(self.download_images_from_tiles, tile_name, tile_path)
-                    future_list.append(future)
-                for f in as_completed(future_list):
-                    logger.info(f.result())  # TODO
-        except Exception as e:
-            logger.error('Error\n\n', exc_info=True)
-            subject = self.launch_download_pool.__qualname__
-            emaile_on_service_error(subject, e)
-            exit(1)
+        with ThreadPoolExecutor(max_workers=settings.MAX_WORKERS) as executor:
+            future_list = []
+            for tile_name, tile_path in tiles_to_update.items():
+                future = executor.submit(self.download_images_from_tiles, tile_name, tile_path)
+                future_list.append(future)
+            for f in as_completed(future_list):
+                logger.info(f.result())  # TODO
 
     def download_images_from_tiles(self, tile_name, tile_path):
         """
@@ -93,53 +77,55 @@ class SentinelDownload:
         tile_prefix = f'{tile_path}/IMG_DATA/R20m/'
         blobs = self.storage_bucket.list_blobs(prefix=tile_prefix)
 
-        for blob in blobs:
-            band, download_needed = self.file_need_to_be_downloaded(blob.name)
-            if download_needed:
-                filename = os.path.join(DOWNLOADED_IMAGES_DIR, f'{tile_name}_{band}.jp2')
-                self.download_file_from_storage(blob, filename)
-                tile_info = TileInformation.objects.get(tile_name=tile_name)
-                if band == Bands.B11.value:
-                    tile_info.source_b11_location = filename
-                elif band == Bands.B12.value:
-                    tile_info.source_b12_location = filename
-                elif band == Bands.B8A.value:
-                    tile_info.source_b8a_location = filename
-                else:
-                    continue
-                tile_info.save()
-        
-        tile_prefix = f'{tile_path}/IMG_DATA/R10m/'
-        blobs = self.storage_bucket.list_blobs(prefix=tile_prefix)
+        try:
+            for blob in blobs:
+                band, download_needed = self.file_need_to_be_downloaded(blob.name)
+                if download_needed:
+                    filename = settings.DOWNLOADED_IMAGES_DIR / f'{tile_name}_{band}.jp2'
+                    self.download_file_from_storage(blob, filename)
+                    tile_info = TileInformation.objects.get(tile_name=tile_name)
+                    if band == Bands.B11.value:
+                        tile_info.source_b11_location = filename
+                    elif band == Bands.B12.value:
+                        tile_info.source_b12_location = filename
+                    elif band == Bands.B8A.value:
+                        tile_info.source_b8a_location = filename
+                    else:
+                        continue
+                    tile_info.save()
 
-        for blob in blobs:
-            band, download_needed = self.file_need_to_be_downloaded(blob.name)
-            if download_needed:
-                filename = os.path.join(DOWNLOADED_IMAGES_DIR, f'{tile_name}_{band}.jp2')
-                self.download_file_from_storage(blob, filename)
-                tile_info = TileInformation.objects.get(tile_name=tile_name)
-                if band == Bands.B04.value:
-                    tile_info.source_b04_location = filename
-                elif band == Bands.B08.value:
-                    tile_info.source_b08_location = filename
-                elif band == Bands.TCI.value:
-                    tile_info.source_tci_location = filename
-                else:
-                    continue
-                tile_info.save()
+            tile_prefix = f'{tile_path}/IMG_DATA/R10m/'
+            blobs = self.storage_bucket.list_blobs(prefix=tile_prefix)
 
-        tile_prefix = f'{tile_path}/QI_DATA/' #MSK_CLDPRB_20m.jp2
-        blobs = self.storage_bucket.list_blobs(prefix=tile_prefix)
-        for blob in blobs:
-            if blob.name.endswith('MSK_CLDPRB_20m.jp2'):
-                tile_info = TileInformation.objects.get(tile_name=tile_name)
-                filename = os.path.join(DOWNLOADED_IMAGES_DIR, f"{tile_name}_{blob.name.split('/')[-1]}")
-                self.download_file_from_storage(blob, filename)
-                tile_info.source_clouds_location = filename
-                tile_info.save()
-        #print(TileInformation.objects.values())
-        #print(list(TileInformation.objects.values('tile_index').distinct()))
-        return tile_name, tile_path
+            for blob in blobs:
+                band, download_needed = self.file_need_to_be_downloaded(blob.name)
+                if download_needed:
+                    filename = settings.DOWNLOADED_IMAGES_DIR / f'{tile_name}_{band}.jp2'
+                    self.download_file_from_storage(blob, filename)
+                    tile_info = TileInformation.objects.get(tile_name=tile_name)
+                    if band == Bands.B04.value:
+                        tile_info.source_b04_location = filename
+                    elif band == Bands.B08.value:
+                        tile_info.source_b08_location = filename
+                    elif band == Bands.TCI.value:
+                        tile_info.source_tci_location = filename
+                    else:
+                        continue
+                    tile_info.save()
+
+            tile_prefix = f'{tile_path}/QI_DATA/'  # MSK_CLDPRB_20m.jp2
+            blobs = self.storage_bucket.list_blobs(prefix=tile_prefix)
+            for blob in blobs:
+                if blob.name.endswith('MSK_CLDPRB_20m.jp2'):
+                    tile_info = TileInformation.objects.get(tile_name=tile_name)
+                    filename = settings.DOWNLOADED_IMAGES_DIR / f"{tile_name}_{blob.name.split('/')[-1]}"
+                    self.download_file_from_storage(blob, filename)
+                    tile_info.source_clouds_location = filename
+                    tile_info.save()
+
+            return tile_name, tile_path
+        except (IOError, ValueError, FileNotFoundError, FileExistsError, Exception):
+            logger.error('Error\n\n', exc_info=True)
 
     def file_need_to_be_downloaded(self, name):
         """
@@ -178,7 +164,7 @@ class SentinelDownload:
                     nested_granule_id_list = self.find_granule_id(nested_command)
                     nested_granule_id = nested_granule_id_list[0]
                     updated_tile_uri = f'{tile_uri}/{granule_id}/GRANULE/{nested_granule_id}'
-                    filename = os.path.join(DOWNLOADED_IMAGES_DIR, f'{tile_name}_{metadata_file}')
+                    filename = settings.DOWNLOADED_IMAGES_DIR / f'{tile_name}_{metadata_file}'
                     try:
                         blob = self.storage_bucket.get_blob(f'{updated_tile_uri}/{metadata_file}')
                         update_needed = self.define_if_tile_update_needed(blob, f'{tile_name}_{granule_num}', filename)
@@ -187,11 +173,8 @@ class SentinelDownload:
                             tiles_to_be_downloaded[f'{tile_name}_{granule_num}'] = f'{updated_tile_uri}'
                             os.remove(filename)
                             granule_num += 1
-                    except Exception as e:
+                    except (IOError, ValueError, FileNotFoundError, FileExistsError, Exception):
                         logger.error('Error\n\n', exc_info=True)
-                        subject = self.request_google_cloud_storage_for_latest_acquisition.__qualname__
-                        emaile_on_service_error(subject, e)
-                        # print(dir(e))
                 else:
                     break
         logger.info(f'tiles_to_be_downloaded\n {tiles_to_be_downloaded}')
@@ -207,7 +190,7 @@ class SentinelDownload:
         :param filename:
         :return:
         """
-        
+        filename = str(filename)
         tile_info, created = TileInformation.objects.get_or_create(tile_name=tile_name)
 
         if not created:
@@ -234,7 +217,8 @@ class SentinelDownload:
         else:
             return False
 
-    def find_granule_id(self, command):
+    @staticmethod
+    def find_granule_id(command):
         """
         Requests next GCS folder node.
         [:-9] is used to cut out _$folder$ from naming
@@ -255,7 +239,8 @@ class SentinelDownload:
 
         return granule_id_list
 
-    def download_file_from_storage(self, blob, filename):
+    @staticmethod
+    def download_file_from_storage(blob, filename):
         """
         Downloads blob to local storage
         :param blob:
@@ -265,7 +250,8 @@ class SentinelDownload:
         with open(filename, 'wb') as new_file:
             blob.download_to_file(new_file)
 
-    def define_xml_node_value(self, xml_file, node):
+    @staticmethod
+    def define_xml_node_value(xml_file, node):
         """
         Parsing XML file for passed node name
         :param xml_file:
@@ -277,6 +263,6 @@ class SentinelDownload:
             xml_node = xml_dom.getElementsByTagName(node)
             xml_node_value = xml_node[0].firstChild.data
             return float(xml_node_value)
-        except Exception as e:
+        except (ParseError, Exception):
             logger.error('Error\n\n', exc_info=True)
             return None

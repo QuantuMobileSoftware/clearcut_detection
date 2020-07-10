@@ -5,11 +5,11 @@ from concurrent.futures import as_completed, ThreadPoolExecutor
 import requests
 import yaml
 from pathlib import Path
+from django.conf import settings
 from clearcuts.geojson_save import save
 from clearcuts.models import TileInformation
 from services.prepare_tif import prepare_tiff
 from services.email_on_error import emaile_on_service_error
-from services.constants_path import DATA_DIR
 
 model_call_config = './model_call_config.yml'
 logger = logging.getLogger('model_call')
@@ -20,7 +20,7 @@ class ModelCaller:
     Class for asynchronous calling of model's API
     """
     def __init__(self):
-        self.data_dir = DATA_DIR
+        self.data_dir = settings.DATA_DIR
         self.query = TileInformation.objects.filter(tile_name__isnull=False,
                                                     tile_index__isnull=False,
                                                     source_b04_location__isnull=False,
@@ -37,12 +37,13 @@ class ModelCaller:
 
     def start(self):
 
-        with ThreadPoolExecutor(max_workers=10) as executor:
+        with ThreadPoolExecutor(max_workers=settings.MAX_WORKERS) as executor:
             future_list = []
             for tile in self.query:
                 logger.info(f'ThreadPoolExecutor submit {tile.tile_index}, {tile.tile_name}')
                 future = executor.submit(prepare_tiff, tile)
                 future_list.append(future)
+
             for f in as_completed(future_list):
                 self.remove_temp_files(f.result()[0], f.result()[1])
 
@@ -67,6 +68,7 @@ class ModelCaller:
         """
         src_tile = tile.first()
         tif_path = src_tile.model_tiff_location.split('/')[:-2]
+
         tif_path = os.path.join(*tif_path)
         results = raster_prediction(tif_path)
         
@@ -89,7 +91,7 @@ def raster_prediction(tif_path):
         endpoint=model_api_cfg["endpoint"]
     )
     data = {"image_path": tif_path}
-    logger.info(f'sending request to model API for\n {tif_path}')
+    logger.info(f'sending request to model API for\n{tif_path}')
     try:
         response = requests.post(url=api_endpoint, json=data)
         result = response.text

@@ -24,13 +24,10 @@ def start_upload():
     Start upload in threads
     :return:
     """
-    executor = ThreadPoolExecutor(max_workers=10)
-    tiles = TileInformation.objects\
-        .filter(tile_location__contains='tiff')\
-        .filter(tile_location__contains='TCI')
-    for tile in tiles:
-        executor.submit(upload_to_mapbox, tile)
-    return executor
+    with ThreadPoolExecutor(max_workers=settings.MAX_WORKERS) as executor:
+        tiles = TileInformation.objects.filter(tile_location__contains='tiff').filter(tile_location__contains='TCI')
+        for tile in tiles:
+            executor.submit(upload_to_mapbox, tile)
 
 
 def upload_to_mapbox(tile):

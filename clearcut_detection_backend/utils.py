@@ -1,19 +1,11 @@
 """
 Script helpers
 """
-import os
-import warnings
 from enum import Enum
 from zipfile import ZipFile
 from io import BytesIO
 import requests
 from shutil import copyfile
-
-
-def path_exists_or_create(path):
-    if not os.path.exists(path):
-        os.makedirs(path)
-    return path
 
 
 class Bands(Enum):
@@ -23,17 +15,6 @@ class Bands(Enum):
     B8A = 'B8A'
     B11 = 'B11'
     B12 = 'B12'
-
-
-def get_landcover():
-    """
-    deprecated, use services.landcover.Landcover
-    """
-    landcover_path = path_exists_or_create('./data/landcover')
-    landcover_file = f'{landcover_path}/forest.tiff'
-    os.system(f'./download_landcover.sh {landcover_path}')
-    if not os.path.isfile(landcover_file):
-        warnings.warn(f'{landcover_file} was not found.', UserWarning)
 
 
 def download_without_progress(url):
