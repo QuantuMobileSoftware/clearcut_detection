@@ -1,2 +1,6 @@
 # dir where planet preview files are saved
 thumbnails/
+
+# dir with real tiles
+
+assets/
