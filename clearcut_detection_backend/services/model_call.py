@@ -1,16 +1,17 @@
 import json
 import os
 import logging
-from concurrent.futures import ProcessPoolExecutor, as_completed
+from concurrent.futures import as_completed, ThreadPoolExecutor
 import requests
 import yaml
+from pathlib import Path
 from clearcuts.geojson_save import save
 from clearcuts.models import TileInformation
 from services.prepare_tif import prepare_tiff
 from services.email_on_error import emaile_on_service_error
+from services.constants_path import DATA_DIR
 
 model_call_config = './model_call_config.yml'
-data_dir = 'data'
 logger = logging.getLogger('model_call')
 
 
@@ -19,7 +20,7 @@ class ModelCaller:
     Class for asynchronous calling of model's API
     """
     def __init__(self):
-        self.data_dir = data_dir
+        self.data_dir = DATA_DIR
         self.query = TileInformation.objects.filter(tile_name__isnull=False,
                                                     tile_index__isnull=False,
                                                     source_b04_location__isnull=False,
@@ -35,24 +36,30 @@ class ModelCaller:
                                         )
 
     def start(self):
-        try:
-            with ProcessPoolExecutor(max_workers=4) as executor:
-                future_list = []
-                for tile in self.query[:2]:  # TODO rm list slice
-                    logger.info(f'ProcessPoolExecutor submit {tile}')
-                    future = executor.submit(prepare_tiff, tile)
-                    future_list.append(future)
-                    for f in as_completed(future_list):
-                        logger.info(f.result())  # TODO
 
-            for unique_tile_index in self.tile_index_distinct:
-                logger.info(f'start model_predict for {unique_tile_index}')
-                self.model_predict(self.query.filter(tile_index__exact=unique_tile_index))
-        except Exception as e:
+        with ThreadPoolExecutor(max_workers=10) as executor:
+            future_list = []
+            for tile in self.query:
+                logger.info(f'ThreadPoolExecutor submit {tile.tile_index}, {tile.tile_name}')
+                future = executor.submit(prepare_tiff, tile)
+                future_list.append(future)
+            for f in as_completed(future_list):
+                self.remove_temp_files(f.result()[0], f.result()[1])
+
+        for unique_tile_index in self.tile_index_distinct:
+            logger.info(f'start model_predict for {unique_tile_index}')
+            self.model_predict(self.query.filter(tile_index__exact=unique_tile_index))
+
+    @staticmethod
+    def remove_temp_files(path, tile_name):
+        logger.info(f'Try remove temp files for {tile_name}')
+        temp_files = Path(path).glob(f'{tile_name}*.tif')
+        try:
+            for file in temp_files:
+                file.unlink()
+            logger.info(f'temp files for {tile_name} were removed')
+        except OSError:
             logger.error('Error\n\n', exc_info=True)
-            subject = self.preprocess.__qualname__
-            emaile_on_service_error(subject, e)
-            exit(1)
 
     def model_predict(self, tile):
         """
@@ -71,9 +78,6 @@ class ModelCaller:
         if os.path.exists(results_path):
             save(tile, results_path, forest=0)
 
-        # rmtree(os.path.dirname(tile.tile_index))
-        # rmtree(os.path.dirname(results_path))
-
 
 def raster_prediction(tif_path):
     with open(model_call_config, 'r') as config:
@@ -85,11 +89,13 @@ def raster_prediction(tif_path):
         endpoint=model_api_cfg["endpoint"]
     )
     data = {"image_path": tif_path}
-    logger.info(f'sending request to model API for {tif_path}')
+    logger.info(f'sending request to model API for\n {tif_path}')
     try:
         response = requests.post(url=api_endpoint, json=data)
         result = response.text
         datastore = json.loads(result)
         return datastore
-    except Exception:
+    except Exception as e:
         logger.error('Error\n\n', exc_info=True)
+        subject = prepare_tiff.__qualname__
+        emaile_on_service_error(subject, e)
