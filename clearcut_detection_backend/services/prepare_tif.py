@@ -14,11 +14,12 @@ from tqdm import tqdm
 
 from utils import path_exists_or_create
 from services.prepare_landcover import transform_crs
-
+from services.constants_path import MODEL_TIFFS_DIR, LAND_TIFF_DIR
 logger = logging.getLogger('prepare_tif')
 
-MODEL_TIFFS_DIR = path_exists_or_create('./data/model_tiffs')
-LAND_TIFF_DIR = './data/landcover'
+# MODEL_TIFFS_DIR = path_exists_or_create('./data/model_tiffs')
+# MODEL_TIFFS_DIR = Path('./data/model_tiffs')
+# LAND_TIFF_DIR = './data/landcover'
 
 
 def search_band(band, folder, file_type):
@@ -31,7 +32,7 @@ def search_band(band, folder, file_type):
 
 def to_tiff(input_jp2_file, output_tiff_file, output_type='Float32'):
     os.system(
-        f'gdal_translate -ot {output_type} \
+        f'gdal_translate -q -ot {output_type} \
         {input_jp2_file} {output_tiff_file}'
     )
 
@@ -48,7 +49,7 @@ def scale_img(img_file, output_file=None, min_value=0, max_value=255, output_typ
         output_file = os.path.splitext(img_file)[0] if output_file is None else output_file
 
         os.system(
-            f'gdal_translate -ot {output_type} \
+            f'gdal_translate -q -ot {output_type} \
             -scale {min_} {max_} {min_value} {max_value} \
             {img_file} {output_file}_scaled.tif'
         )
@@ -72,7 +73,9 @@ def parse_args():
 
 
 def prepare_tiff(tile):
-    save_path = path_exists_or_create(join(MODEL_TIFFS_DIR, f"{tile.tile_index}"))
+    save_path = MODEL_TIFFS_DIR / tile.tile_index
+    save_path.mkdir(parents=True, exist_ok=True)
+
     # defining temporary files names
     output_tiffs = {'tiff_b4_name': join(save_path, f'{tile.tile_name}_B04.tif'),
                     'tiff_b8_name': join(save_path, f'{tile.tile_name}_B08.tif'),
@@ -148,12 +151,6 @@ def prepare_tiff(tile):
             imageio.imwrite(dest, np.moveaxis(src.read(), 0, -1))
             src.close()
 
-    # TODO fix rm files
-    # for item in os.listdir(save_path):
-    #     if item.endswith('.tif'):
-    #         os.remove(join(save_path, item))
-    # logger.info('\ntemp files have been deleted\n')
-    
     save_path = path_exists_or_create(join(MODEL_TIFFS_DIR, f"{tile.tile_name.split('_')[0]}"))
     output_folder = path_exists_or_create(os.path.join(save_path, tile.tile_name))
     tiff_output_name = os.path.join(output_folder, f'{tile.tile_name}.tif')
@@ -167,3 +164,5 @@ def prepare_tiff(tile):
             transform_crs(join(LAND_TIFF_DIR, 'forest.tiff'), join(LAND_TIFF_DIR, 'forest_corr.tiff'), dst_crs=src.crs)
         src.close()
         lnd.close()
+
+    return save_path, tile.tile_name, tiff_output_name
