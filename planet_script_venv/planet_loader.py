@@ -52,7 +52,7 @@ def main(cred, input, path="thumbnails/",
         request = api.filters.build_search_request(**data)
         results = client.quick_search(request)
 
-        result_list, res = extract_results(results)
+        result_list = extract_results(results)
 
         if not result_list:
             print(f"Items not found for index {index} in input file")

@@ -11,7 +11,7 @@ def extract_results(results, limit=100):
          }
         for item in results.items_iter(limit) if 'visible_percent' in item['properties']]
 
-    return items, results
+    return items
 
 
 def overlap(target, result_list, overlap_percent, verbose):
