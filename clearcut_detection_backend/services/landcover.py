@@ -4,6 +4,7 @@ from shutil import copyfile
 from utils import download_without_progress, fetch_file_from_zip, fetch_all_from_zip
 from requests.exceptions import (HTTPError, InvalidURL, ConnectionError)
 from zipfile import (BadZipFile, LargeZipFile)
+from services.constants_path import DATA_DIR, LAND_TIFF_DIR
 
 logger = logging.getLogger('landcover')
 
@@ -12,8 +13,8 @@ class Landcover:
     tif = 'E020N60_ProbaV_LC100_epoch2015_global_v2.0.2_forest-type-layer_EPSG-4326.tif'
 
     def __init__(self):
-        self.data_path = Path('./data')
-        self.landcover_path = self.data_path / 'landcover'
+        self.data_path = DATA_DIR
+        self.landcover_path = LAND_TIFF_DIR
         self.landcover_path.mkdir(parents=True, exist_ok=True)
         self.forest_tiff = self.landcover_path / 'forest.tiff'
 
