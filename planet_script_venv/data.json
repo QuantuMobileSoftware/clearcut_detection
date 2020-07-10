@@ -1,5 +1,5 @@
 [{
-  "interval": "day",
+
   "item_types": ["PSOrthoTile"],
   "filter_like": {
     "type": "AndFilter",
@@ -111,7 +111,7 @@
   }
 }, 
 {
-    "interval": "day",
+
     "item_types": ["PSOrthoTile"],
     "filter_like": {
       "type": "AndFilter",
@@ -217,7 +217,7 @@
               "field_name": "acquired",
               "config": {
                   "gt":"2020-01-01T00:00:00Z",
-                  "lte":"2020-01-15T00:00:00Z"  
+                  "lte":"2020-01-15T00:00:00Z"
               }
           }]
     }
