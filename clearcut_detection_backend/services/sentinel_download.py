@@ -5,6 +5,7 @@ import subprocess
 import logging
 
 from django.conf import settings
+import concurrent.futures
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from configparser import ConfigParser
 from google.cloud import storage
@@ -31,10 +32,10 @@ class TillNameError(Exception):
 
 
 class BlobNotFound(Exception):
-    def __init__(self, till_name):
-        self.message = f'{till_name} is not valid till_name'
+    def __init__(self, uri):
+        self.message = f'{uri} is not valid blob uri'
         Exception.__init__(self, self.message)
-        logger.error('Error\n\n', exc_info=True)
+        # logger.error('Error\n\n', exc_info=True)
 
     def __str__(self):
         return self.message
@@ -111,8 +112,12 @@ class SentinelDownload:
             for tile_name, tile_path in tiles_to_update.items():
                 future = executor.submit(self.download_images_from_tiles, tile_name, tile_path)
                 future_list.append(future)
-            for f in as_completed(future_list):
-                logger.info(f.result())  # TODO
+
+        for future in as_completed(future_list):
+            if not future.result():
+                exit(1)
+            else:
+                logger.info(f'images for {future.result()[0]} were downloaded')
 
     def download_images_from_tiles(self, tile_name, tile_path):
         """
@@ -123,64 +128,76 @@ class SentinelDownload:
         :return:
         """
         tile_prefix = f'{tile_path}/IMG_DATA/R20m/'
-        try:
-            blobs = self.storage_bucket.list_blobs(prefix=tile_prefix)
-            if not blobs:
-                raise BlobNotFound(f'no such tile_prefix: {tile_prefix}')
+        blobs = self.storage_bucket.list_blobs(prefix=tile_prefix)
 
-            for blob in blobs:
-                band, download_needed = self.file_need_to_be_downloaded(blob.name)
-                if download_needed:
-                    filename = settings.DOWNLOADED_IMAGES_DIR / f'{tile_name}_{band}.jp2'
-                    self.download_file_from_storage(blob, filename)
-                    tile_info = TileInformation.objects.get(tile_name=tile_name)
-                    if band == Bands.B11.value:
-                        tile_info.source_b11_location = filename
-                    elif band == Bands.B12.value:
-                        tile_info.source_b12_location = filename
-                    elif band == Bands.B8A.value:
-                        tile_info.source_b8a_location = filename
-                    else:
-                        continue
-                    tile_info.save()
+        is_blob = False
+        for blob in blobs:
+            is_blob = True
+            band, download_needed = self.file_need_to_be_downloaded(blob.name)
+            if download_needed:
+                filename = settings.DOWNLOADED_IMAGES_DIR / f'{tile_name}_{band}.jp2'
+                self.download_file_from_storage(blob, filename)  # TODO
+                tile_info = TileInformation.objects.get(tile_name=tile_name)
+                if band == Bands.B11.value:
+                    tile_info.source_b11_location = filename
+                elif band == Bands.B12.value:
+                    tile_info.source_b12_location = filename
+                elif band == Bands.B8A.value:
+                    tile_info.source_b8a_location = filename
+                else:
+                    continue
+                tile_info.save()
 
-                tile_prefix = f'{tile_path}/IMG_DATA/R10m/'
-                blobs = self.storage_bucket.list_blobs(prefix=tile_prefix)
-                if not blobs:
-                    raise NotFound(f'no such tile_prefix: {tile_prefix}')
+        if not is_blob:
+            logger.error(f'{__name__}.{self.download_images_from_tiles.__qualname__} Error in uri: {tile_prefix}')
+            return
 
-            for blob in blobs:
-                band, download_needed = self.file_need_to_be_downloaded(blob.name)
-                if download_needed:
-                    filename = settings.DOWNLOADED_IMAGES_DIR / f'{tile_name}_{band}.jp2'
-                    self.download_file_from_storage(blob, filename)
-                    tile_info = TileInformation.objects.get(tile_name=tile_name)
-                    if band == Bands.B04.value:
-                        tile_info.source_b04_location = filename
-                    elif band == Bands.B08.value:
-                        tile_info.source_b08_location = filename
-                    elif band == Bands.TCI.value:
-                        tile_info.source_tci_location = filename
-                    else:
-                        continue
-                    tile_info.save()
+        tile_prefix = f'{tile_path}/IMG_DATA/R10m/'
+        blobs = self.storage_bucket.list_blobs(prefix=tile_prefix)
+        is_blob = False
 
-            tile_prefix = f'{tile_path}/QI_DATA/'
-            blobs = self.storage_bucket.list_blobs(prefix=tile_prefix)
-            if not blobs:
-                raise NotFound(f'no such tile_prefix: {tile_prefix}')
+        for blob in blobs:
+            is_blob = True
+            band, download_needed = self.file_need_to_be_downloaded(blob.name)
+            if download_needed:
+                filename = settings.DOWNLOADED_IMAGES_DIR / f'{tile_name}_{band}.jp2'
+                self.download_file_from_storage(blob, filename)  # TODO
+                tile_info = TileInformation.objects.get(tile_name=tile_name)
+                if band == Bands.B04.value:
+                    tile_info.source_b04_location = filename
+                elif band == Bands.B08.value:
+                    tile_info.source_b08_location = filename
+                elif band == Bands.TCI.value:
+                    tile_info.source_tci_location = filename
+                else:
+                    continue
+                tile_info.save()
 
-            for blob in blobs:
-                if blob.name.endswith('MSK_CLDPRB_20m.jp2'):
-                    tile_info = TileInformation.objects.get(tile_name=tile_name)
-                    filename = settings.DOWNLOADED_IMAGES_DIR / f"{tile_name}_{blob.name.split('/')[-1]}"
-                    self.download_file_from_storage(blob, filename)
-                    tile_info.source_clouds_location = filename
-                    tile_info.save()
+        if not is_blob:
+            logger.error(f'{__name__}.{self.download_images_from_tiles.__qualname__} Error in uri: {tile_prefix}')
+            return
+
+        tile_prefix = f'{tile_path}/QI_DATA/'
+        blobs = self.storage_bucket.list_blobs(prefix=tile_prefix)
+        is_blob = False
+
+        endswith = 'MSK_CLDPRB_20m.jp2'
+        for blob in blobs:
+            is_blob = True
+            if blob.name.endswith(endswith):
+                tile_info = TileInformation.objects.get(tile_name=tile_name)
+                filename = settings.DOWNLOADED_IMAGES_DIR / f"{tile_name}_{blob.name.split('/')[-1]}"
+                self.download_file_from_storage(blob, filename)
+                tile_info.source_clouds_location = filename
+                tile_info.save()
 
                 return tile_name, tile_path
-        except (NotFound):
-            logger.error('Error\n\n', exc_info=True)
+
+        if not is_blob:
+            logger.error(f'{__name__}.{self.download_images_from_tiles.__qualname__} Error in uri: {tile_prefix}')
+            return
+        else:
+            logger.error(f'No file.endswith({endswith})')
 
     def file_need_to_be_downloaded(self, name):
         """
@@ -213,7 +230,7 @@ class SentinelDownload:
 
             prefixes = list(blobs.prefixes)
             if not prefixes:
-                raise NotFound((f'no such tile_uri: {tile_uri}'))
+                raise NotFound(f'no such tile_uri: {tile_uri}')
             prefixes.sort(key=self.get_folders_date, reverse=True)
             granule_id_list = prefixes[:self.tile_dates_count]
 
