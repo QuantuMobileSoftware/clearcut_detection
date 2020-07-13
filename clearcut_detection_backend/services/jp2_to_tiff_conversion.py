@@ -3,10 +3,10 @@ import os
 import subprocess
 
 from clearcuts.models import TileInformation
-from utils import path_exists_or_create
+from django.conf import settings
 
-logging.basicConfig(format='%(asctime)s %(message)s')
-MAPBOX_TIFFS_DIR = path_exists_or_create('data/mapbox_tiffs')
+logger = logging.getLogger('jp2_to_tiff_conversion')
+settings.MAPBOX_TIFFS_DIR.mkdir(parents=True, exist_ok=True)
 
 
 def jp2_to_tiff():
@@ -19,8 +19,8 @@ def jp2_to_tiff():
                     .values_list('source_tci_location', flat=True))
     for file in jp2files:
         filename = os.path.basename(file).split('.')[0]
-        logging.warning('Converting %s to TIFF format', file)
-        geo_tiff_file = os.path.join(MAPBOX_TIFFS_DIR, f'{filename}.tiff')
+        logger.info('Converting %s to TIFF format', file)
+        geo_tiff_file = os.path.join(settings.MAPBOX_TIFFS_DIR, f'{filename}.tiff')
         command_jp2_to_tiff = f'gdalwarp -of GTiff -overwrite -ot Byte -t_srs EPSG:4326 ' \
                               f'-wm 4096 -multi -wo NUM_THREADS=12 ' \
                               f'-co COMPRESS=DEFLATE -co PREDICTOR=2 {file} {geo_tiff_file}'
@@ -35,11 +35,14 @@ def jp2_to_tiff():
         command_cutoff_nodata = f'rio edit-info --nodata 0 {geo_tiff_file}'
 
         for command in [command_jp2_to_tiff, command_cutoff_nodata]:
-            result = process_command(command)
-        if result:
-            tile_info = TileInformation.objects.get(source_tci_location=file)
-            tile_info.tile_location = geo_tiff_file
-            tile_info.save()
+            try:
+                result = process_command(command)
+                if result:
+                    tile_info = TileInformation.objects.get(source_tci_location=file)
+                    tile_info.tile_location = geo_tiff_file
+                    tile_info.save()
+            except (IOError, ValueError, FileNotFoundError, FileExistsError, Exception):
+                logger.error('Error\n\n', exc_info=True)
 
 
 def process_command(command):

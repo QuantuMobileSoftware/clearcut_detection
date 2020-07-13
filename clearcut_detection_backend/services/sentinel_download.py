@@ -1,19 +1,21 @@
 import os
-import csv
 import datetime
 import subprocess
+import logging
 
 from django.conf import settings
-from concurrent.futures import ThreadPoolExecutor
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from configparser import ConfigParser
 from google.cloud import storage
 from xml.dom import minidom
+from xml.etree.ElementTree import ParseError
 
 from clearcuts.models import TileInformation
-from utils import path_exists_or_create, Bands
+from utils import Bands
 
-DOWNLOADED_IMAGES_DIR = path_exists_or_create('data/source_images/')
 
+logger = logging.getLogger('sentinel')
+settings.DOWNLOADED_IMAGES_DIR.mkdir(parents=True, exist_ok=True)
 
 class SentinelDownload:
 
@@ -27,7 +29,6 @@ class SentinelDownload:
         self.config.read('gcp_config.ini')
         self.area_tile_set = self.config.get('config', 'AREA_TILE_SET').split()
         self.bands_to_download = self.config.get('config', 'BANDS_TO_DOWNLOAD').split()
-        self.executor = ThreadPoolExecutor(max_workers=10)
 
     def process_download(self):
         """
@@ -57,8 +58,13 @@ class SentinelDownload:
         :param tiles_to_update:
         :return:
         """
-        for tile_name, tile_path in tiles_to_update.items():
-            threads = self.executor.submit(self.download_images_from_tiles, tile_name, tile_path)
+        with ThreadPoolExecutor(max_workers=settings.MAX_WORKERS) as executor:
+            future_list = []
+            for tile_name, tile_path in tiles_to_update.items():
+                future = executor.submit(self.download_images_from_tiles, tile_name, tile_path)
+                future_list.append(future)
+            for f in as_completed(future_list):
+                logger.info(f.result())  # TODO
 
     def download_images_from_tiles(self, tile_name, tile_path):
         """
@@ -71,52 +77,55 @@ class SentinelDownload:
         tile_prefix = f'{tile_path}/IMG_DATA/R20m/'
         blobs = self.storage_bucket.list_blobs(prefix=tile_prefix)
 
-        for blob in blobs:
-            band, download_needed = self.file_need_to_be_downloaded(blob.name)
-            if download_needed:
-                filename = os.path.join(DOWNLOADED_IMAGES_DIR, f'{tile_name}_{band}.jp2')
-                self.download_file_from_storage(blob, filename)
-                tile_info = TileInformation.objects.get(tile_name=tile_name)
-                if band == Bands.B11.value:
-                    tile_info.source_b11_location = filename
-                elif band == Bands.B12.value:
-                    tile_info.source_b12_location = filename
-                elif band == Bands.B8A.value:
-                    tile_info.source_b8a_location = filename
-                else:
-                    continue
-                tile_info.save()
-        
-        tile_prefix = f'{tile_path}/IMG_DATA/R10m/'
-        blobs = self.storage_bucket.list_blobs(prefix=tile_prefix)
+        try:
+            for blob in blobs:
+                band, download_needed = self.file_need_to_be_downloaded(blob.name)
+                if download_needed:
+                    filename = settings.DOWNLOADED_IMAGES_DIR / f'{tile_name}_{band}.jp2'
+                    self.download_file_from_storage(blob, filename)
+                    tile_info = TileInformation.objects.get(tile_name=tile_name)
+                    if band == Bands.B11.value:
+                        tile_info.source_b11_location = filename
+                    elif band == Bands.B12.value:
+                        tile_info.source_b12_location = filename
+                    elif band == Bands.B8A.value:
+                        tile_info.source_b8a_location = filename
+                    else:
+                        continue
+                    tile_info.save()
 
-        for blob in blobs:
-            band, download_needed = self.file_need_to_be_downloaded(blob.name)
-            if download_needed:
-                filename = os.path.join(DOWNLOADED_IMAGES_DIR, f'{tile_name}_{band}.jp2')
-                self.download_file_from_storage(blob, filename)
-                tile_info = TileInformation.objects.get(tile_name=tile_name)
-                if band == Bands.B04.value:
-                    tile_info.source_b04_location = filename
-                elif band == Bands.B08.value:
-                    tile_info.source_b08_location = filename
-                elif band == Bands.TCI.value:
-                    tile_info.source_tci_location = filename
-                else:
-                    continue
-                tile_info.save()
+            tile_prefix = f'{tile_path}/IMG_DATA/R10m/'
+            blobs = self.storage_bucket.list_blobs(prefix=tile_prefix)
 
-        tile_prefix = f'{tile_path}/QI_DATA/' #MSK_CLDPRB_20m.jp2
-        blobs = self.storage_bucket.list_blobs(prefix=tile_prefix)
-        for blob in blobs:
-            if blob.name.endswith('MSK_CLDPRB_20m.jp2'):
-                tile_info = TileInformation.objects.get(tile_name=tile_name)
-                filename = os.path.join(DOWNLOADED_IMAGES_DIR, f"{tile_name}_{blob.name.split('/')[-1]}")
-                self.download_file_from_storage(blob, filename)
-                tile_info.source_clouds_location = filename
-                tile_info.save()
-        #print(TileInformation.objects.values())
-        #print(list(TileInformation.objects.values('tile_index').distinct()))
+            for blob in blobs:
+                band, download_needed = self.file_need_to_be_downloaded(blob.name)
+                if download_needed:
+                    filename = settings.DOWNLOADED_IMAGES_DIR / f'{tile_name}_{band}.jp2'
+                    self.download_file_from_storage(blob, filename)
+                    tile_info = TileInformation.objects.get(tile_name=tile_name)
+                    if band == Bands.B04.value:
+                        tile_info.source_b04_location = filename
+                    elif band == Bands.B08.value:
+                        tile_info.source_b08_location = filename
+                    elif band == Bands.TCI.value:
+                        tile_info.source_tci_location = filename
+                    else:
+                        continue
+                    tile_info.save()
+
+            tile_prefix = f'{tile_path}/QI_DATA/'  # MSK_CLDPRB_20m.jp2
+            blobs = self.storage_bucket.list_blobs(prefix=tile_prefix)
+            for blob in blobs:
+                if blob.name.endswith('MSK_CLDPRB_20m.jp2'):
+                    tile_info = TileInformation.objects.get(tile_name=tile_name)
+                    filename = settings.DOWNLOADED_IMAGES_DIR / f"{tile_name}_{blob.name.split('/')[-1]}"
+                    self.download_file_from_storage(blob, filename)
+                    tile_info.source_clouds_location = filename
+                    tile_info.save()
+
+            return tile_name, tile_path
+        except (IOError, ValueError, FileNotFoundError, FileExistsError, Exception):
+            logger.error('Error\n\n', exc_info=True)
 
     def file_need_to_be_downloaded(self, name):
         """
@@ -137,40 +146,38 @@ class SentinelDownload:
         :return:
         """
         tiles_to_be_downloaded = {}
+        base_uri = 'gs://gcp-public-data-sentinel-2'
+        metadata_file = 'MTD_TL.xml'
+
         for tile_name, tile_path in tiles_path.items():
-            print('====== TILE NAME ======')
-            print(tile_name)
-            base_uri = 'gs://gcp-public-data-sentinel-2'
+            logger.info(f'TILE NAME\n {tile_name}')
             tile_uri = f'L2/tiles/{tile_path}'
-            metadata_file = 'MTD_TL.xml'
             command = f'gsutil ls -l {base_uri}/{tile_uri}/ | sort -k2n | tail -n{self.tile_dates_count}'
             granule_id_list = self.find_granule_id(command)
             granule_id_list.reverse()
             granule_num = 0
             for granule_id in granule_id_list:
                 if granule_num < self.sequential_dates_count:
-                    print('====== GRANULE ID ======')
-                    print(granule_id)
+                    # print('====== GRANULE ID ======')
+                    # print(granule_id)
                     nested_command = f'gsutil ls -l {base_uri}/{tile_uri}/{granule_id}/GRANULE/ | sort -k2n | tail -n1'
                     nested_granule_id_list = self.find_granule_id(nested_command)
                     nested_granule_id = nested_granule_id_list[0]
                     updated_tile_uri = f'{tile_uri}/{granule_id}/GRANULE/{nested_granule_id}'
-                    filename = os.path.join(DOWNLOADED_IMAGES_DIR, f'{tile_name}_{metadata_file}')
+                    filename = settings.DOWNLOADED_IMAGES_DIR / f'{tile_name}_{metadata_file}'
                     try:
                         blob = self.storage_bucket.get_blob(f'{updated_tile_uri}/{metadata_file}')
                         update_needed = self.define_if_tile_update_needed(blob, f'{tile_name}_{granule_num}', filename)
-                        print('====== IS UPDATE NEEDED ======')
-                        print(update_needed)
+                        logger.info(f'IS UPDATE NEEDED for {tile_name}_{granule_num}\n {update_needed}')
                         if update_needed:
                             tiles_to_be_downloaded[f'{tile_name}_{granule_num}'] = f'{updated_tile_uri}'
                             os.remove(filename)
-                            granule_num+=1
-                    except Exception as e:
-                        print(e)
-                        print(dir(e))
+                            granule_num += 1
+                    except (IOError, ValueError, FileNotFoundError, FileExistsError, Exception):
+                        logger.error('Error\n\n', exc_info=True)
                 else:
                     break
-        print(tiles_to_be_downloaded)
+        logger.info(f'tiles_to_be_downloaded\n {tiles_to_be_downloaded}')
         return tiles_to_be_downloaded
 
     def define_if_tile_update_needed(self, blob, tile_name, filename) -> bool:
@@ -183,7 +190,7 @@ class SentinelDownload:
         :param filename:
         :return:
         """
-        
+        filename = str(filename)
         tile_info, created = TileInformation.objects.get_or_create(tile_name=tile_name)
 
         if not created:
@@ -193,13 +200,13 @@ class SentinelDownload:
 
         self.download_file_from_storage(blob, filename)
         nodata_pixel_value = self.define_xml_node_value(filename, 'NODATA_PIXEL_PERCENTAGE')
-        print('====== NO DATA PIXEL VALUE ======')
-        print(nodata_pixel_value)
+        # print('====== NO DATA PIXEL VALUE ======')
+        # print(nodata_pixel_value)
         if nodata_pixel_value >= settings.MAXIMUM_EMPTY_PIXEL_PERCENTAGE:
             return False
         cloud_coverage_value = self.define_xml_node_value(filename, 'CLOUDY_PIXEL_PERCENTAGE')
-        print('====== CLOUD COVERAGE VALUE ======')
-        print(cloud_coverage_value)
+        # print('====== CLOUD COVERAGE VALUE ======')
+        # print(cloud_coverage_value)
         if cloud_coverage_value <= settings.MAXIMUM_CLOUD_PERCENTAGE_ALLOWED:
             tile_info.cloud_coverage = cloud_coverage_value
             tile_info.tile_metadata_hash = blob.md5_hash
@@ -210,7 +217,8 @@ class SentinelDownload:
         else:
             return False
 
-    def find_granule_id(self, command):
+    @staticmethod
+    def find_granule_id(command):
         """
         Requests next GCS folder node.
         [:-9] is used to cut out _$folder$ from naming
@@ -231,7 +239,8 @@ class SentinelDownload:
 
         return granule_id_list
 
-    def download_file_from_storage(self, blob, filename):
+    @staticmethod
+    def download_file_from_storage(blob, filename):
         """
         Downloads blob to local storage
         :param blob:
@@ -241,7 +250,8 @@ class SentinelDownload:
         with open(filename, 'wb') as new_file:
             blob.download_to_file(new_file)
 
-    def define_xml_node_value(self, xml_file, node):
+    @staticmethod
+    def define_xml_node_value(xml_file, node):
         """
         Parsing XML file for passed node name
         :param xml_file:
@@ -253,6 +263,6 @@ class SentinelDownload:
             xml_node = xml_dom.getElementsByTagName(node)
             xml_node_value = xml_node[0].firstChild.data
             return float(xml_node_value)
-        except Exception as e:
-            print(e)
+        except (ParseError, Exception):
+            logger.error('Error\n\n', exc_info=True)
             return None

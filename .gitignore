@@ -4,6 +4,7 @@
 data/
 logs/
 venv/
+_install/
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
@@ -76,3 +77,4 @@ credentials.json
 
 # External files
 landcover.zip
+docker-compose-django-debug.yml
