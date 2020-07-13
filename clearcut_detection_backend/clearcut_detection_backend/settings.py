@@ -155,6 +155,7 @@ MAX_WORKERS = 6
 
 DATA_DIR = Path('data')
 DOWNLOADED_IMAGES_DIR = Path('./data/source_images/')
+DOWNLOADED_IMAGES_DIR.mkdir(parents=True, exist_ok=True)
 MODEL_TIFFS_DIR = Path('./data/model_tiffs')
 MAPBOX_TIFFS_DIR = Path('./data/mapbox_tiffs')
 
