@@ -1,22 +1,18 @@
 import os
 import re
 import datetime
-import subprocess
 import logging
+from enum import Enum
 
 from django.conf import settings
-import concurrent.futures
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from configparser import ConfigParser
 from google.cloud import storage
-from google.api_core.page_iterator import HTTPIterator
 from google.cloud.exceptions import NotFound
 from xml.dom import minidom
 from xml.etree.ElementTree import ParseError
 
-
 from clearcuts.models import TileInformation
-from utils import Bands
 
 config = ConfigParser(allow_no_value=True)
 logger = logging.getLogger('sentinel')
@@ -31,14 +27,13 @@ class TillNameError(Exception):
         return self.message
 
 
-class BlobNotFound(Exception):
-    def __init__(self, uri):
-        self.message = f'{uri} is not valid blob uri'
-        Exception.__init__(self, self.message)
-        # logger.error('Error\n\n', exc_info=True)
-
-    def __str__(self):
-        return self.message
+class Bands(Enum):
+    TCI = 'TCI'
+    B04 = 'B04'
+    B08 = 'B08'
+    B8A = 'B8A'
+    B11 = 'B11'
+    B12 = 'B12'
 
 
 class SentinelDownload:
@@ -136,7 +131,7 @@ class SentinelDownload:
             band, download_needed = self.file_need_to_be_downloaded(blob.name)
             if download_needed:
                 filename = settings.DOWNLOADED_IMAGES_DIR / f'{tile_name}_{band}.jp2'
-                self.download_file_from_storage(blob, filename)  # TODO
+                self.download_file_from_storage(blob, filename)
                 tile_info = TileInformation.objects.get(tile_name=tile_name)
                 if band == Bands.B11.value:
                     tile_info.source_b11_location = filename
@@ -161,7 +156,7 @@ class SentinelDownload:
             band, download_needed = self.file_need_to_be_downloaded(blob.name)
             if download_needed:
                 filename = settings.DOWNLOADED_IMAGES_DIR / f'{tile_name}_{band}.jp2'
-                self.download_file_from_storage(blob, filename)  # TODO
+                self.download_file_from_storage(blob, filename)
                 tile_info = TileInformation.objects.get(tile_name=tile_name)
                 if band == Bands.B04.value:
                     tile_info.source_b04_location = filename
