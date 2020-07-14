@@ -5,19 +5,24 @@ import torch
 import logging
 import rasterio
 import argparse
+import geopandas
 import numpy as np
 import segmentation_models_pytorch as smp
 
 from catalyst.dl.utils import UtilsFactory
 from geopandas import GeoSeries
+from scipy import spatial
 from shapely.geometry import Polygon
+from shapely.ops import unary_union
 from torchvision import transforms
 from torch import nn
 from tqdm import tqdm
 from rasterio.windows import Window
 from skimage.transform import match_histograms
 
-import matplotlib.pyplot as plt
+from utils import LandcoverPolygons
+
+CLOUDS_PROBABILITY_THRESHOLD = 15
 
 import warnings
 warnings.filterwarnings('ignore')
@@ -61,77 +66,58 @@ def window_from_extent(corners, aff):
     return ((int(row_start), int(row_stop)), (int(col_start), int(col_stop)))
 
 
-def crop_external_rmap(src, corners):
-    aff = src.transform
-    window = window_from_extent(corners, aff)
-    arr = src.read(1, window=window)
-    return arr
-
-
 def predict_raster(img_path, channels, network, model_weights_path, input_size=56, neighbours=3):
     tile = img_path.split('/')[-1]
-    
     tiff_files = [os.path.join(img_path, f'{tile}_{i}', f'{tile}_{i}.tif') for i in range(2)]
-    cloud_files = [os.path.join(img_path, f'{tile}_{i}', 'clouds.tiff') for i in range(2)]
-    landcover_file = './data/landcover/forest_corr.tiff'
-
     model, device = load_model(network, model_weights_path, channels, neighbours)
-    with rasterio.open(tiff_files[0]) as src, rasterio.open(tiff_files[1]) as src_next, \
-         rasterio.open(cloud_files[0]) as cld_1, rasterio.open(cloud_files[1]) as cld_2, \
-         rasterio.open(landcover_file) as lnd:
-        
-        meta = src.meta
+
+    with rasterio.open(tiff_files[0]) as source_current, \
+         rasterio.open(tiff_files[1]) as source_previous:
+
+        meta = source_current.meta
         meta['count'] = 1
-        raster_array = np.zeros((src.meta['height'], src.meta['width']))
+        clearcut_mask = np.zeros((source_current.height, source_current.width))
         pbar = tqdm()
         for i in range(src.width // input_size):
             for j in range(src.height // input_size):
-                pbar.set_postfix(row=f'{i}', col=f'{j}', num_pixels=f'{raster_array.sum()}')
-                corners=[
-                    src.xy(j * input_size, i * input_size),
-                    src.xy(j * input_size, (i + 1) * input_size),
-                    src.xy((j + 1) * input_size, (i + 1) * input_size),
-                    src.xy((j + 1) * input_size, i * input_size),
-                    src.xy(j * input_size, i * input_size)
-                    ]
+                pbar.set_postfix(row=f'{i}', col=f'{j}', num_pixels=f'{clearcut_mask.sum()}')
                 
-                cld1 = crop_external_rmap(cld_1, corners)
-                cld2 = crop_external_rmap(cld_2, corners)
-                if (cld1+cld2).max()<20:
-                    img1 = np.moveaxis(src.read(window=Window(j * input_size, i * input_size, input_size, input_size)), 0, -1)
-                    img2 = np.moveaxis(src_next.read(window=Window(j * input_size, i * input_size, input_size, input_size)), 0, -1)
+                bottom_row = j * input_size
+                upper_row = (j + 1) * input_size
+                left_column = i * input_size
+                right_column = (i + 1) * input_size
 
-                    res = diff(img1,img2)
-                    res = filter_by_channels(res, channels)
+                corners=[
+                    source_current.xy(bottom_row, left_column),
+                    source_current.xy(bottom_row, right_column),
+                    source_current.xy(upper_row, right_column),
+                    source_current.xy(upper_row, left_column),
+                    source_current.xy(bottom_row, left_column)
+                    ]
 
-                    res = transforms.ToTensor()(res.astype(np.uint8)).to(device)
-                    pred = predict(model, res, (1, count_channels(channels)*neighbours, input_size, input_size), device)
+                window = Window(bottom_row, left_column, input_size, input_size)
+                image_current = np.moveaxis(source_current.read(window=window), 0, -1)
+                image_previous = np.moveaxis(source_previous.read(window=window), 0, -1)
 
-                    land = (crop_external_rmap(lnd, corners) > 0) * 1
-                    if land.size-land.sum() > 3:                  
-                        raster_array[j * input_size : (j + 1) * input_size, \
-                                     i * input_size : (i + 1) * input_size] = pred * (-1)
-                    else:
-                        raster_array[j * input_size : (j + 1) * input_size, \
-                                     i * input_size : (i + 1) * input_size] = pred * 1
+                merged_image = diff(image_current, image_previous)
+                filtered_image = filter_by_channels(merged_image, channels)
 
+                image_tensor = transforms.ToTensor()(filtered_image.astype(np.uint8)).to(device)
 
+                n_channels = count_channels(channels) * neighbours
+                image_shape = (1, n_channels, input_size, input_size)
+                predicted = predict(model, image_tensor, image_shape, device)
 
-                pbar.update(1)
-
-    src.close()
-    src_next.close()
-    cld_1.close()
-    cld_2.close()
-    lnd.close()
+                clearcut_mask[bottom_row:upper_row, left_column:right_column] = predicted
+            pbar.update(1)
 
     meta['dtype'] = 'float32'
-    return raster_array.astype(np.float32), meta
+    return clearcut_mask.astype(np.float32), meta
 
 
 def get_model(name, classification_head=True, model_weights_path=None):
     if name == 'unet_ch':
-        aux_params=dict(
+        aux_params = dict(
             pooling='max',             # one of 'avg', 'max'
             dropout=0.1,               # dropout ratio, default is None
             activation='sigmoid',      # activation function, default is None
@@ -202,10 +188,10 @@ def save_raster(raster_array, meta, save_path, filename):
             dst.write(raster_array, i)
 
 
-def polygonize(raster_array, meta, transform=True):
+def polygonize(raster_array, meta, transform=True, mode=cv2.RETR_TREE):
     raster_array = (raster_array * 255).astype(np.uint8)
 
-    contours, _ = cv2.findContours(raster_array, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
+    contours, _ = cv2.findContours(raster_array, mode, cv2.CHAIN_APPROX_SIMPLE)
 
     polygons = []
     for i in tqdm(range(len(contours))):
@@ -234,6 +220,59 @@ def save_polygons(polygons, meta, save_path, filename):
     gc.crs = meta['crs']
     logging.info(f'{filename}.geojson saved.')
     gc.to_file(os.path.join(save_path, f'{filename}.geojson'), driver='GeoJSON')
+
+
+def intersection_poly(test_poly, truth_poly):
+    intersecion_score = 0
+    if test_poly.is_valid and truth_poly.is_valid:
+        intersection_result = test_poly.intersection(truth_poly)
+        if not intersection_result.is_valid:
+            intersection_result = intersection_result.buffer(0)
+        if not intersection_result.is_empty:
+            intersection_area = intersection_result.area
+            test_poly_area = test_poly.area
+            intersecion_score = intersection_area / test_poly_area
+    return intersecion_score
+
+
+def postprocessing(img_path, clearcuts, src_crs):
+
+    def get_intersected_polygons(clearcuts, masks, area_threshold=0.9):
+        inside_mask_polygons = []
+        outside_mask_polygons = []
+        if len(masks) > 0:
+            centroids = [[mask.centroid.x, mask.centroid.y] for mask in masks]
+            kdtree = spatial.KDTree(centroids)
+            for clearcut in tqdm(clearcuts):
+                _, idx = kdtree.query(clearcut.centroid, k=1)
+                #if clearcut.intersects(masks[idx]):
+                if intersection_poly(clearcut, masks[idx]) > area_threshold:
+                    inside_mask_polygons.append(clearcut)
+                else:
+                    outside_mask_polygons.append(clearcut)
+        else:
+            outside_mask_polygons = clearcuts
+        return inside_mask_polygons, outside_mask_polygons
+        
+    tile = img_path.split('/')[-1]
+
+    landcover = LandcoverPolygons(tile, src_crs)
+    forest_polygons = landcover.get_polygon()
+
+    cloud_files = [os.path.join(img_path, f'{tile}_{i}', 'clouds.tiff') for i in range(2)]
+    cloud_polygons = []
+    for cloud_file in cloud_files:
+        with rasterio.open(cloud_file) as src:
+            clouds = src.read(1)
+            meta = src.meta
+        clouds = (clouds > CLOUDS_PROBABILITY_THRESHOLD) * 1
+        if clouds.sum() > 0:
+            cloud_polygons.extend(polygonize(clouds, meta, mode=cv2.RETR_LIST))
+    
+    # TODO: cloud polygons do not filter all cases correctly, need to investigate
+    under_clouds, outside_clouds = get_intersected_polygons(clearcuts, cloud_polygons)
+    inside_forest, outside_forest = get_intersected_polygons(outside_clouds, forest_polygons)
+    return under_clouds, outside_forest, inside_forest
 
 
 def parse_args():
@@ -290,11 +329,14 @@ def main():
             meta = src.meta
             src.close()
 
+    logging.info('Polygonize raster array of clearcuts...')
     polygons = polygonize(raster_array > args.threshold, meta)
-    polygons_not_forest = polygonize(raster_array < 0, meta)
-
-    save_polygons(polygons, meta, args.save_path, predicted_filename)
-    save_polygons(polygons_not_forest, meta, args.save_path, predicted_filename+'_not_forest')
+    logging.info('Filter polygons of clearcuts')
+    clouds_polygons, not_forest_polygons, forest_polygons = postprocessing(args.image_path, polygons, meta['crs'])
+    
+    save_polygons(clouds_polygons, meta, args.save_path, predicted_filename + '_clouds')
+    save_polygons(not_forest_polygons, meta, args.save_path, predicted_filename+'_not_forest')
+    save_polygons(forest_polygons, meta, args.save_path, predicted_filename)
 
 
 if __name__ == '__main__':
