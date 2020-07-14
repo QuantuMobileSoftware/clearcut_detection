@@ -122,7 +122,7 @@ AUTH_PASSWORD_VALIDATORS = [
 # In summer can lower cloud percentage to 5-10, amd enlarge nodata pixel threshold to 50 and dates reviewed to 20-25
 MAXIMUM_CLOUD_PERCENTAGE_ALLOWED = 20.0
 MAXIMUM_EMPTY_PIXEL_PERCENTAGE = 5.0
-MAXIMUM_DATES_REVIEWED_FOR_TILE = 24
+MAXIMUM_DATES_REVIEWED_FOR_TILE = 100
 MAXIMUM_DATES_STORE_FOR_TILE = 2
 
 MAPBOX_USER = 'quantum-inc'
@@ -155,7 +155,6 @@ MAX_WORKERS = 6
 
 DATA_DIR = Path('data')
 DOWNLOADED_IMAGES_DIR = Path('./data/source_images/')
-DOWNLOADED_IMAGES_DIR.mkdir(parents=True, exist_ok=True)
 MODEL_TIFFS_DIR = Path('./data/model_tiffs')
 MAPBOX_TIFFS_DIR = Path('./data/mapbox_tiffs')
 

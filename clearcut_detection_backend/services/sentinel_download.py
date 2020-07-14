@@ -37,6 +37,7 @@ class Bands(Enum):
 class SentinelDownload:
 
     def __init__(self):
+        settings.DOWNLOADED_IMAGES_DIR.mkdir(parents=True, exist_ok=True)
         os.environ['GOOGLE_APPLICATION_CREDENTIALS'] = './key.json'
         self.tile_dates_count = settings.MAXIMUM_DATES_REVIEWED_FOR_TILE
         self.sequential_dates_count = settings.MAXIMUM_DATES_STORE_FOR_TILE
