@@ -6,7 +6,7 @@ import time as t
 import easyargs
 from planet import api
 
-from downloader import download
+from downloader import download, quota
 from helper import extract_results, overlap, get_best_items, print_item, pprint
 from thumbnail import store_thumbnails
 
@@ -77,13 +77,14 @@ def main(cred, input, path="thumbnails/",
                 for item in best_items:
                     print_item(item)
             else:
-                print("Quality items not found. Try to change overlap or cloud percent")
+                print("Quality items not found. Try to change overlap or cloud percent\n")
 
-    if load:
-        download(api, client, items, item_type, asset_type,
+    if load and items:
+        quota(api_key, verbose)
+        download(api, client, [items[0]], item_type, asset_type,
                  directory, sleep, tries, cores, verbose)
 
-    pprint(f"Finished execution at {t.strftime('%H:%M:%S', t.gmtime(t.time() - start))}", verbose)
+    pprint(f"\nFinished execution at {t.strftime('%H:%M:%S', t.gmtime(t.time() - start))}", verbose)
 
 
 if __name__ == '__main__':
