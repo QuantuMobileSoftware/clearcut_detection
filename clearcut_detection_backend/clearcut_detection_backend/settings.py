@@ -88,7 +88,7 @@ DATABASES = {
         'NAME': 'clearcuts_db',
         'USER': 'ecoProj',
         'PASSWORD': os.getenv('DB_PASSWORD', 'zys8rwTAC9VIR1X9'),
-        'HOST': 'db',
+        'HOST': os.environ.get('DB_HOST', 'db'),
         'PORT': '5432'
     }
 }
@@ -155,7 +155,6 @@ MAX_WORKERS = 6
 
 DATA_DIR = Path('data')
 DOWNLOADED_IMAGES_DIR = Path('./data/source_images/')
-DOWNLOADED_IMAGES_DIR.mkdir(parents=True, exist_ok=True)
 MODEL_TIFFS_DIR = Path('./data/model_tiffs')
 MAPBOX_TIFFS_DIR = Path('./data/mapbox_tiffs')
 
