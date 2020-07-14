@@ -1,5 +1,7 @@
 import os
 import time
+import requests
+from requests.auth import HTTPBasicAuth
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from helper import pprint
 
@@ -9,7 +11,6 @@ def get_items_assets(client, items, item_type, asset_type, verbose):
     for item in items:
         item_assets = client.get_assets_by_id(item_type, item["id"]).get()
         item_assets = item_assets.get(asset_type)
-
         if not item_assets:
             pprint(f"Cannot get assets for {item['id']} from Planet API. Check api_key and permissions to download",
                    verbose)
@@ -70,9 +71,9 @@ def load_assets(api, client, assets, directory, verbose):
                 callback = api.write_to_file(directory, callback=downloaded)
                 body = client.download(request_asset, callback=callback)
 
-                pprint(f"Downloaded {id}", verbose)
             except Exception as e:
                 pprint(f"cannot download {id} asset: {str(e)}", verbose)
+        break
 
 
 def download(api, client, items, item_type, asset_type, directory, sleep, tries, cores, verbose):
@@ -87,6 +88,42 @@ def download(api, client, items, item_type, asset_type, directory, sleep, tries,
 
     load_assets(api, client, activated_assets, directory, verbose)
 
+
 # TODO: deal with callback for loading
 def downloaded(callback):
-    print(callback)
+    # print(callback)
+    pass
+
+
+def quota(api_key, verbose):
+    """Print allocation and remaining quota"""
+
+    response = requests.get(
+        "https://api.planet.com/auth/v1/experimental/public/my/subscriptions",
+        auth=HTTPBasicAuth(api_key, ''),
+    )
+
+    if response.status_code == 200:
+        response = response.json()[0]
+
+        quota_sqkm = float(response["quota_sqkm"])
+        quota_used = round(float(response["quota_used"]), 2)
+
+        pprint(f"\nQuota status:\nOrganization name: {response['organization']['name']}\n"
+               f"Quota enabled: {response['quota_enabled']}\n"
+               f"Total quota in SqKm: {quota_sqkm}\n"
+               f"Total quota used: {quota_used}", verbose)
+
+        left_quota = round(quota_sqkm - quota_used, 2)
+        try:
+            left_percent = round((left_quota * 100.0) / quota_sqkm, 2)
+            if left_percent < 5.0:
+                print(f"Warning: left {left_percent}% of total quota to load")
+        except ZeroDivisionError as ex:
+            pprint(f"Cannot calculate left quota percent: {str(ex)}", verbose)
+            pprint(f"Remaining Quota: {left_quota} SqKm", verbose)
+        else:
+            pprint(f"Remaining Quota: {left_quota} SqKm or {left_percent}%", verbose)
+
+    else:
+        pprint(f"Cannot get quota status: {response.status_code}", verbose)
