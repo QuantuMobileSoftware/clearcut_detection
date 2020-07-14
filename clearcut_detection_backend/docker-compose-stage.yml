@@ -56,13 +56,13 @@ nginx_stage:
   links:
     - "django_stage"
   expose:
-    - "8080"
+    - "8082"
   environment:
     - VIRTUAL_HOST=clearcut1.quantumobile.com
-    - VIRTUAL_PORT=8080
+    - VIRTUAL_PORT=8082
     - LETSENCRYPT_HOST=clearcut1.quantumobile.com
     - LETSENCRYPT_EMAIL=o.tsiapa@quantumobile.com
   volumes:
-    - ./nginx/nginx.conf:/etc/nginx/conf.d/default.conf
+    - ./nginx/nginx_stage.conf:/etc/nginx/conf.d/default.conf
     - ./frontend/build:/frontend/build
 
