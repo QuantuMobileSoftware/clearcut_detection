@@ -88,7 +88,7 @@ DATABASES = {
         'NAME': 'clearcuts_db',
         'USER': 'ecoProj',
         'PASSWORD': os.getenv('DB_PASSWORD', 'zys8rwTAC9VIR1X9'),
-        'HOST': 'db',
+        'HOST': os.environ.get('DB_HOST', 'db'),
         'PORT': '5432'
     }
 }
