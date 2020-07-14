@@ -6,15 +6,13 @@ from enum import Enum
 
 from django.conf import settings
 from concurrent.futures import ThreadPoolExecutor, as_completed
-from configparser import ConfigParser
 from google.cloud import storage
 from google.cloud.exceptions import NotFound
 from xml.dom import minidom
 from xml.etree.ElementTree import ParseError
-
 from clearcuts.models import TileInformation
+from services.configuration import area_tile_set, bands_to_download
 
-config = ConfigParser(allow_no_value=True)
 logger = logging.getLogger('sentinel')
 
 
@@ -42,15 +40,17 @@ class SentinelDownload:
         os.environ['GOOGLE_APPLICATION_CREDENTIALS'] = './key.json'
         self.tile_dates_count = settings.MAXIMUM_DATES_REVIEWED_FOR_TILE
         self.sequential_dates_count = settings.MAXIMUM_DATES_STORE_FOR_TILE
-        config.read('gcp_config.ini')
-        self.area_tile_set = config.get('config', 'AREA_TILE_SET').split()
-        self.bands_to_download = config.get('config', 'BANDS_TO_DOWNLOAD').split()
+        self.area_tile_set = area_tile_set
+        self.bands_to_download = bands_to_download
         self.base_uri = 'gs://gcp-public-data-sentinel-2'  # TODO to settings
         self.bucket_name = 'gcp-public-data-sentinel-2'  # TODO to settings
         self.prefix = 'L2/tiles'
         self.tiles_and_uris_dict = {tile_name: self.get_tile_uri(tile_name) for tile_name in self.area_tile_set}
         self.storage_client = storage.Client()
         self.storage_bucket = self.get_storage_bucket()
+
+        logger.info(f'area tile set for download: {self.area_tile_set}')
+        logger.info(f'bands to download:{self.bands_to_download}')
 
     def get_storage_bucket(self):
         try:
@@ -86,11 +86,12 @@ class SentinelDownload:
             latitude_band = match[0] if match else None
             if not latitude_band:
                 raise TillNameError(tile_name)
-            string = string.replace(match[0], '')
+            string = string.replace(match[0], '', 1)
 
             match = re.search(r'\b[A-Z][A-Z]\b', string)
             grid_square = match[0] if match else None
             if not grid_square:
+                logger.info(string)
                 raise TillNameError(tile_name)
             return f'{utm_zone}/{latitude_band}/{grid_square}'
         except TillNameError:
