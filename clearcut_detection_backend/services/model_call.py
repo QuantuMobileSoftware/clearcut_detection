@@ -50,11 +50,13 @@ class ModelCaller:
                         future = executor.submit(prepare_tiff, tile)
                         future_list.append(future)
 
-        for f in as_completed(future_list):
-            self.remove_temp_files(f.result()[0], f.result()[1])
+        for future in as_completed(future_list):
+            if future.result()[0]:
+                self.remove_temp_files(future.result()[0], future.result()[1])
 
         for tile_index in self.tile_index_distinct:
             logger.info(f'start model_predict for {tile_index}')
+
             self.model_predict(self.query.filter(tile_index__exact=tile_index))
 
     @staticmethod
