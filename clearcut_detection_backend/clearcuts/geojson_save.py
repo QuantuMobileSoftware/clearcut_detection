@@ -7,26 +7,6 @@ from django.contrib.gis.geos import GEOSGeometry
 
 from .models import Clearcut, Zone
 
-'''
-def convert_geodataframe_to_geospolygons(dataframe):
-    geometries = []
-    flags_clouds = []
-    flags_forest = []
-    for data in dataframe.to_dict("records"):
-        geometry_str = data.pop('geometry')
-        flag_cloud = data.pop('clouds')
-        flag_forest = data.pop('forest')
-        geometry = GEOSGeometry('POINT EMPTY', srid=4326)
-        try:
-            geometry = GEOSGeometry(str(geometry_str), srid=4326)
-        except (TypeError, ValueError) as exc:
-            # print(exc)
-            continue
-        geometries.append(geometry)
-        flags_clouds.append(flag_cloud)
-        flags_forest.append(flag_forest)
-    return geometries, flags_clouds, flags_forest
-'''
 def convert_geodataframe_to_geospolygons(dataframe):
     geometries = []
     for data in dataframe.to_dict("records"):
