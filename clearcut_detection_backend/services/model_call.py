@@ -54,8 +54,8 @@ class ModelCaller:
         for future in as_completed(future_list):
             if future.result()[0]:
                 self.remove_temp_files(future.result()[0], future.result()[1])
-                if future.result()[3]:
-                    tile_index = future.result()[3]
+                if future.result()[2]:
+                    tile_index = future.result()[2]
                     if tile_index not in results:
                         results[tile_index] = 1
                     else:
