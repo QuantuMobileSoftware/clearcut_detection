@@ -23,6 +23,7 @@ from skimage.transform import match_histograms
 from utils import LandcoverPolygons
 
 CLOUDS_PROBABILITY_THRESHOLD = 15
+DATES_FOR_TILE = 2
 
 import warnings
 warnings.filterwarnings('ignore')
@@ -67,8 +68,8 @@ def window_from_extent(corners, aff):
 
 
 def predict_raster(img_path, channels, network, model_weights_path, input_size=56, neighbours=3):
-    tile = img_path.split('/')[-1]
-    tiff_files = [os.path.join(img_path, f'{tile}_{i}', f'{tile}_{i}.tif') for i in range(2)]
+    tile = os.path.basename(img_path)
+    tiff_files = [os.path.join(img_path, f'{tile}_{i}', f'{tile}_{i}.tif') for i in range(DATES_FOR_TILE)]
     model, device = load_model(network, model_weights_path, channels, neighbours)
 
     with rasterio.open(tiff_files[0]) as source_current, \
@@ -78,8 +79,8 @@ def predict_raster(img_path, channels, network, model_weights_path, input_size=5
         meta['count'] = 1
         clearcut_mask = np.zeros((source_current.height, source_current.width))
         pbar = tqdm()
-        for i in range(src.width // input_size):
-            for j in range(src.height // input_size):
+        for i in range(source_current.width // input_size):
+            for j in range(source_current.height // input_size):
                 pbar.set_postfix(row=f'{i}', col=f'{j}', num_pixels=f'{clearcut_mask.sum()}')
                 
                 bottom_row = j * input_size
@@ -207,7 +208,7 @@ def polygonize(raster_array, meta, transform=True, mode=cv2.RETR_TREE):
     return polygons
 
 
-def save_polygons(polygons, meta, save_path, filename):
+def save_polygons(polygons, save_path, filename):
     if len(polygons) == 0:
         logging.info('no_polygons detected')
         return
@@ -216,16 +217,16 @@ def save_polygons(polygons, meta, save_path, filename):
         os.makedirs(save_path, exist_ok=True)
         logging.info("Data directory created.")
 
-    gc = GeoSeries(polygons)
-    gc.crs = meta['crs']
+    # gc = GeoSeries(polygons)
+    # gc.crs = meta['crs']
     logging.info(f'{filename}.geojson saved.')
-    gc.to_file(os.path.join(save_path, f'{filename}.geojson'), driver='GeoJSON')
+    polygons.to_file(os.path.join(save_path, f'{filename}.geojson'), driver='GeoJSON')
 
 
-def intersection_poly(test_poly, truth_poly):
+def intersection_poly(test_poly, mask_poly):
     intersecion_score = 0
-    if test_poly.is_valid and truth_poly.is_valid:
-        intersection_result = test_poly.intersection(truth_poly)
+    if test_poly.is_valid and mask_poly.is_valid:
+        intersection_result = test_poly.intersection(mask_poly)
         if not intersection_result.is_valid:
             intersection_result = intersection_result.buffer(0)
         if not intersection_result.is_empty:
@@ -237,42 +238,59 @@ def intersection_poly(test_poly, truth_poly):
 
 def postprocessing(img_path, clearcuts, src_crs):
 
-    def get_intersected_polygons(clearcuts, masks, area_threshold=0.9):
-        inside_mask_polygons = []
-        outside_mask_polygons = []
+    def get_intersected_polygons(polygons, masks, mask_column_name,
+                                 area_fraction=0.9):
+        """Finding in GeoDataFrame with clearcuts the masked polygons.
+
+        :param polygons: GeoDataFrame with clearcuts and mask columns
+        :param masks: list of masks (e.g., polygons of clouds)
+        :param mask_column_name: name of mask column in polygons GeoDataFrame
+        :param area_fraction: minimal fraction of the clearcut's area, 
+                              which should be overlapped with a mask
+                              in order to assign corresponding mask flag
+
+        :return: GeoDataFrame with filled mask flags in corresponding column
+        """
+        masked_values = []
         if len(masks) > 0:
             centroids = [[mask.centroid.x, mask.centroid.y] for mask in masks]
             kdtree = spatial.KDTree(centroids)
-            for clearcut in tqdm(clearcuts):
-                _, idx = kdtree.query(clearcut.centroid, k=1)
-                #if clearcut.intersects(masks[idx]):
-                if intersection_poly(clearcut, masks[idx]) > area_threshold:
-                    inside_mask_polygons.append(clearcut)
+            for _, clearcut in polygons.iterrows():
+                polygon = clearcut['geometry']
+                _, idx = kdtree.query(polygon.centroid, k=1)
+                if intersection_poly(polygon, masks[idx]) > area_fraction:
+                    masked_values.append(1)
                 else:
-                    outside_mask_polygons.append(clearcut)
-        else:
-            outside_mask_polygons = clearcuts
-        return inside_mask_polygons, outside_mask_polygons
-        
-    tile = img_path.split('/')[-1]
+                    masked_values.append(0)
+        polygons[mask_column_name] = masked_values
+        return polygons
+
+    tile = os.path.basename(img_path)
 
     landcover = LandcoverPolygons(tile, src_crs)
     forest_polygons = landcover.get_polygon()
 
-    cloud_files = [os.path.join(img_path, f'{tile}_{i}', 'clouds.tiff') for i in range(2)]
+    cloud_files = [f"{img_path}/{tile}_{i}/clouds.tiff" for i in range(DATES_FOR_TILE)]
     cloud_polygons = []
     for cloud_file in cloud_files:
         with rasterio.open(cloud_file) as src:
             clouds = src.read(1)
             meta = src.meta
-        clouds = (clouds > CLOUDS_PROBABILITY_THRESHOLD) * 1
+        clouds = (clouds > CLOUDS_PROBABILITY_THRESHOLD).astype(np.uint8)
         if clouds.sum() > 0:
             cloud_polygons.extend(polygonize(clouds, meta, mode=cv2.RETR_LIST))
+
+    n_clearcuts = len(clearcuts)
+    polygons = {'geometry': clearcuts,
+                'forest': np.zeros(n_clearcuts),
+                'clouds': np.zeros(n_clearcuts)}
+
+    polygons = geopandas.GeoDataFrame(polygons, crs=src_crs)
     
     # TODO: cloud polygons do not filter all cases correctly, need to investigate
-    under_clouds, outside_clouds = get_intersected_polygons(clearcuts, cloud_polygons)
-    inside_forest, outside_forest = get_intersected_polygons(outside_clouds, forest_polygons)
-    return under_clouds, outside_forest, inside_forest
+    polygons = get_intersected_polygons(polygons, cloud_polygons, 'clouds')
+    polygons = get_intersected_polygons(polygons, forest_polygons, 'forest')
+    return polygons
 
 
 def parse_args():
@@ -330,13 +348,11 @@ def main():
             src.close()
 
     logging.info('Polygonize raster array of clearcuts...')
-    polygons = polygonize(raster_array > args.threshold, meta)
+    clearcuts = polygonize(raster_array > args.threshold, meta)
     logging.info('Filter polygons of clearcuts')
-    clouds_polygons, not_forest_polygons, forest_polygons = postprocessing(args.image_path, polygons, meta['crs'])
+    polygons = postprocessing(args.image_path, clearcuts, meta['crs'])
     
-    save_polygons(clouds_polygons, meta, args.save_path, predicted_filename + '_clouds')
-    save_polygons(not_forest_polygons, meta, args.save_path, predicted_filename+'_not_forest')
-    save_polygons(forest_polygons, meta, args.save_path, predicted_filename)
+    save_polygons(polygons, args.save_path, predicted_filename)
 
 
 if __name__ == '__main__':

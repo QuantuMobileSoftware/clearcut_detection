@@ -44,18 +44,14 @@ def raster_prediction():
             )
             save_raster(raster_array, result_directory_path, predicted_filename)
 
-            polygons = polygonize(raster_array > threshold, meta)
-            clouds_polygons, not_forest_polygons, forest_polygons = postprocessing(image_path, polygons, meta['crs'])
+            claercuts = polygonize(raster_array > threshold, meta)
+            polygons = postprocessing(image_path, claercuts, meta['crs'])
 
-            save_polygons(clouds_polygons, meta, result_directory_path, predicted_filename + '_clouds')
-            save_polygons(not_forest_polygons, meta, result_directory_path, predicted_filename+'_not_forest')
-            save_polygons(forest_polygons, meta, result_directory_path, predicted_filename)
+            save_polygons(polygons, result_directory_path, predicted_filename)
 
             path_array.append({
                 'picture': join(predicted_directory_name, predicted_filename + '.png'),
-                'polygons': join(predicted_directory_name, predicted_filename + '.geojson'),
-                'polygons_not_forest': join(predicted_directory_name, predicted_filename + '_not_forest.geojson'),
-                'polygons_clouds': join(predicted_directory_name, predicted_filename + '_clouds.geojson'),
+                'polygons': join(predicted_directory_name, predicted_filename + '.geojson')
             })
         return jsonify(path_array)
     except Exception as e:

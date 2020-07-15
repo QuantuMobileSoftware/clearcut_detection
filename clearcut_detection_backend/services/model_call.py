@@ -75,19 +75,9 @@ class ModelCaller:
         logger.info(f'results:\n{results}')
         results_path = os.path.join(self.data_dir, results[0].get('polygons'))
         if os.path.exists(results_path):
-            forest, not_forest, cloud = 1, 0, 0
-            save(tile, results_path, forest, not_forest, cloud)
+            save(tile, results_path)
 
-        results_path = os.path.join(self.data_dir, results[0].get('polygons_not_forest'))
-        if os.path.exists(results_path):
-            forest, not_forest, cloud = 0, 1, 0
-            save(tile, results_path, forest, not_forest, cloud)
-
-        results_path = os.path.join(self.data_dir, results[0].get('polygons_clouds'))
-        if os.path.exists(results_path):
-            forest, not_forest, cloud = 0, 0, 1
-            save(tile, results_path, forest, not_forest, cloud)
-
+# TODO: add docstring
 def raster_prediction(tif_path):
     with open(model_call_config, 'r') as config:
         cfg = yaml.load(config, Loader=yaml.SafeLoader)

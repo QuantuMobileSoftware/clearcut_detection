@@ -3,12 +3,15 @@ Model's helpers
 """
 import io
 import os.path
+import logging
 
 from googleapiclient.discovery import build
 from googleapiclient.http import MediaIoBaseDownload
 from google.oauth2 import service_account
 
 import geopandas as gpd
+
+logging.basicConfig(format='%(asctime)s %(message)s')
 
 SCOPES = ['https://www.googleapis.com/auth/drive.file']
 
@@ -36,8 +39,10 @@ class LandcoverPolygons:
     def get_polygon(self):
         polygon_path = os.path.join(LANDCOVER_POLYGONS_PATH, f"{self.tile}.geojson")
         if os.path.exists(polygon_path):
+            logging.info(f'{self.tile} forest polygons file exists.')
             polygons = gpd.read_file(polygon_path)
         else:
+            logging.info(f'{self.tile} forest polygons file does not exist. Creating polygons...')
             polygons = self.create_polygon()
 
         if len(polygons) > 0:
