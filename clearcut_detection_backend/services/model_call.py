@@ -66,6 +66,7 @@ class ModelCaller:
                         logger.error(f'results after model_predict not empty.\n\
                           results: {results}')
 
+
     @staticmethod
     def remove_temp_files(path, tile_name):
         logger.info(f'Try remove temp files for {tile_name}')
