@@ -158,8 +158,6 @@ DOWNLOADED_IMAGES_DIR = Path('./data/source_images/')
 MODEL_TIFFS_DIR = Path('./data/model_tiffs')
 MAPBOX_TIFFS_DIR = Path('./data/mapbox_tiffs')
 
-SAVE_IN_PNG = False
-
 LOGGING = {
     'version': 1,
     'disable_existing_loggers': False,
