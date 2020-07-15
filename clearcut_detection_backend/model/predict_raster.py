@@ -27,6 +27,9 @@ def load_model(network, model_weights_path, channels):
     return model, device
 
 
+
+
+
 def predict(model, image_tensor, input_shape, device):
     prediction = model(image_tensor.view(input_shape)).to(device)
     return torch \

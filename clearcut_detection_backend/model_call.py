@@ -24,7 +24,7 @@ class ModelCaller:
         self.executor = ThreadPoolExecutor(max_workers=10)
 
     def start(self):
-        for tile in self.query:
+        for tile in self.query[:2]:
             self.executor.submit(self.process, tile)
 
     def process(self, tile):

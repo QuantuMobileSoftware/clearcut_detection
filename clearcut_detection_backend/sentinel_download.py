@@ -9,7 +9,8 @@ from xml.dom import minidom
 
 from clearcuts.models import TileInformation
 from utils import path_exists_or_create, Bands
-
+from concurrent.futures import ThreadPoolExecutor
+from functools import partial
 DOWNLOADED_IMAGES_DIR = path_exists_or_create('data/source_images/')
 
 
@@ -110,31 +111,69 @@ class SentinelDownload:
             print(tile_name)
             base_uri = 'gs://gcp-public-data-sentinel-2'
             tile_uri = f'L2/tiles/{tile_path}'
-            metadata_file = 'MTD_TL.xml'
+
             command = f'gsutil ls -l {base_uri}/{tile_uri}/ | sort -k2n | tail -n{self.tile_dates_count}'
             granule_id_list = self.find_granule_id(command)
             granule_id_list.reverse()
-            for granule_id in granule_id_list:
-                print('====== GRANULE ID ======')
-                print(granule_id)
-                nested_command = f'gsutil ls -l {base_uri}/{tile_uri}/{granule_id}/GRANULE/ | sort -k2n | tail -n1'
-                nested_granule_id_list = self.find_granule_id(nested_command)
-                nested_granule_id = nested_granule_id_list[0]
-                updated_tile_uri = f'{tile_uri}/{granule_id}/GRANULE/{nested_granule_id}'
-                filename = os.path.join(DOWNLOADED_IMAGES_DIR, f'{tile_name}_{metadata_file}')
-                try:
-                    blob = self.storage_bucket.get_blob(f'{updated_tile_uri}/{metadata_file}')
-                    update_needed = self.define_if_tile_update_needed(blob, tile_name, filename)
-                    print('====== IS UPDATE NEEDED ======')
-                    print(update_needed)
-                    if update_needed:
-                        tiles_to_be_downloaded[f'{tile_name}'] = f'{updated_tile_uri}'
-                        os.remove(filename)
-                except Exception as e:
-                    print(e)
-                    print(dir(e))
+            with ThreadPoolExecutor() as executor:
+
+                get_meta = partial(self._read_granules_metadata, tile_uri, base_uri, tile_name)
+                granules = executor.map(get_meta, granule_id_list)
+            # print('granules', granules)
+            # granules = list(granules)
+            [tiles_to_be_downloaded.update(granule) for granule in granules if granule is not None]
+            # for granule_id in granule_id_list:
+            #     print('====== GRANULE ID ======')
+            #     print(granule_id)
+            #     nested_command = f'gsutil ls -l {base_uri}/{tile_uri}/{granule_id}/GRANULE/ | sort -k2n | tail -n1'
+            #     nested_granule_id_list = self.find_granule_id(nested_command)
+            #     nested_granule_id = nested_granule_id_list[0]
+            #     updated_tile_uri = f'{tile_uri}/{granule_id}/GRANULE/{nested_granule_id}'
+            #     filename = os.path.join(DOWNLOADED_IMAGES_DIR, f'{tile_name}_{metadata_file}')
+            #     try:
+            #         blob = self.storage_bucket.get_blob(f'{updated_tile_uri}/{metadata_file}')
+            #         update_needed = self.define_if_tile_update_needed(blob, tile_name, filename)
+            #         print('====== IS UPDATE NEEDED ======')
+            #         print(update_needed)
+            #         if update_needed:
+            #             tiles_to_be_downloaded[f'{tile_name}'] = f'{updated_tile_uri}'
+            #             os.remove(filename)
+            #     except Exception as e:
+            #         print(e)
+            #         print(dir(e))
 
         return tiles_to_be_downloaded
+
+    def _read_granules_metadata(self, tile_uri, base_uri, tile_name, granule_id):
+        # for granule_id in granule_id_list:
+        metadata_file = 'MTD_TL.xml'
+        log="\n"
+        log += f'====== GRANULE ID : {granule_id}'
+        # print(granule_id)
+        nested_command = f'gsutil ls -l {base_uri}/{tile_uri}/{granule_id}/GRANULE/ | sort -k2n | tail -n1'
+        nested_granule_id_list = self.find_granule_id(nested_command)
+        nested_granule_id = nested_granule_id_list[0]
+        updated_tile_uri = f'{tile_uri}/{granule_id}/GRANULE/{nested_granule_id}'
+        print(updated_tile_uri)
+        filename = os.path.join(DOWNLOADED_IMAGES_DIR, f'{tile_name}_{metadata_file}')
+        try:
+
+            storage_bucket = storage.Client().get_bucket('gcp-public-data-sentinel-2')
+            blob = storage_bucket.get_blob(f'{updated_tile_uri}/{metadata_file}')
+            update_needed = self.define_if_tile_update_needed(blob, tile_name, filename)
+            log += f'\n====== IS UPDATE NEEDED : {update_needed}'
+            print(log)
+            if update_needed:
+                # tiles_to_be_downloaded[f'{tile_name}'] = f'{updated_tile_uri}'
+                os.remove(filename)
+                return {tile_name: updated_tile_uri}
+        except Exception as e:
+            log += str(e)
+            print(log)
+
+            # print(e)
+            # print(dir(e))
+        return None
 
     def define_if_tile_update_needed(self, blob, tile_name, filename) -> bool:
         """
@@ -154,13 +193,13 @@ class SentinelDownload:
 
         self.download_file_from_storage(blob, filename)
         nodata_pixel_value = self.define_xml_node_value(filename, 'NODATA_PIXEL_PERCENTAGE')
-        print('====== NO DATA PIXEL VALUE ======')
-        print(nodata_pixel_value)
+        print(f'====== NO DATA PIXEL VALUE : {nodata_pixel_value}')
+        # print(nodata_pixel_value)
         if nodata_pixel_value >= settings.MAXIMUM_EMPTY_PIXEL_PERCENTAGE:
             return False
         cloud_coverage_value = self.define_xml_node_value(filename, 'CLOUDY_PIXEL_PERCENTAGE')
-        print('====== CLOUD COVERAGE VALUE ======')
-        print(cloud_coverage_value)
+        print(f'====== CLOUD COVERAGE VALUE : {cloud_coverage_value}')
+        # print(cloud_coverage_value)
         if cloud_coverage_value <= settings.MAXIMUM_CLOUD_PERCENTAGE_ALLOWED:
             tile_info.cloud_coverage = cloud_coverage_value
             tile_info.tile_metadata_hash = blob.md5_hash
