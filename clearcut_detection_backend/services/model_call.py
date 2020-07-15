@@ -61,6 +61,10 @@ class ModelCaller:
                     else:
                         logger.info(f'start model_predict for {tile_index}')
                         self.model_predict(self.query.filter(tile_index__exact=tile_index))
+                        del results[tile_index]
+                    if len(results) > 0:
+                        logger.error(f'results after model_predict not empty.\n\
+                          results: {results}')
 
     @staticmethod
     def remove_temp_files(path, tile_name):
