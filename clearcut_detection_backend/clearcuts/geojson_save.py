@@ -14,7 +14,6 @@ def convert_geodataframe_to_geospolygons(dataframe):
         try:
             geometry = GEOSGeometry(str(geometry_str), srid=4326)
         except (TypeError, ValueError) as exc:
-            # print(exc)
             continue
         geometries.append(geometry)
     return geometries
@@ -50,6 +49,7 @@ def save(tile, poly_path, init_db=False):
     detection_date = [tile.first().tile_date, tile.last().tile_date]
 
     if Clearcut.objects.all().count() == 0:
+        for idx, geopoly in enumerate(geospolygons):
             save_clearcut(geopoly, avg_area, detection_date,
                           flags_forest[idx], flags_clouds[idx],
                           area_geodataframe[idx], create_new_zone=True)

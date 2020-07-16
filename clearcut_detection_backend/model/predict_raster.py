@@ -23,6 +23,7 @@ from skimage.transform import match_histograms
 from utils import LandcoverPolygons
 
 CLOUDS_PROBABILITY_THRESHOLD = 15
+NEAREST_POLYGONS_NUMBER = 10
 DATES_FOR_TILE = 2
 
 import warnings
@@ -65,7 +66,6 @@ def window_from_extent(corners, aff):
     col_start, row_start = ~aff * (xmin, ymax)
     col_stop,  row_stop  = ~aff * (xmax, ymin)
     return ((int(row_start), int(row_stop)), (int(col_start), int(col_stop)))
-
 
 def predict_raster(img_path, channels, network, model_weights_path, input_size=56, neighbours=3):
     tile = os.path.basename(img_path)
@@ -217,37 +217,36 @@ def save_polygons(polygons, save_path, filename):
         os.makedirs(save_path, exist_ok=True)
         logging.info("Data directory created.")
 
-    # gc = GeoSeries(polygons)
-    # gc.crs = meta['crs']
     logging.info(f'{filename}.geojson saved.')
     polygons.to_file(os.path.join(save_path, f'{filename}.geojson'), driver='GeoJSON')
 
 
 def intersection_poly(test_poly, mask_poly):
-    intersecion_score = 0
+    intersecion_score = False
     if test_poly.is_valid and mask_poly.is_valid:
         intersection_result = test_poly.intersection(mask_poly)
         if not intersection_result.is_valid:
             intersection_result = intersection_result.buffer(0)
         if not intersection_result.is_empty:
-            intersection_area = intersection_result.area
-            test_poly_area = test_poly.area
-            intersecion_score = intersection_area / test_poly_area
+            intersecion_score = True
     return intersecion_score
 
+def morphological_transform(img):
+    kernel = np.ones((5,5),np.uint8)
+    closing = cv2.morphologyEx(img, cv2.MORPH_CLOSE, kernel)
+
+    kernel = np.ones((3,3),np.uint8)
+    closing = cv2.dilate(closing,kernel,iterations = 1)
+    return closing
 
 def postprocessing(img_path, clearcuts, src_crs):
 
-    def get_intersected_polygons(polygons, masks, mask_column_name,
-                                 area_fraction=0.9):
+    def get_intersected_polygons(polygons, masks, mask_column_name):
         """Finding in GeoDataFrame with clearcuts the masked polygons.
 
         :param polygons: GeoDataFrame with clearcuts and mask columns
         :param masks: list of masks (e.g., polygons of clouds)
         :param mask_column_name: name of mask column in polygons GeoDataFrame
-        :param area_fraction: minimal fraction of the clearcut's area, 
-                              which should be overlapped with a mask
-                              in order to assign corresponding mask flag
 
         :return: GeoDataFrame with filled mask flags in corresponding column
         """
@@ -257,11 +256,13 @@ def postprocessing(img_path, clearcuts, src_crs):
             kdtree = spatial.KDTree(centroids)
             for _, clearcut in polygons.iterrows():
                 polygon = clearcut['geometry']
-                _, idx = kdtree.query(polygon.centroid, k=1)
-                if intersection_poly(polygon, masks[idx]) > area_fraction:
-                    masked_values.append(1)
-                else:
-                    masked_values.append(0)
+                _, idxs = kdtree.query(polygon.centroid, k=NEAREST_POLYGONS_NUMBER)
+                masked_value = 0
+                for idx in idxs:
+                    if intersection_poly(polygon, masks[idx].buffer(0)):
+                        masked_value = 1
+                        break
+                masked_values.append(masked_value)
         polygons[mask_column_name] = masked_values
         return polygons
 
@@ -276,10 +277,11 @@ def postprocessing(img_path, clearcuts, src_crs):
         with rasterio.open(cloud_file) as src:
             clouds = src.read(1)
             meta = src.meta
+        clouds = morphological_transform(clouds)
         clouds = (clouds > CLOUDS_PROBABILITY_THRESHOLD).astype(np.uint8)
         if clouds.sum() > 0:
             cloud_polygons.extend(polygonize(clouds, meta, mode=cv2.RETR_LIST))
-
+    
     n_clearcuts = len(clearcuts)
     polygons = {'geometry': clearcuts,
                 'forest': np.zeros(n_clearcuts),
