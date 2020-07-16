@@ -5,7 +5,7 @@ import time
 
 from requests.auth import HTTPBasicAuth
 
-from helper import pprint
+from search.helper import pprint
 
 
 def _load_thumbnail(thb_url, api_key, width, password):
@@ -20,7 +20,7 @@ def _load_thumbnail(thb_url, api_key, width, password):
 
 def _save_thumbnail(tile_id, content, path):
     os.makedirs(path, exist_ok=True)
-    with open(f"{path}{tile_id}.png", "wb") as file:
+    with open(f"{path}/{tile_id}.png", "wb") as file:
         file.write(content)
 
 

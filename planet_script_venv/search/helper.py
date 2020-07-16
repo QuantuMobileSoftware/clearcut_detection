@@ -1,7 +1,12 @@
+import json
+
 from shapely.geometry import Polygon
+from planet.api import filters
+from datetime import datetime
 
 
 def extract_results(results, limit=100):
+
     items = [
         {'id': item['id'],
          'visible_percent': item['properties']['visible_percent'],
@@ -11,11 +16,14 @@ def extract_results(results, limit=100):
          }
         for item in results.items_iter(limit) if 'visible_percent' in item['properties']]
 
+    for item in results.items_iter(limit):
+        print(item)
+
     return items
 
 
-def overlap(target, result_list, overlap_percent, verbose):
-    target_polygon = Polygon(target['filter_like']['config'][0]['config']['coordinates'][0])
+def overlap(geometry, result_list, overlap_percent, verbose):
+    target_polygon = Polygon(geometry["coordinates"][0])
 
     items = list()
     for item in result_list:
@@ -55,12 +63,41 @@ def get_best_items(items, cloud_percent):
 
 
 def print_item(item):
-    print(f"ID: {item['id']}, "
+    print(f"id: {item['id']}, "
           f"overlap percent: {item['overlap_percent']}, "
           f"visible percent {item['visible_percent']}, "
           f"cloud percent {item['cloud_percent']}")
 
 
+def write_items(items, output):
+    with open(output, 'w') as f:
+        items_dict = dict()
+        for item in items:
+            items_dict[item["id"]] = {"overlap percent": item['overlap_percent'],
+                                      "visible percent": item['visible_percent'],
+                                      "cloud percent": item['cloud_percent'],
+                                      }
+
+        json.dump(items_dict, f, indent=1)
+
+
 def pprint(text, verbose=True):
     if verbose:
         print(text)
+
+
+def create_request(geometry, start, end, item_types=["PSOrthoTile"]):
+    geometry_filter = {
+        "type": "GeometryFilter",
+        "field_name": "geometry",
+        "config": geometry,
+    }
+
+    start_date = datetime.strptime(start, '%Y-%m-%d')
+    end_date = datetime.strptime(end, '%Y-%m-%d')
+    date_filter = filters.date_range("acquired", gte=start_date, lte=end_date)
+
+    filter = filters.and_filter(date_filter, geometry_filter)
+    request = filters.build_search_request(filter, item_types)
+
+    return request
