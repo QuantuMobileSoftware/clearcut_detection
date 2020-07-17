@@ -6,7 +6,7 @@ import re
 import traceback
 
 from flask import Flask, abort, request, jsonify, make_response
-from predict_raster import predict_raster, polygonize, save_polygons
+from predict_raster import predict_raster, polygonize, save_polygons, postprocessing
 from os.path import join
 
 from utils import weights_exists_or_download
@@ -44,16 +44,14 @@ def raster_prediction():
             )
             save_raster(raster_array, result_directory_path, predicted_filename)
 
-            polygons = polygonize(raster_array > threshold, meta)
-            polygons_not_forest = polygonize(raster_array < -threshold, meta)
-            
-            save_polygons(polygons, meta, result_directory_path, predicted_filename)
-            save_polygons(polygons_not_forest, meta, result_directory_path, predicted_filename+'_not_forest')
+            claercuts = polygonize(raster_array > threshold, meta)
+            polygons = postprocessing(image_path, claercuts, meta['crs'])
+
+            save_polygons(polygons, result_directory_path, predicted_filename)
 
             path_array.append({
                 'picture': join(predicted_directory_name, predicted_filename + '.png'),
-                'polygons': join(predicted_directory_name, predicted_filename + '.geojson'),
-                'polygons_not_forest': join(predicted_directory_name, predicted_filename + '_not_forest.geojson')
+                'polygons': join(predicted_directory_name, predicted_filename + '.geojson')
             })
         return jsonify(path_array)
     except Exception as e:

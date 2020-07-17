@@ -86,17 +86,14 @@ class ModelCaller:
         tif_path = src_tile.model_tiff_location.split('/')[:-2]
 
         tif_path = os.path.join(*tif_path)
+        logger.info(f'raster_prediction {tif_path}')
         results = raster_prediction(tif_path)
-        
+        logger.info(f'results:\n{results}')
         results_path = os.path.join(self.data_dir, results[0].get('polygons'))
         if os.path.exists(results_path):
-            save(tile, results_path, forest=1)
+            save(tile, results_path)
 
-        results_path = os.path.join(self.data_dir, results[0].get('polygons_not_forest'))
-        if os.path.exists(results_path):
-            save(tile, results_path, forest=0)
-
-
+# TODO: add docstring
 def raster_prediction(tif_path):
     with open(model_call_config, 'r') as config:
         cfg = yaml.load(config, Loader=yaml.SafeLoader)
