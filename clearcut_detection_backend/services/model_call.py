@@ -66,7 +66,7 @@ class ModelCaller:
                         results[tile_index] = 1
                     else:
                         logger.info(f'start model_predict for {tile_index}')
-                        # self.model_predict(self.query.filter(tile_index__exact=tile_index))
+                        self.model_predict(self.query.filter(tile_index__exact=tile_index))
                         del results[tile_index]
 
                         tile_list = self.query.filter(tile_index__exact=tile_index).order_by('tile_name')
