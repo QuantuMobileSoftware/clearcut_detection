@@ -10,7 +10,6 @@ from clearcuts.geojson_save import save
 from clearcuts.models import TileInformation
 from services.prepare_tif import prepare_tiff
 from services.configuration import area_tile_set
-from services.email_on_error import emaile_on_service_error
 
 model_call_config = './model_call_config.yml'
 logger = logging.getLogger('model_call')
@@ -66,7 +65,6 @@ class ModelCaller:
                         logger.error(f'results after model_predict not empty.\n\
                           results: {results}')
 
-
     @staticmethod
     def remove_temp_files(path, tile_name):
         logger.info(f'Try remove temp files for {tile_name}')
@@ -110,7 +108,5 @@ def raster_prediction(tif_path):
         result = response.text
         datastore = json.loads(result)
         return datastore
-    except Exception as e:
+    except (ValueError, Exception):
         logger.error('Error\n\n', exc_info=True)
-        subject = prepare_tiff.__qualname__
-        emaile_on_service_error(subject, e)
