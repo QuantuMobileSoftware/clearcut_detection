@@ -1,9 +1,19 @@
 """
 Script helpers
 """
+from enum import Enum
 from zipfile import ZipFile
 from io import BytesIO
 import requests
+
+
+class Bands(Enum):
+    TCI = 'TCI'
+    B04 = 'B04'
+    B08 = 'B08'
+    B8A = 'B8A'
+    B11 = 'B11'
+    B12 = 'B12'
 
 
 def download_without_progress(url):

@@ -7,10 +7,11 @@ class Zone(models.Model):
 
 
 class Clearcut(models.Model):
-    image_date_0 = models.DateField(default=timezone.now())
-    image_date_1 = models.DateField(default=timezone.now())
+    image_date_previous = models.DateField(default=timezone.now())
+    image_date_current = models.DateField(default=timezone.now())
     area = models.FloatField()
-    forest = models.PositiveIntegerField(default=1)
+    forest = models.PositiveIntegerField(default=0)
+    clouds = models.PositiveIntegerField(default=0)
     centroid = models.PointField()
     zone = models.ForeignKey(Zone, on_delete=models.CASCADE)
     mpoly = models.PolygonField()
