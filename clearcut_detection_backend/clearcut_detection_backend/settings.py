@@ -158,6 +158,8 @@ DOWNLOADED_IMAGES_DIR = Path('./data/source_images/')
 MODEL_TIFFS_DIR = Path('./data/model_tiffs')
 MAPBOX_TIFFS_DIR = Path('./data/mapbox_tiffs')
 
+PATH_TYPE = 'fs'
+
 LOGGING = {
     'version': 1,
     'disable_existing_loggers': False,

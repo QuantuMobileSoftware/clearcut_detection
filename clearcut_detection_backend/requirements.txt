@@ -1,4 +1,5 @@
-Django==2.2.3
+# Django==2.2.3
+Django==2.2.14
 django-cors-headers==3.0.2
 django-rest-swagger==2.2.0
 djangorestframework==3.10.1
