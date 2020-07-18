@@ -10,7 +10,6 @@ from clearcuts.geojson_save import save
 from clearcuts.models import TileInformation, RunUpdateTask, Tile
 from services.prepare_tif import prepare_tiff
 from services.configuration import area_tile_set
-from services.email_on_error import emaile_on_service_error
 
 model_call_config = './model_call_config.yml'
 logger = logging.getLogger('model_call')
@@ -111,17 +110,14 @@ class ModelCaller:
         tif_path = src_tile.model_tiff_location.split('/')[:-2]
 
         tif_path = os.path.join(*tif_path)
+        logger.info(f'raster_prediction {tif_path}')
         results = raster_prediction(tif_path)
-        
+        logger.info(f'results:\n{results}')
         results_path = os.path.join(self.data_dir, results[0].get('polygons'))
         if os.path.exists(results_path):
-            save(tile, results_path, forest=1)
+            save(tile, results_path)
 
-        results_path = os.path.join(self.data_dir, results[0].get('polygons_not_forest'))
-        if os.path.exists(results_path):
-            save(tile, results_path, forest=0)
-
-
+# TODO: add docstring
 def raster_prediction(tif_path):
     with open(model_call_config, 'r') as config:
         cfg = yaml.load(config, Loader=yaml.SafeLoader)
@@ -138,8 +134,5 @@ def raster_prediction(tif_path):
         result = response.text
         datastore = json.loads(result)
         return datastore
-    except Exception as e:
+    except (ValueError, Exception):
         logger.error('Error\n\n', exc_info=True)
-        subject = prepare_tiff.__qualname__
-        emaile_on_service_error(subject, e)
-

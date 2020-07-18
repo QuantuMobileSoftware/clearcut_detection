@@ -172,30 +172,34 @@ LOGGING = {
         'console': {
             'class': 'logging.StreamHandler',
         },
+        'mail_on_error': {
+            'level': 'WARNING',
+            'class': 'services.email_on_error.EmailOnErrorHandler',
+        }
     },
     'loggers': {
         'update': {
-            'handlers': ['file', 'console'],
+            'handlers': ['file', 'console', 'mail_on_error'],
             'propagate': False,
             'level': os.getenv('DJANGO_LOG_LEVEL', 'INFO')
         },
         'sentinel': {
-            'handlers': ['file', 'console'],
+            'handlers': ['file', 'console', 'mail_on_error'],
             'propagate': False,
             'level': os.getenv('DJANGO_LOG_LEVEL', 'INFO')
         }, 
         'prepare_tif': {
-            'handlers': ['file', 'console'],
+            'handlers': ['file', 'console', 'mail_on_error'],
             'propagate': False,
             'level': os.getenv('DJANGO_LOG_LEVEL', 'INFO')
         }, 
         'jp2_to_tiff_conversion': {
-            'handlers': ['file', 'console'],
+            'handlers': ['file', 'console', 'mail_on_error'],
             'propagate': False,
             'level': os.getenv('DJANGO_LOG_LEVEL', 'INFO')
         },
         'model_call': {
-            'handlers': ['file', 'console'],
+            'handlers': ['file', 'console', 'mail_on_error'],
             'propagate': False,
             'level': os.getenv('DJANGO_LOG_LEVEL', 'INFO')
         },
