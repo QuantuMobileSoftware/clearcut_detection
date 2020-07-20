@@ -9,9 +9,9 @@ models:
       - b12
       - ndvi
       - ndmi
-    weights: /model/unet_v4.pth
+    weights: /model/unet.pth
 
 prediction:
   save_path: data
-  threshold: 0.3
+  threshold: 0.4
   input_size: 56
