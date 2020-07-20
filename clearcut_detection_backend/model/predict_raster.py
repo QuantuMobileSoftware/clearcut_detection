@@ -3,6 +3,7 @@ import re
 import cv2
 import torch
 import logging
+import imageio
 import rasterio
 import argparse
 import geopandas
@@ -18,6 +19,7 @@ from torchvision import transforms
 from torch import nn
 from tqdm import tqdm
 from rasterio.windows import Window
+from rasterio.plot import reshape_as_image
 from skimage.transform import match_histograms
 
 from utils import LandcoverPolygons
@@ -42,13 +44,11 @@ def load_model(network, model_weights_path, channels, neighbours):
     model.load_state_dict(torch.load(model_weights_path, map_location=torch.device(device)))
     return model, device
 
-
-def predict(model, image_tensor, input_shape, device):
-    preds, _ = model(image_tensor.view(input_shape))
-    prediction = preds.to(device)
-    return torch \
-        .sigmoid(prediction.view(input_shape[2:])) \
-        .cpu().detach().numpy()
+def predict(image_tensor, model, channels, neighbours, size, device):
+    image_shape = 1, count_channels(channels)*neighbours, size, size
+    prediction, _ = model.predict(image_tensor.view(image_shape).to(device, dtype=torch.float))
+    result = prediction.view(size, size).detach().cpu().numpy()
+    return result
 
 
 def diff(img1, img2):
@@ -57,15 +57,6 @@ def diff(img1, img2):
     difference = (difference + 1) * 127
     return np.concatenate((difference.astype(np.uint8), img1.astype(np.uint8), img2.astype(np.uint8)), axis=-1)
 
-
-def window_from_extent(corners, aff):
-    xmax=max(corners[0][0],corners[2][0])
-    xmin=min(corners[0][0],corners[2][0])
-    ymax=max(corners[0][1],corners[2][1])
-    ymin=min(corners[0][1],corners[2][1])
-    col_start, row_start = ~aff * (xmin, ymax)
-    col_stop,  row_stop  = ~aff * (xmax, ymin)
-    return ((int(row_start), int(row_stop)), (int(col_start), int(col_stop)))
 
 def predict_raster(img_path, channels, network, model_weights_path, input_size=56, neighbours=3):
     tile = os.path.basename(img_path)
@@ -97,19 +88,14 @@ def predict_raster(img_path, channels, network, model_weights_path, input_size=5
                     ]
 
                 window = Window(bottom_row, left_column, input_size, input_size)
-                image_current = np.moveaxis(source_current.read(window=window), 0, -1)
-                image_previous = np.moveaxis(source_previous.read(window=window), 0, -1)
+                image_current = reshape_as_image(source_current.read(window=window))
+                image_previous = reshape_as_image(source_previous.read(window=window))
 
-                merged_image = diff(image_current, image_previous)
-                filtered_image = filter_by_channels(merged_image, channels)
+                difference_image = diff(image_current, image_previous)
+                image_tensor = transforms.ToTensor()(difference_image.astype(np.uint8)).to(device, dtype=torch.float)
 
-                image_tensor = transforms.ToTensor()(filtered_image.astype(np.uint8)).to(device)
-
-                n_channels = count_channels(channels) * neighbours
-                image_shape = (1, n_channels, input_size, input_size)
-                predicted = predict(model, image_tensor, image_shape, device)
-
-                clearcut_mask[bottom_row:upper_row, left_column:right_column] = predicted
+                predicted = predict(image_tensor, model, channels, neighbours, input_size, device)
+                clearcut_mask[left_column:right_column, bottom_row:upper_row] += predicted
             pbar.update(1)
 
     meta['dtype'] = 'float32'
@@ -231,6 +217,7 @@ def intersection_poly(test_poly, mask_poly):
             intersecion_score = True
     return intersecion_score
 
+
 def morphological_transform(img):
     kernel = np.ones((5,5),np.uint8)
     closing = cv2.morphologyEx(img, cv2.MORPH_CLOSE, kernel)
@@ -238,6 +225,7 @@ def morphological_transform(img):
     kernel = np.ones((3,3),np.uint8)
     closing = cv2.dilate(closing,kernel,iterations = 1)
     return closing
+
 
 def postprocessing(img_path, clearcuts, src_crs):
 
@@ -289,7 +277,6 @@ def postprocessing(img_path, clearcuts, src_crs):
 
     polygons = geopandas.GeoDataFrame(polygons, crs=src_crs)
     
-    # TODO: cloud polygons do not filter all cases correctly, need to investigate
     polygons = get_intersected_polygons(polygons, cloud_polygons, 'clouds')
     polygons = get_intersected_polygons(polygons, forest_polygons, 'forest')
     return polygons
@@ -320,7 +307,7 @@ def parse_args():
     )
     parser.add_argument(
         '--threshold', '-t', dest='threshold',
-        default=0.3, help='Threshold to get binary values in mask', type=float
+        default=0.4, help='Threshold to get binary values in mask', type=float
     )
     parser.add_argument(
         '--polygonize_only', '-po', dest='polygonize_only',

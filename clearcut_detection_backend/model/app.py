@@ -44,8 +44,8 @@ def raster_prediction():
             )
             save_raster(raster_array, result_directory_path, predicted_filename)
 
-            claercuts = polygonize(raster_array > threshold, meta)
-            polygons = postprocessing(image_path, claercuts, meta['crs'])
+            clearcuts = polygonize(raster_array > threshold, meta)
+            polygons = postprocessing(image_path, clearcuts, meta['crs'])
 
             save_polygons(polygons, result_directory_path, predicted_filename)
 
