@@ -36,6 +36,11 @@ def main(cred,
     pprint(f"Start script execution\n"
            f"Loading {item_type} assets and {asset_type} type", verbose)
 
+    """cred = "credentials.json"
+       input = 'input/load_kharkiv.json'
+       item_type = "Sentinel2L1C"
+    """
+
     auth = get_auth(cred)
     quota(auth, verbose)
 
@@ -59,10 +64,5 @@ def main(cred,
 
 
 if __name__ == '__main__':
-    """cred = "credentials.json"
-    input = 'load_kharkiv.json'
-    item_type = "Sentinel2L1C"
-    """
-
     main()
 

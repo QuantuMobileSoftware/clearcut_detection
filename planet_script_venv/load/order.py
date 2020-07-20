@@ -62,7 +62,7 @@ def _poll_order(order_id, auth, verbose):
     if response.status_code == 200:
         text = response.json()
         state = text["state"]
-        pprint(f"Poll message: {text['last_message']} for order_id {order_id}, state: {state}", verbose)
+        pprint(f"Poll message: {text['last_message']} for order_id {order_id}, state: {state}\n", verbose)
 
         if state == "success":
             pprint(f"Item {text['name']} ready, state: {state}", verbose)
