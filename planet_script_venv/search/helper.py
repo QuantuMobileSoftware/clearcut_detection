@@ -1,12 +1,11 @@
 import json
 
-from shapely.geometry import Polygon
+from shapely.geometry import Polygon, mapping
 from planet.api import filters
 from datetime import datetime
 
 
 def extract_results(results, limit=100):
-
     items = [
         {'id': item['id'],
          'visible_percent': item['properties']['visible_percent'],
@@ -16,8 +15,8 @@ def extract_results(results, limit=100):
          }
         for item in results.items_iter(limit) if 'visible_percent' in item['properties']]
 
-    for item in results.items_iter(limit):
-        print(item)
+    # for item in results.items_iter(limit):
+    #   print(item)
 
     return items
 
@@ -101,3 +100,11 @@ def create_request(geometry, start, end, item_types=["PSOrthoTile"]):
     request = filters.build_search_request(filter, item_types)
 
     return request
+
+
+def get_agg_polygon(request_df):
+    bounds = request_df.bounds
+    minx, miny = bounds[["minx", "miny"]].min()
+    maxx, maxy = bounds[["maxx", "maxy"]].max()
+    polygon = Polygon.from_bounds(minx, miny, maxx, maxy)
+    return mapping(polygon)
