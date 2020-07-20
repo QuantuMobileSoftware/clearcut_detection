@@ -7,6 +7,8 @@ from django.contrib.gis.geos import GEOSGeometry
 
 from .models import Clearcut, Zone
 
+SEARCH_WINDOW = 10
+
 def convert_geodataframe_to_geospolygons(dataframe):
     geometries = []
     for data in dataframe.to_dict("records"):
@@ -55,7 +57,7 @@ def save(tile, poly_path, init_db=False):
                           area_geodataframe[idx], create_new_zone=True)
     else:
         for idx, geopoly in enumerate(geospolygons):
-            intersecting_polys = Clearcut.objects.filter(centroid__intersects=geopoly)
+            intersecting_polys = Clearcut.objects.filter(centroid__dwithin=(geom, D(m=SEARCH_WINDOW))
             forest = flags_forest[idx]
             cloud = flags_clouds[idx]
             if intersecting_polys.count() > 0:

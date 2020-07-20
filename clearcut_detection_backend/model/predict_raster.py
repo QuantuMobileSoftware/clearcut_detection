@@ -58,6 +58,14 @@ def diff(img1, img2):
     return np.concatenate((difference.astype(np.uint8), img1.astype(np.uint8), img2.astype(np.uint8)), axis=-1)
 
 
+def mask_postprocess(mask):
+    kernel = np.ones((3, 3), np.uint8)
+    erosion = cv2.erode(mask, kernel, iterations = 1)
+    kernel = np.ones((5, 5), np.uint8)
+    closing = cv2.morphologyEx(erosion, cv2.MORPH_CLOSE, kernel)
+    return closing
+
+
 def predict_raster(img_path, channels, network, model_weights_path, input_size=56, neighbours=3):
     tile = os.path.basename(img_path)
     tiff_files = [os.path.join(img_path, f'{tile}_{i}', f'{tile}_{i}.tif') for i in range(DATES_FOR_TILE)]
@@ -95,6 +103,7 @@ def predict_raster(img_path, channels, network, model_weights_path, input_size=5
                 image_tensor = transforms.ToTensor()(difference_image.astype(np.uint8)).to(device, dtype=torch.float)
 
                 predicted = predict(image_tensor, model, channels, neighbours, input_size, device)
+                predicted = mask_postprocess(predicted)
                 clearcut_mask[left_column:right_column, bottom_row:upper_row] += predicted
             pbar.update(1)
 
