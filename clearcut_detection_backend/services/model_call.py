@@ -7,7 +7,7 @@ import yaml
 from pathlib import Path
 from django.conf import settings
 from clearcuts.geojson_save import save
-from clearcuts.models import TileInformation
+from clearcuts.models import TileInformation, RunUpdateTask, Tile
 from services.prepare_tif import prepare_tiff
 from services.configuration import area_tile_set
 
@@ -36,6 +36,12 @@ class ModelCaller:
         logger.info(f'tile_index_distinct: {self.tile_index_distinct}')
 
     def start(self):
+        if settings.PATH_TYPE == 'fs':
+            path_type = 0
+        else:
+            logger.error(f'Unsupported file path in settings.PATH_TYPE: {settings.PATH_TYPE}')
+            raise ValueError
+
 
         with ThreadPoolExecutor(max_workers=settings.MAX_WORKERS) as executor:
             future_list = []
@@ -61,6 +67,26 @@ class ModelCaller:
                         logger.info(f'start model_predict for {tile_index}')
                         self.model_predict(self.query.filter(tile_index__exact=tile_index))
                         del results[tile_index]
+
+                        tile_list = self.query.filter(tile_index__exact=tile_index).order_by('tile_name')
+                        path_img_0 = tile_list[0].model_tiff_location
+                        path_img_1 = tile_list[1].model_tiff_location
+                        image_date_0 = tile_list[0].tile_date
+                        image_date_1 = tile_list[1].tile_date
+
+                        tile = Tile.objects.get(tile_index=tile_index)
+                        task = RunUpdateTask(tile_index=tile,
+                                             path_type=path_type,
+                                             path_img_0=path_img_0,
+                                             path_img_1=path_img_1,
+                                             image_date_0=image_date_0,
+                                             image_date_1=image_date_1,
+                                             )
+                        task.save()
+
+
+
+
                     if len(results) > 0:
                         logger.error(f'results after model_predict not empty.\n\
                           results: {results}')
