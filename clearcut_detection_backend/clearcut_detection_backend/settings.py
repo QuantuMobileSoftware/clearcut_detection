@@ -205,5 +205,3 @@ LOGGING = {
         },
     },
 }
-
-EMAIL_ADMIN_MAIL = ['dmitriy.lugovoy.79@gmail.com', 'dl@lug.in.ua']
