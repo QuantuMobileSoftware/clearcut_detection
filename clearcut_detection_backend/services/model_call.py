@@ -72,7 +72,11 @@ class ModelCaller:
                         image_date_0 = tile_list[0].tile_date
                         image_date_1 = tile_list[1].tile_date
 
-                        tile = Tile.objects.get(tile_index=tile_index)
+                        tile, created = Tile.objects.get_or_create(tile_index=tile_index)  # TODO
+                        if created:
+                            tile.is_tracked = 1
+                            tile.save()
+
                         task = RunUpdateTask(tile_index=tile,
                                              path_type=path_type,
                                              path_img_0=path_img_0,
