@@ -1,0 +1,10 @@
+from pathlib import Path
+
+MAXIMUM_CLOUD_PERCENTAGE_ALLOWED = 20.0
+MAXIMUM_EMPTY_PIXEL_PERCENTAGE = 5.0
+MAXIMUM_DATES_STORE_FOR_TILE = 2
+MAX_WORKERS = 4
+
+DATA_DIR = Path('./data')
+DOWNLOADED_IMAGES_DIR = Path('./data/source_images/')
+MODEL_TIFFS_DIR = Path('./data/model_tiffs')
