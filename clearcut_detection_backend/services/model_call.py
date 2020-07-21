@@ -64,8 +64,6 @@ class ModelCaller:
                     if tile_index not in results:
                         results[tile_index] = 1
                     else:
-                        logger.info(f'start model_predict for {tile_index}')
-                        self.model_predict(self.query.filter(tile_index__exact=tile_index))
                         del results[tile_index]
 
                         tile_list = self.query.filter(tile_index__exact=tile_index).order_by('tile_name')
@@ -83,13 +81,12 @@ class ModelCaller:
                                              image_date_1=image_date_1,
                                              )
                         task.save()
+                        logger.info(f'start model_predict for {tile_index}')
+                        self.model_predict(self.query.filter(tile_index__exact=tile_index))
 
-
-
-
-                    if len(results) > 0:
-                        logger.error(f'results after model_predict not empty.\n\
-                          results: {results}')
+        if len(results) > 0:
+            logger.error(f'results after model_predict not empty.\n\
+              results: {results}')
 
     @staticmethod
     def remove_temp_files(path, tile_name):
