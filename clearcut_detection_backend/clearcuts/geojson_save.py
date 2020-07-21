@@ -57,7 +57,7 @@ def save(tile, poly_path, init_db=False):
                           area_geodataframe[idx], create_new_zone=True)
     else:
         for idx, geopoly in enumerate(geospolygons):
-            intersecting_polys = Clearcut.objects.filter(centroid__dwithin=(geopoly, D(m=SEARCH_WINDOW))
+            intersecting_polys = Clearcut.objects.filter(centroid__dwithin=(geopoly, D(m=SEARCH_WINDOW)))
             forest = flags_forest[idx]
             cloud = flags_clouds[idx]
             if intersecting_polys.count() > 0:
