@@ -3,6 +3,8 @@ db_stage:
   dockerfile: postgis.Dockerfile
   expose:
     - 5432
+  ports:
+    - "5433:5432"
   env_file:
     - db.env
   volumes:
@@ -49,7 +51,7 @@ django_stage:
     - "model_stage"
   expose:
     - 9000
-  command: /bin/bash -c "pip install -r requirements.txt && exec invoke runbackend"
+  command: /bin/bash -c "pip install -r requirements.txt && exec invoke runbackend --createdb"
 
 nginx_stage:
   image: nginx:1.15.8
