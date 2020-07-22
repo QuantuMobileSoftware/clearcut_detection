@@ -40,6 +40,7 @@ django_stage:
   dockerfile: django.Dockerfile
   environment:
     - DJANGO_SETTINGS_MODULE=clearcut_detection_backend.prod_settings
+    - DB_HOST=db_stage
   env_file:
    - db.env 
    - django.env
