@@ -14,7 +14,7 @@ from settings import DATA_DIR
 from sklearn.metrics import f1_score, precision_score, recall_score, auc, precision_recall_curve
 
 from polyeval import *
-from utils import GOLD_STANDARD_F1SCORES, GOLD_DICE, GOLD_IOU, SUCCESS_THRESHOLD
+from utils import GOLD_STANDARD_F1SCORES, GOLD_DICE, GOLD_IOU, SUCCESS_THRESHOLD, IOU_THRESHOLD
 
 def parse_args():
     parser = argparse.ArgumentParser(
@@ -130,19 +130,22 @@ if __name__ == "__main__":
     f1_score_test, dice, iou = evaluate(args.datasets_path, args.predictions_path, args.output_name, args.masks_folder, args.mask_type)
     f1_score_standard = pd.read_csv(GOLD_STANDARD_F1SCORES)
 
+    f1_score_test = f1_score_test[f1_score_test['threshold'] <= IOU_THRESHOLD]
+    f1_score_standard = f1_score_standard[f1_score_standard['threshold'] <= IOU_THRESHOLD]
+
     result = {}
-    result['f1_score'] = np.mean(f1_score_standard['f1_score'].to_numpy()[0:3] - f1_score_test['f1_score'].to_numpy()[0:3])
+    result['f1_score'] = np.mean(f1_score_standard['f1_score'].to_numpy() - f1_score_test['f1_score'].to_numpy())
     result['dice_score'] = GOLD_DICE - dice
     result['iou_score'] = GOLD_IOU - iou
     result['status'] = (result['f1_score'] < SUCCESS_THRESHOLD) \
                      & (result['dice_score'] < SUCCESS_THRESHOLD) \
                      & (result['iou_score'] < SUCCESS_THRESHOLD)
-    print(result)
-    result['status'] = str(result['status'])
+
     if result['status']:
-        result['status'] = result['status'].replace('True', 'success')
+        result['status'] = str(result['status']).replace('True', 'success')
     else:
-        result['status'] = result['status'].replace('False', 'failed')
-    
+        result['status'] = str(result['status']).replace('False', 'failed')
+
+    print(result)    
     with open('test_status.json', 'w') as outfile:
         json.dump(result, outfile)

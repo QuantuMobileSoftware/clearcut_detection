@@ -26,4 +26,5 @@ DATE_PREVIOUS = datetime.strptime(date_previous_test, '%Y%m%d')
 GOLD_STANDARD_F1SCORES = f'{TEST_PATH}/gold_standard.txt'
 GOLD_DICE = 0.2811
 GOLD_IOU = 0.2545
+IOU_THRESHOLD = 0.3
 SUCCESS_THRESHOLD = 0.05
