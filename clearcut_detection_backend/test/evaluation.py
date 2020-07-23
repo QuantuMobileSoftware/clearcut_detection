@@ -139,5 +139,10 @@ if __name__ == "__main__":
                      & (result['iou_score'] < SUCCESS_THRESHOLD)
     print(result)
     result['status'] = str(result['status'])
+    if result['status']:
+        result['status'] = result['status'].replace('True', 'success')
+    else:
+        result['status'] = result['status'].replace('False', 'failed')
+    
     with open('test_status.json', 'w') as outfile:
         json.dump(result, outfile)
