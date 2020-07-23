@@ -42,8 +42,8 @@ class SentinelDownload:
         self.sequential_dates_count = settings.MAXIMUM_DATES_STORE_FOR_TILE
         self.area_tile_set = area_tile_set_test
         self.bands_to_download = bands_to_download
-        self.base_uri = 'gs://gcp-public-data-sentinel-2'  # TODO to settings
-        self.bucket_name = 'gcp-public-data-sentinel-2'  # TODO to settings
+        self.base_uri = 'gs://gcp-public-data-sentinel-2'
+        self.bucket_name = 'gcp-public-data-sentinel-2'
         self.prefix = 'L2/tiles'
         self.tiles_and_uris_dict = {tile_name: self.get_tile_uri(tile_name) for tile_name in self.area_tile_set}
         self.storage_client = storage.Client()
@@ -65,7 +65,6 @@ class SentinelDownload:
         Launches multithread download
         """
         tiles_to_update = self.request_google_cloud_storage_for_latest_acquisition(self.tiles_and_uris_dict)
-        print(tiles_to_update)
         self.launch_download_pool(tiles_to_update)
 
     @staticmethod

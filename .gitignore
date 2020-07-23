@@ -1,9 +1,11 @@
+test_status.json
+
 \.idea/
 \.vscode
 clearcut_detection_backend/clearcuts/migrations/
 clearcut_detection_backend/model/predicted/
 logs.txt
-data/
+clearcut_detection_backend/data/
 logs/
 venv/
 _install/

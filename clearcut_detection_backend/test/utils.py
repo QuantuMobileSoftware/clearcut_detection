@@ -21,3 +21,9 @@ TEST_POLYGONS = f'{TEST_PATH}/36UYA_test_data.geojson'
 TEST_TILES = f'{TEST_PATH}/tiles_to_download.txt'
 DATE_CURRENT = datetime.strptime(date_current_test, '%Y%m%d')
 DATE_PREVIOUS = datetime.strptime(date_previous_test, '%Y%m%d')
+
+# Target metrics values
+GOLD_STANDARD_F1SCORES = f'{TEST_PATH}/gold_standard.txt'
+GOLD_DICE = 0.2811
+GOLD_IOU = 0.2545
+SUCCESS_THRESHOLD = 0.05

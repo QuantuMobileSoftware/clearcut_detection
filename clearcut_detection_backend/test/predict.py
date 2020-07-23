@@ -22,9 +22,11 @@ from rasterio.windows import Window
 from rasterio.plot import reshape_as_image
 from rasterio import features
 from skimage.transform import match_histograms
+from scipy.ndimage import gaussian_filter
 
 from test_data_prepare import get_gt_polygons
-from utils import path_exists_or_create
+from settings import MODEL_TIFFS_DIR, DATA_DIR
+from utils import path_exists_or_create, area_tile_set_test
 
 CLOUDS_PROBABILITY_THRESHOLD = 15
 NEAREST_POLYGONS_NUMBER = 10
@@ -69,7 +71,7 @@ def mask_postprocess(mask):
     return closing
 
 
-def predict_raster(img_path, channels, network, model_weights_path, input_size=56, neighbours=3):
+def predict_raster(img_path, channels, network, model_weights_path, save_path, input_size=56, neighbours=3):
     tile = os.path.basename(img_path)
     tiff_files = [os.path.join(img_path, f'{tile}_{i}', f'{tile}_{i}_merged.tiff') for i in range(DATES_FOR_TILE)]
     model, device = load_model(network, model_weights_path, channels, neighbours)
@@ -117,6 +119,15 @@ def predict_raster(img_path, channels, network, model_weights_path, input_size=5
                     predicted = predict(image_tensor, model, channels, neighbours, input_size, device)
                     predicted = mask_postprocess(predicted)
                     clearcut_mask[left_column:right_column, bottom_row:upper_row] += predicted
+
+                    mask_piece = mask[left_column:right_column, bottom_row:upper_row]
+                    # mask_piece = (gaussian_filter(mask_piece, 0.5) > 0)
+                    
+                    cv2.imwrite(f"{save_path}/preds/{i}_{j}.png", predicted * 255)
+                    cv2.imwrite(f"{save_path}/masks/{i}_{j}.png", mask_piece * 255)
+
+
+
 
     meta['dtype'] = 'float32'
     return clearcut_mask.astype(np.float32), meta
@@ -247,18 +258,18 @@ def parse_args():
     parser = argparse.ArgumentParser(description='Script for predicting masks.')
     parser.add_argument(
         '--image_path', '-ip', dest='image_path',
-        type=str, required=True, help='Path to source image'
+        default=f'{MODEL_TIFFS_DIR}/{area_tile_set_test.pop()}', help='Path to source image'
     )
     parser.add_argument(
         '--model_weights_path', '-mwp', dest='model_weights_path',
-        default='data/unet_v4.pth', help='Path to directory where pieces will be stored'
+        default=f'{DATA_DIR}/unet_v4.pth', help='Path to directory where pieces will be stored'
     )
     parser.add_argument(
         '--network', '-net', dest='network', default='unet_ch',
         help='Model architecture'
     )
     parser.add_argument(
-        '--save_path', '-sp', dest='save_path', default='data/predicted',
+        '--save_path', '-sp', dest='save_path', default=f'{DATA_DIR}/predicted',
         help='Path to directory where results will be stored'
     )
     parser.add_argument(
@@ -281,21 +292,17 @@ def parse_args():
 def main():
     args = parse_args()
     path_exists_or_create(args.save_path)
+    path_exists_or_create(f"{args.save_path}/preds")
+    path_exists_or_create(f"{args.save_path}/masks")
     filename = re.split(r'[./]', args.image_path)[-1]
     predicted_filename = f'predicted_{filename}'
 
-    if not args.polygonize_only:
-        raster_array, meta = predict_raster(
-            args.image_path,
-            args.channels, args.network, args.model_weights_path
-        )
-        save_raster(raster_array, meta, args.save_path, filename)
-    else:
-        with rasterio.open(os.path.join(args.save_path, f'{predicted_filename}.tif')) as src:
-            raster_array = src.read()
-            raster_array = np.moveaxis(raster_array, 0, -1)
-            meta = src.meta
-            src.close()
+    raster_array, meta = predict_raster(
+        args.image_path,
+        args.channels, args.network, args.model_weights_path,
+        args.save_path
+    )
+    # save_raster(raster_array, meta, args.save_path, filename)
 
     clearcuts = polygonize(raster_array > args.threshold, meta)
     clearcuts = polygon_to_geodataframe(clearcuts, meta['crs'])
