@@ -1,1 +1,0 @@
-sudo docker run -v /home/quantum/DS/clearcut/service/testing/clearcut_detection/clearcut_detection_backend/test/:/test/ -ti testing /bin/bash
