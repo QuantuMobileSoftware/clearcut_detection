@@ -83,37 +83,16 @@ def score(test_polys, truth_polys, threshold=0.5):
             for inter in intersected:
                 iou_score = iou_poly(inter[0], inter[1])
 
-                '''
-                xs, ys = inter[0].exterior.xy
-                plt.fill(xs, ys, alpha=0.5, fc='r', label='Test')
-                xs, ys = inter[1].exterior.xy
-                plt.fill(xs, ys, alpha=0.5, fc='b', label='Truth')
-                plt.legend()
-                plt.title(iou_list)
-                plt.show()
-                '''
-
                 if iou_score >= threshold:
                     true_pos_count += 1
                     total_count+=1
                 else:
                     false_pos_count += 1
                     total_count+=1
-            '''            
-            for geom in test_poly:    
-                xs, ys = geom.exterior.xy
-                plt.fill(xs, ys, alpha=0.5, fc='r', label='Test')
-            
-            for geom in truth_poly:    
-                xs, ys = geom.exterior.xy
-                plt.fill(xs, ys, alpha=0.5, fc='b', label='Truth')
-            plt.legend()
-            plt.show()
-            '''
     return true_pos_count, false_pos_count, false_neg_count, total_count
 
 
-def evalfunction(test_polys, truth_polys, threshold = 0.5):
+def f1_score_evaluation(test_polys, truth_polys, threshold = 0.5):
     if len(truth_polys)==0 and len(test_polys)!=0:
         true_pos_count = 0
         false_pos_count = len(test_polys)

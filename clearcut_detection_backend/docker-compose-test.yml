@@ -1,0 +1,29 @@
+version: '3'
+services:
+    model:
+        build:
+            context: ./model
+            dockerfile: model.Dockerfile
+        image: clearcut_detection/model
+        env_file:
+            - ./model/model.env
+        volumes:
+            - ./model/:/model
+            - ./data/:/model/data
+        working_dir: /model
+        ports:
+            - '5000:5000'
+        command: /bin/bash -c "python app.py"
+
+    test:
+        build:
+            context: ./
+            dockerfile: test.Dockerfile
+        image: clearcut_detection/test
+        volumes:
+            - ./:/code
+        working_dir: /code
+        command: /bin/bash -c "pip install -r ./test/requirements.txt && python test.py"
+    
+volumes:
+  data:

@@ -5,6 +5,6 @@ MAXIMUM_EMPTY_PIXEL_PERCENTAGE = 5.0
 MAXIMUM_DATES_STORE_FOR_TILE = 2
 MAX_WORKERS = 6
 
-DATA_DIR = Path('./data')
-DOWNLOADED_IMAGES_DIR = Path('./data/source_images/')
-MODEL_TIFFS_DIR = Path('./data/model_tiffs')
+DATA_DIR = Path('./data/test')
+DOWNLOADED_IMAGES_DIR = Path(f'{DATA_DIR}/source_images/')
+MODEL_TIFFS_DIR = Path(f'{DATA_DIR}/model_tiffs')

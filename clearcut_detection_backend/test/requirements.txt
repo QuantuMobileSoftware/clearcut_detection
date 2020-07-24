@@ -82,7 +82,7 @@ urllib3==1.25.9
 utm==0.5.0
 zipp==3.1.0
 
-catalyst==19.5
-segmentation-models-pytorch==0.1.0
-torch==1.4.0
-torchvision==0.5.0
+# catalyst==19.5
+# segmentation-models-pytorch==0.1.0
+# torch==1.4.0
+# torchvision==0.5.0

@@ -4,7 +4,8 @@ import geopandas
 
 from datetime import datetime
 from shapely.ops import unary_union
-from utils import DATE_CURRENT, DATE_PREVIOUS, TEST_POLYGONS, TEST_PATH
+from test.utils import DATE_CURRENT, DATE_PREVIOUS, TEST_POLYGONS
+from test.settings import DATA_DIR
 
 
 def save_polygons(polygons, crs, save_path, filename):
@@ -24,5 +25,5 @@ def prepare_testfile():
 
 def get_gt_polygons():
     test = prepare_testfile()
-    clearcuts = unary_union(test['geometry'].buffer(1e-5))
-    return save_polygons(clearcuts, test.crs, TEST_PATH, 'test_clearcuts')
+    clearcuts = unary_union(test['geometry'].buffer(1e-5)).buffer(-1e-5)
+    return save_polygons(clearcuts, test.crs, DATA_DIR, 'test_clearcuts')
