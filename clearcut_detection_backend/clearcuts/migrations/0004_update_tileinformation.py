@@ -36,6 +36,11 @@ class Migration(migrations.Migration):
             name='source_clouds_location',
             field=models.CharField(blank=True, max_length=60, null=True),
         ),
+        migrations.AlterField(
+            model_name='tileinformation',
+            name='tile_name',
+            field=models.CharField(max_length=7),
+        ),
 
     ]
 

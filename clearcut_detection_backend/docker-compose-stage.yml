@@ -8,7 +8,7 @@ db_stage:
   env_file:
     - db.env
   volumes:
-    - db-data:/var/lib/postgresql/data
+    - ./db-data_stage:/var/lib/postgresql/data
     - ./:/code
 
 model_stage:
@@ -68,4 +68,5 @@ nginx_stage:
   volumes:
     - ./nginx/nginx_stage.conf:/etc/nginx/conf.d/default.conf
     - ./frontend/build:/frontend/build
+    - ./db-data_stage:/var/lib/postgresql/data
 
