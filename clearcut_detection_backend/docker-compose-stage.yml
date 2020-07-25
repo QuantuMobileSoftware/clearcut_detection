@@ -3,10 +3,12 @@ db_stage:
   dockerfile: postgis.Dockerfile
   expose:
     - 5432
+  ports:
+    - "5433:5432"
   env_file:
     - db.env
   volumes:
-    - db-data:/var/lib/postgresql/data
+    - ./db-data_stage:/var/lib/postgresql/data
     - ./:/code
 
 model_stage:
@@ -14,6 +16,8 @@ model_stage:
   dockerfile: model.Dockerfile
   env_file:
     - ./model/model.env
+  environment:
+    - MODEL_HOST=model_stage
   volumes:
     - ./model/:/model
     - ./data/:/model/data
@@ -28,7 +32,7 @@ react_stage:
     - ./frontend:/frontend
   working_dir: /frontend
   ports:
-    - "3000:3000"
+    - "3001:3000"
   links: 
     - "django_stage"
   command: /bin/bash -c "npm install && npm run-script build"
@@ -38,6 +42,7 @@ django_stage:
   dockerfile: django.Dockerfile
   environment:
     - DJANGO_SETTINGS_MODULE=clearcut_detection_backend.prod_settings
+    - DB_HOST=db_stage
   env_file:
    - db.env 
    - django.env
@@ -49,7 +54,7 @@ django_stage:
     - "model_stage"
   expose:
     - 9000
-  command: /bin/bash -c "pip install -r requirements.txt && exec invoke runbackend"
+  command: /bin/bash -c "pip install -r requirements.txt && exec invoke runbackend --createdb"
 
 nginx_stage:
   image: nginx:1.15.8
@@ -65,4 +70,5 @@ nginx_stage:
   volumes:
     - ./nginx/nginx_stage.conf:/etc/nginx/conf.d/default.conf
     - ./frontend/build:/frontend/build
+    - ./db-data_stage:/var/lib/postgresql/data
 

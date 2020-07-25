@@ -54,7 +54,7 @@ class EmailOnErrorHandler(logging.Handler):
                   message,
                   from_email=settings.EMAIL_HOST_USER,
                   recipient_list=settings.EMAIL_ADMIN_MAILS,
-                  fail_silently=False,
+                  fail_silently=True,
                   html_message=html_message
                   )
 

@@ -30,11 +30,9 @@ def collect_static_element(ctx):
 @task
 def init_db(ctx, create_db=False):
     wait_port_is_open(os.getenv('DB_HOST', 'db'), 5432)
-    if create_db:
-        ctx.run('python manage.py loaddata db.json')
-
-    ctx.run('python manage.py makemigrations clearcuts')
     ctx.run('python manage.py migrate')
+    # if create_db:
+    #     ctx.run('python manage.py loaddata db.json')
 
 
 def wait_port_is_open(host, port):
@@ -61,7 +59,7 @@ def rundev(ctx, createdb=False):
 
 @task
 def runbackend(ctx, createdb=False):
-    init_db(ctx, createdb)
+    # init_db(ctx, createdb)
     collect_static_element(ctx)
     thread_cron = threading.Thread(target=devcron, args=(ctx,))
     thread_cron.start()

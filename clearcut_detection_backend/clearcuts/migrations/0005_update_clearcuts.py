@@ -7,7 +7,7 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('clearcuts', '0002_tileinformation_source_clouds_location'),
+        ('clearcuts', '0004_update_tileinformation'),
     ]
 
     operations = [
