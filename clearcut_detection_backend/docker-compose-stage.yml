@@ -16,6 +16,8 @@ model_stage:
   dockerfile: model.Dockerfile
   env_file:
     - ./model/model.env
+  environment:
+    - MODEL_HOST=model_stage
   volumes:
     - ./model/:/model
     - ./data/:/model/data
@@ -30,7 +32,7 @@ react_stage:
     - ./frontend:/frontend
   working_dir: /frontend
   ports:
-    - "3000:3000"
+    - "3001:3000"
   links: 
     - "django_stage"
   command: /bin/bash -c "npm install && npm run-script build"
