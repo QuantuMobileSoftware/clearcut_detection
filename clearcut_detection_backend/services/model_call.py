@@ -42,7 +42,6 @@ class ModelCaller:
             logger.error(f'Unsupported file path in settings.PATH_TYPE: {settings.PATH_TYPE}')
             raise ValueError
 
-
         with ThreadPoolExecutor(max_workers=settings.MAX_WORKERS) as executor:
             future_list = []
             for tile_index in self.tile_index_distinct:
@@ -117,6 +116,7 @@ class ModelCaller:
         results_path = os.path.join(self.data_dir, results[0].get('polygons'))
         if os.path.exists(results_path):
             save(tile, results_path)
+
 
 # TODO: add docstring
 def raster_prediction(tif_path):
