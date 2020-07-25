@@ -1,6 +1,5 @@
 \.idea/
 \.vscode
-clearcut_detection_backend/clearcuts/migrations/
 clearcut_detection_backend/model/predicted/
 logs.txt
 data/
