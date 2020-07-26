@@ -177,10 +177,10 @@ def create_tiff_path(tile):
 
 
 def prepare_tiff(tile):
-    convert_to_tiff = 0
-    create_ndvi = 0
-    scaling = 0
-    merge = 0
+    convert_to_tiff = 1
+    create_ndvi = 1
+    scaling = 1
+    merge = 1
     save_in_png = 0
 
     save_path, output_folder, tiff_output_name = create_tiff_path(tile)  # create path for tiff images

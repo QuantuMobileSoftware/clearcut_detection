@@ -15,7 +15,7 @@ from services.configuration import bands_to_download, area_tile_set
 
 logger = logging.getLogger('sentinel')
 
-download_img = os.environ.get('DOWNLOAD_IMG', True)
+download_img = os.environ.get('DOWNLOAD_IMG', True)  # FIXME
 
 # logger.info(f'download_img type: {type(download_img)}')
 

@@ -22,20 +22,6 @@ class ModelCaller:
     def __init__(self):
         self.data_dir = settings.DATA_DIR
         self.tile_index_distinct = Tile.objects.filter(is_tracked=1)
-        self.query = TileInformation.objects.filter(
-            # tile_index__in=Tile.objects.filter(is_tracked=1),
-            tile_index__is_tracked=1,
-            source_b04_location__isnull=False,
-            source_b08_location__isnull=False,
-            source_b8a_location__isnull=False,
-            source_b11_location__isnull=False,
-            source_b12_location__isnull=False,
-            source_tci_location__isnull=False,
-            source_clouds_location__isnull=False,
-            is_prepared=0,
-            is_downloaded=7,
-        )
-
         logger.info(f'tile_index_distinct: {self.tile_index_distinct}')
 
     def start(self):
@@ -95,7 +81,6 @@ class ModelCaller:
                         # self.model_predict(TileInformation.objects.filter(tile_index__tile_index=tile_index))
 
                         model_add_task(task.id)
-                        # future_list.remove(future)
 
         if len(results) > 0:
             logger.error(f'results after model_predict not empty.\n\

@@ -55,11 +55,8 @@ def run_predict(session, task_id):
     result_directory_path.mkdir(parents=True, exist_ok=True)
 
     channels = models['deforestration_detection']['channels']
-    print(f'channels : {channels}')
     network = models['deforestration_detection']['network']
-    print(f'network : {network}')
     weights = models['deforestration_detection']['weights']
-    print(f'weights : {weights}')
 
     try:
         model_weights_path = weights_exists_or_download(
@@ -82,7 +79,7 @@ def run_predict(session, task_id):
 
     clearcut = polygonize(raster_array > threshold, meta)
 
-    polygons = postprocessing(image_path, clearcut, meta['crs'])
+    polygons = postprocessing(image_path, clearcut, meta['crs'])  # TODO
     polygons_json = polygons.to_json()
 
     params['result'] = polygons_json

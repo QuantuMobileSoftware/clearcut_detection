@@ -14,6 +14,9 @@ def jp2_to_tiff():
     Conversion raw satellite jp2 images to tiffs for mapbox
     """
     jp2files = list(TileInformation.objects
+                    .filter(tile_index__is_tracked=1)
+                    .filter(is_predicted=1)
+                    .filter(is_converted=0)
                     .filter(source_tci_location__contains='jp2')
                     .filter(source_tci_location__contains='TCI')
                     .values_list('source_tci_location', flat=True))
@@ -40,6 +43,7 @@ def jp2_to_tiff():
                 if result:
                     tile_info = TileInformation.objects.get(source_tci_location=file)
                     tile_info.tile_location = geo_tiff_file
+                    tile_info.is_converted = 1
                     tile_info.save()
             except (IOError, ValueError, FileNotFoundError, FileExistsError, Exception):
                 logger.error('Error\n\n', exc_info=True)

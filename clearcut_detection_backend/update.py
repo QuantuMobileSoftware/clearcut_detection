@@ -11,10 +11,10 @@ from services.sentinel_download import SentinelDownload
 from services.upload_to_mapbox import start_upload
 from services.configuration import area_tile_set
 
-sentinel_download = 0
+sentinel_download = 1
 call_model = 1
-convert_to_tiff = 0
-mapbox_upload = 0
+convert_to_tiff = 1
+mapbox_upload = 1
 
 
 logger = logging.getLogger('update')
