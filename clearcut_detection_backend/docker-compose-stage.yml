@@ -11,22 +11,22 @@ db_stage:
     - ./db-data_stage:/var/lib/postgresql/data
     - ./:/code
 
-model_stage:
-  build: ./model
-  dockerfile: model.Dockerfile
-  env_file:
-    - ./model/model.env
-  environment:
-    - MODEL_HOST=model_stage
-    - MODEL_PORT=5000
-    - MODEL_ENDPOINT=raster_prediction
-  volumes:
-    - ./model/:/model
-    - ./data/:/model/data
-  working_dir: /model
-  ports:
-    - "5001:5000"
-  command: /bin/bash -c "pip install -r requirements.txt && python app.py"
+#model_stage:
+#  build: ./model
+#  dockerfile: model.Dockerfile
+#  env_file:
+#    - ./model/model.env
+#  environment:
+#    - MODEL_HOST=model_stage
+#    - MODEL_PORT=5000
+#    - MODEL_ENDPOINT=raster_prediction
+#  volumes:
+#    - ./model/:/model
+#    - ./data/:/model/data
+#  working_dir: /model
+#  ports:
+#    - "5001:5000"
+#  command: /bin/bash -c "pip install -r requirements.txt && python app.py"
 
   model_stage_2:
     build:
