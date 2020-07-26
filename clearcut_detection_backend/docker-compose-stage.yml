@@ -33,13 +33,20 @@ model_stage_2:
   dockerfile: model.Dockerfile
   env_file:
     - ./model2/model.env
+    - ./model2/db.env
   volumes:
     - ./model2/:/model
     - ./data/:/model/data
   working_dir: /model
-  expose:
-      - 5000
-  command: /bin/bash -c "pip install -r requirements.txt && ./run_predict.sh"  # todo
+  environment:
+    - DB_HOST=db_stage
+#  expose:
+#      - 5000
+#      - 5672
+  links:
+    - "rabbitmq"
+    - "db_stage"
+  command: /bin/bash -c "./run_predict.sh"  # todo
 
 react_stage:
   image: node:10.15.0
@@ -56,13 +63,13 @@ django_stage:
 #  build: ./
 #  dockerfile: django.Dockerfile
   image: clearcut_detection/backend
+  env_file:
+    - db.env
+    - django.env
   environment:
     - DJANGO_SETTINGS_MODULE=clearcut_detection_backend.prod_settings
     - DB_HOST=db_stage
     - DOWNLOAD_IMG=False
-  env_file:
-   - db.env 
-   - django.env
   volumes:
     - ./:/code
   working_dir: /code
@@ -70,6 +77,7 @@ django_stage:
     - "db_stage"
 #    - "model_stage"
     - "model_stage_2"
+    - "rabbitmq"
   expose:
     - 9000
   command: /bin/bash -c "pip install -r requirements.txt && exec invoke runbackend --createdb"
@@ -89,4 +97,24 @@ nginx_stage:
     - ./nginx/nginx_stage.conf:/etc/nginx/conf.d/default.conf
     - ./frontend/build:/frontend/build
     - ./db-data_stage/data:/var/lib/postgresql/data
+
+rabbitmq:
+  hostname: "rabbitmq"
+  labels:
+    NAME: "rabbitmq"
+  image: "rabbitmq"
+  environment:
+    RABBITMQ_DEFAULT_USER: "guest"
+    RABBITMQ_DEFAULT_PASS: "guest"
+    RABBITMQ_DEFAULT_VHOST: "/"
+    RABBITMQ_NODE_PORT_NUMBER: "5672"
+    RABBITMQ_MANAGER_PORT_NUMBER: "15672"
+  expose:
+    - 15672
+    - 5672
+
+#  ports:
+#    - "15672:15672"
+#    - "5672:5672"
+  restart: always
 
