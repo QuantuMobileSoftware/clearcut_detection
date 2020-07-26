@@ -66,20 +66,20 @@ def mask_postprocess(mask):
     return closing
 
 
-def predict_raster(img_path, channels, network, model_weights_path, input_size=56, neighbours=3):
-    tile = os.path.basename(img_path)
-    tiff_files = [os.path.join(img_path, f'{tile}_{i}', f'{tile}_{i}.tif') for i in range(DATES_FOR_TILE)]
+def predict_raster(img_current, img_previous, channels, network, model_weights_path, input_size=56, neighbours=3):
+    # tile = os.path.basename(img_path)
+    # tiff_files = [os.path.join(img_path, f'{tile}_{i}', f'{tile}_{i}.tif') for i in range(DATES_FOR_TILE)]
     model, device = load_model(network, model_weights_path, channels, neighbours)
 
-    with rasterio.open(tiff_files[0]) as source_current, \
-         rasterio.open(tiff_files[1]) as source_previous:
+    with rasterio.open(img_current) as source_current, \
+         rasterio.open(img_previous) as source_previous:
 
         meta = source_current.meta
         meta['count'] = 1
         clearcut_mask = np.zeros((source_current.height, source_current.width))
         pbar = tqdm()
-        for i in range(source_current.width // input_size):
-            for j in range(source_current.height // input_size):
+        for i in range(10):  #(source_current.width // input_size):
+            for j in range(10):  #(source_current.height // input_size):
                 pbar.set_postfix(row=f'{i}', col=f'{j}', num_pixels=f'{clearcut_mask.sum()}')
                 
                 bottom_row = j * input_size

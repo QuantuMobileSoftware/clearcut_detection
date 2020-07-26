@@ -15,6 +15,3 @@ prediction:
   save_path: data
   threshold: 0.3
   input_size: 56
-
-database:
-  database_uri: postgresql://ecoProj:zys8rwTAC9VIR1X9@db/clearcuts_db

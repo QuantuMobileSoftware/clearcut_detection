@@ -14,7 +14,7 @@ app = Celery(
 @app.task(remote_tracebacks='enable')
 def run_model_predict(**kwargs):
     task_id = int(kwargs.get('task_id'))
-    print(f'qqqqqqqqqqqqqqqqqqqqqqq {task_id}')
+    print(f'get task_id: {task_id}')
     session_factory = make_session_factory(db_string)
     session = session_factory.make_session()
     run_predict(session, task_id)

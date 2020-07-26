@@ -4,7 +4,6 @@ import imageio
 import numpy as np
 import re
 import traceback
-from config import models, save_path, threshold, input_size
 
 from flask import Flask, abort, request, jsonify, make_response
 from predict_raster import predict_raster, polygonize, save_polygons, postprocessing
@@ -27,7 +26,7 @@ def raster_prediction():
     else:
         abort(make_response(jsonify(message=f"Invalid image path ({image_path})"), 400))
     try:
-        # models, save_path, threshold, input_size = load_config()
+        models, save_path, threshold, input_size = load_config()
         predicted_directory_name = 'predicted_' + filename
         result_directory_path = join(save_path, predicted_directory_name)
         os.makedirs(result_directory_path, exist_ok=True)
@@ -45,8 +44,8 @@ def raster_prediction():
             )
             save_raster(raster_array, result_directory_path, predicted_filename)
 
-            claercuts = polygonize(raster_array > threshold, meta)
-            polygons = postprocessing(image_path, claercuts, meta['crs'])
+            clearcuts = polygonize(raster_array > threshold, meta)
+            polygons = postprocessing(image_path, clearcuts, meta['crs'])
 
             save_polygons(polygons, result_directory_path, predicted_filename)
 

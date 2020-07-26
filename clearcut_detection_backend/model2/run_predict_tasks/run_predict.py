@@ -18,13 +18,12 @@ from config import models, save_path, threshold, input_size
 from utils import weights_exists_or_download
 from predict_raster import predict_raster, polygonize, save_polygons, postprocessing
 from services.run_predict_tasks_service import RunPredictTasks as RpT
+from datetime import datetime, timezone
 
 
-# All of the loaded extensions. We don't want to load an extension twice.
-_loaded_extensions = set()
-_ws = None
 _session = None
 _task_id = None
+need_predict = True
 
 
 def run_predict(session, task_id):
@@ -37,12 +36,11 @@ def run_predict(session, task_id):
     _session = session
     _task_id = task_id
     model_weights_path = None
-    # ws_url = config.get('ws', 'url')
-    # guard_header = config.get('ws', 'guard_header')
-    # guard_key = config.get('ws', 'guard_key')
-    # header = ["{}: {}".format(guard_header, guard_key)]
 
     params = RpT.get_task_by_id(_session, _task_id)
+    params['date_started'] = str(datetime.now())
+    RpT.update_task_by_id(_session, _task_id, params)
+
     image_path = Path(params['path_img_0']).parent.parent
     list_tif_path = list(image_path.parts)
     filename = list_tif_path[-1]
@@ -56,62 +54,46 @@ def run_predict(session, task_id):
     print(result_directory_path)
     result_directory_path.mkdir(parents=True, exist_ok=True)
 
-    path_array = []
-    for model in models:
-        predicted_filename = f'predicted_{model}_{filename}'
-
-        channels = models[model]['channels']
-        network = models[model]['network']
-        try:
-            model_weights_path = weights_exists_or_download(
-                models[model]['weights'],
-                os.environ.get('GOOGLE_DRIVE_FILE_ID'),
-            )
-        except (ValueError, Exception) as e:
-            print(e)  # TODO
-
-        raster_array, meta = predict_raster(
-            str(image_path),
-            channels,
-            network,
-            model_weights_path,
-            input_size=input_size
-        )
-
-        save_raster(raster_array, result_directory_path, predicted_filename)
-
-        claercuts = polygonize(raster_array > threshold, meta)
-        print('11111111111111111111111')
-        polygons = postprocessing(image_path, claercuts, meta['crs'])
-        print('222222222222222222222222222')
-
-        # print(polygons)
-        # print(type(polygons))
-        polygons_json = polygons.to_json()
-        print(f'dddddddddddd: {polygons_json}')
-
-
-        save_polygons(polygons, result_directory_path, predicted_filename)  # TODO
-    
-    return
-
-
-
-
-    logger.info('simulation_start_date: {}'.format(params['simulation_start_date']))
-
-    result = params['result']
+    channels = models['deforestration_detection']['channels']
+    print(f'channels : {channels}')
+    network = models['deforestration_detection']['network']
+    print(f'network : {network}')
+    weights = models['deforestration_detection']['weights']
+    print(f'weights : {weights}')
 
     try:
-        new_params = dict(status=1, simulation_start_date=str(datetime.now()))
+        model_weights_path = weights_exists_or_download(
+            weights,
+            os.environ.get('GOOGLE_DRIVE_FILE_ID'),
+        )
+    except (ValueError, Exception) as e:
+        print(e)  # TODO
 
-        RpT.update_task_by_id(_session, _task_id, new_params)
-        params.update(new_params)
+    raster_array, meta = predict_raster(
+        params['path_img_0'],
+        params['path_img_1'],
+        channels,
+        network,
+        model_weights_path,
+        input_size=input_size,
+    )
 
-    except RuntimeError:
-        RpT.update_task_by_id(_session, task_id, {'status': 20})
-        raise LogValueErrors(logger, log_msg=None)
+    # save_raster(raster_array, result_directory_path, predicted_filename)
 
+    clearcut = polygonize(raster_array > threshold, meta)
+
+    polygons = postprocessing(image_path, clearcut, meta['crs'])
+    polygons_json = polygons.to_json()
+
+    params['result'] = polygons_json
+    params['date_finished'] = str(datetime.now())
+
+    RpT.update_task_by_id(_session, _task_id, params)
+    RpT.update_tileinformation(_session, params['tile_index_id'])
+
+    # save_polygons(polygons, result_directory_path, predicted_filename)  # TODO
+
+    # logger.info('simulation_start_date: {}'.format(params['simulation_start_date']))
     return
 
 

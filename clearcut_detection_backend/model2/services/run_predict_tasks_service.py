@@ -7,12 +7,6 @@ class RunPredictTasks(DataBaseResponseMixin):
 
     @classmethod
     def get_task_by_id(cls, session, task_id):
-        # t = text("SELECT crut.id, crut.path_type, crut.path_img_0, crut.path_img_1, crut.image_date_0, \
-        # crut.image_date_1, crut.result, crut.date_created, crut.date_started, crut.date_finished, ct.tile_index \
-        # FROM clearcuts_run_update_task crut \
-        #   LEFT JOIN clearcuts_tile ct on crut.tile_index_id = ct.id WHERE crut.id=:task_id").bindparams(
-        #     task_id=int(task_id)
-        # )
         t = text("SELECT * FROM clearcuts_run_update_task WHERE id=:task_id").bindparams(
             task_id=int(task_id)
         )
@@ -22,21 +16,38 @@ class RunPredictTasks(DataBaseResponseMixin):
     @classmethod
     def update_task_by_id(cls, session, task_id, params):
         """
-        Update run_algorimt_tasks by task id, and dict values
+        Update result field of clearcuts_run_update_task table by task id
         :param session: sqlalchemy session
         :param task_id: int
-        :param params: dict (key - column name, value - value)
+        :param params: dict
         :return:
         """
-        t = text("SELECT *******(:task_id, :params)").bindparams(
-            task_id=task_id,
-            params=json.dumps(params)
-        )
+        print(f'params: {params}')
 
-        q_res = session.execute(t)
-        res = q_res.fetchone() if q_res.rowcount else None
+        t = text("UPDATE clearcuts_run_update_task SET result=:result, date_started=:date_started, date_finished=:date_finished \
+        WHERE id=:task_id").bindparams(
+            task_id=task_id,
+            result=params['result'],
+            date_started=params['date_started'],
+            date_finished=params['date_finished'],
+        )
+        session.execute(t)
         session.commit()
-        return res
+
+    @classmethod
+    def update_tileinformation(cls, session, tile_index_id):
+        """
+        Update clearcuts_tileinformation table by tile_index
+        set is_predicted=1.
+        :param session: sqlalchemy session
+        :param tile_index_id: int
+        :return:
+        """
+        t = text('UPDATE clearcuts_tileinformation SET is_predicted=1 WHERE tile_index_id=:tile_index_id').bindparams(
+            tile_index_id=tile_index_id
+        )
+        session.execute(t)
+        session.commit()
 
     @classmethod
     def add_logs(cls, session, task_id, log_level, log_message):
