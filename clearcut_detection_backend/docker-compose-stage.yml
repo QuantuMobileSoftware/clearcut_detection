@@ -53,8 +53,9 @@ react_stage:
   command: /bin/bash -c "npm install && npm run-script build"
 
 django_stage:
-  build: ./
-  dockerfile: django.Dockerfile
+#  build: ./
+#  dockerfile: django.Dockerfile
+  image: clearcut_detection/backend
   environment:
     - DJANGO_SETTINGS_MODULE=clearcut_detection_backend.prod_settings
     - DB_HOST=db_stage
