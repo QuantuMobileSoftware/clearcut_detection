@@ -1,2 +1,3 @@
 /data
+/db-data_stage
 *.Dockerfile
