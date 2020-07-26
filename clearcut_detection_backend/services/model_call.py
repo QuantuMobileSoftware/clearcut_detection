@@ -9,7 +9,7 @@ from django.conf import settings
 from clearcuts.geojson_save import save
 from clearcuts.models import TileInformation, RunUpdateTask, Tile
 from services.prepare_tif import prepare_tiff
-from services.configuration import area_tile_set
+from clearcut_detection_backend import celery_app
 
 model_call_config = './model_call_config.yml'
 logger = logging.getLogger('model_call')
@@ -85,7 +85,9 @@ class ModelCaller:
                                              )
                         task.save()
                         logger.info(f'start model_predict for {tile_index}')
-                        self.model_predict(TileInformation.objects.filter(tile_index__tile_index=tile_index))
+                        # self.model_predict(TileInformation.objects.filter(tile_index__tile_index=tile_index))
+
+                        model_add_task(task.id)
 
         if len(results) > 0:
             logger.error(f'results after model_predict not empty.\n\
@@ -137,3 +139,18 @@ def raster_prediction(tif_path):
         return datastore
     except (ValueError, Exception):
         logger.error('Error\n\n', exc_info=True)
+
+
+def model_add_task(task_id):
+    """
+    Add run update task task in to 'run_update_task' queue
+    :param task_id:
+    :return:
+    """
+    print(f'now we in model_add_task with kwargs[task_id] = {task_id}')
+    celery_app.send_task(
+        name='tasks.run_model_predict',
+        queue='model_predict_queue',
+        kwargs={'task_id': task_id},
+    )
+    print(f'app.send_task is ok task_id = {task_id}')
