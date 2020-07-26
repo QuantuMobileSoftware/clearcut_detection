@@ -63,10 +63,12 @@ class TileInformation(models.Model):
 class RunUpdateTask(models.Model):
     tile_index = models.ForeignKey(Tile, on_delete=models.CASCADE, related_name='run_update_task')
     path_type = models.SmallIntegerField(default=0, null=False)
-    path_img_0 = models.URLField(max_length=200, blank=False, null=False)
-    path_img_1 = models.URLField(max_length=200, blank=False, null=False)
+    path_img_0 = models.URLField(max_length=200, blank=False, null=False, default='')
+    path_img_1 = models.URLField(max_length=200, blank=False, null=False, default='')
     image_date_0 = models.DateField(blank=False, null=False)  # TODO
     image_date_1 = models.DateField(blank=False, null=False)  # TODO
+    path_clouds_0 = models.URLField(max_length=200, blank=False, null=False, default='')
+    path_clouds_1 = models.URLField(max_length=200, blank=False, null=False, default='')
     result = JSONField(null=True)
     date_created = models.DateTimeField(auto_now_add=True)
     date_started = models.DateTimeField(null=True, default=None)
