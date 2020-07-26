@@ -18,6 +18,8 @@ model_stage:
     - ./model/model.env
   environment:
     - MODEL_HOST=model_stage
+    - MODEL_PORT=5000
+    - MODEL_ENDPOINT=raster_prediction
   volumes:
     - ./model/:/model
     - ./data/:/model/data
@@ -43,6 +45,7 @@ django_stage:
   environment:
     - DJANGO_SETTINGS_MODULE=clearcut_detection_backend.prod_settings
     - DB_HOST=db_stage
+    - DOWNLOAD_IMG=False
   env_file:
    - db.env 
    - django.env

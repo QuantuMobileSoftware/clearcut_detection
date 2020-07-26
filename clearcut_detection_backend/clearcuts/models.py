@@ -32,7 +32,7 @@ class Clearcut(models.Model):
 
 class TileInformation(models.Model):
     tile_name = models.CharField(max_length=7, blank=False, null=False)
-    tile_index = models.CharField(max_length=5, blank=False, null=False)
+    tile_index = models.ForeignKey(Tile, on_delete=models.CASCADE, related_name='tile_information')
     tile_date = models.DateField(default=timezone.now)
 
     tile_location = models.URLField(max_length=200, blank=True, null=True)
@@ -51,12 +51,17 @@ class TileInformation(models.Model):
     mapbox_tile_name = models.CharField(max_length=32, blank=True, null=True)
     mapbox_tile_layer = models.CharField(max_length=32, blank=True, null=True)
     coordinates = models.PolygonField(blank=True, null=True)
+    is_downloaded = models.SmallIntegerField(default=0)
+    is_prepared = models.SmallIntegerField(default=0)
+    is_predicted = models.SmallIntegerField(default=0)
+    is_converted = models.SmallIntegerField(default=0)
+    is_uploaded = models.SmallIntegerField(default=0)
 
     objects = models.Manager()
 
 
 class RunUpdateTask(models.Model):
-    tile_index = models.ForeignKey(Tile, on_delete=models.CASCADE)
+    tile_index = models.ForeignKey(Tile, on_delete=models.CASCADE, related_name='run_update_task')
     path_type = models.SmallIntegerField(default=0, null=False)
     path_img_0 = models.URLField(max_length=200, blank=False, null=False)
     path_img_1 = models.URLField(max_length=200, blank=False, null=False)
