@@ -17,6 +17,8 @@ logger = logging.getLogger('sentinel')
 
 download_img = os.environ.get('DOWNLOAD_IMG', True)
 
+# logger.info(f'download_img type: {type(download_img)}')
+
 
 class TillNameError(Exception):
     def __init__(self, till_name):

@@ -68,11 +68,16 @@ class ModelCaller:
                     else:
                         del results[tile_index]
 
-                        tile_list = TileInformation.objects.filter(tile_index__tile_index=tile_index).order_by('tile_name')
+                        tile_list = TileInformation.objects.filter(
+                            tile_index__tile_index=tile_index
+                        ).order_by('tile_name')
                         path_img_0 = tile_list[0].model_tiff_location
                         path_img_1 = tile_list[1].model_tiff_location
                         image_date_0 = tile_list[0].tile_date
                         image_date_1 = tile_list[1].tile_date
+
+                        path_clouds_0 = str(Path(path_img_0).parent / 'clouds.tiff')
+                        path_clouds_1 = str(Path(path_img_1).parent / 'clouds.tiff')
 
                         tile = Tile.objects.get(tile_index=tile_index)  # TODO
 
@@ -82,12 +87,15 @@ class ModelCaller:
                                              path_img_1=path_img_1,
                                              image_date_0=image_date_0,
                                              image_date_1=image_date_1,
+                                             path_clouds_0=path_clouds_0,
+                                             path_clouds_1=path_clouds_1
                                              )
                         task.save()
                         logger.info(f'start model_predict for {tile_index}')
                         # self.model_predict(TileInformation.objects.filter(tile_index__tile_index=tile_index))
 
                         model_add_task(task.id)
+                        # future_list.remove(future)
 
         if len(results) > 0:
             logger.error(f'results after model_predict not empty.\n\
@@ -147,10 +155,10 @@ def model_add_task(task_id):
     :param task_id:
     :return:
     """
-    print(f'now we in model_add_task with kwargs[task_id] = {task_id}')
+    logger.info(f'now we in model_add_task with kwargs[task_id] = {task_id}')
     celery_app.send_task(
         name='tasks.run_model_predict',
         queue='model_predict_queue',
         kwargs={'task_id': task_id},
     )
-    print(f'app.send_task is ok task_id = {task_id}')
+    logger.info(f'app.send_task is ok task_id = {task_id}')

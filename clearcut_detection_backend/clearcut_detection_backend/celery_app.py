@@ -9,5 +9,5 @@ from django.conf import settings  # noqa
 
 app = Celery('clearcut_detection_backend')
 
-app.config_from_object('django.conf:settings')
-app.autodiscover_tasks(lambda: settings.INSTALLED_APPS)
+app.config_from_object('django.conf:settings', namespace='CELERY')
+app.autodiscover_tasks()
