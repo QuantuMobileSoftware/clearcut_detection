@@ -28,6 +28,21 @@ model_stage:
     - "5001:5000"
   command: /bin/bash -c "pip install -r requirements.txt && python app.py"
 
+  model_stage_2:
+    build:
+      context: ./model2
+      dockerfile: model.Dockerfile
+    image: clearcut_detection/model2
+    env_file:
+      - ./model2/model.env
+    volumes:
+      - ./model2/:/model
+      - ./data/:/model/data
+    working_dir: /model
+    expose:
+      - 5000
+    command: /bin/bash -c "pip install -r requirements.txt && ./run_predict.sh"  # todo
+
 react_stage:
   image: node:10.15.0
   volumes:

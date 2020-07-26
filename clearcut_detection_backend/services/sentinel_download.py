@@ -172,7 +172,6 @@ class SentinelDownload:
                     self.download_file_from_storage(blob, filename)
                 else:
                     logger.info(f'skip downloading {filename}')
-                # tile_info = TileInformation.objects.get(tile_name=tile_name)
                 if band == Bands.B04.value:
                     tile_info.source_b04_location = filename
                 elif band == Bands.B08.value:
@@ -198,7 +197,6 @@ class SentinelDownload:
         for blob in blobs:
             is_blob = True
             if blob.name.endswith(endswith):
-                # tile_info = TileInformation.objects.get(tile_name=tile_name)
                 filename = settings.DOWNLOADED_IMAGES_DIR / f"{tile_name}_{blob.name.split('/')[-1]}"
                 if download_img:
                     self.download_file_from_storage(blob, filename)
