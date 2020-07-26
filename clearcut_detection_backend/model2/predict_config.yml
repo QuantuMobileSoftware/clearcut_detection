@@ -1,0 +1,20 @@
+models:
+  deforestration_detection:
+    network: unet_ch
+    channels:
+      - rgb
+      - b8
+      - b8a
+      - b11
+      - b12
+      - ndvi
+      - ndmi
+    weights: /model/unet_v4.pth
+
+prediction:
+  save_path: data
+  threshold: 0.3
+  input_size: 56
+
+database:
+  database_uri: postgresql://ecoProj:zys8rwTAC9VIR1X9@db/clearcuts_db
