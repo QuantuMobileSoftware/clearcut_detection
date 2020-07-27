@@ -27,36 +27,36 @@ def clearcuts_info(request, start_date, end_date):
     if Clearcut.objects.all().count() == 0:
         return JsonResponse({})
 
-    date_filtered_clearcuts = Clearcut.objects.filter(image_date_0__range=[start_date, end_date],
-                                                      image_date_1__range=[start_date, end_date],
+    date_filtered_clearcuts = Clearcut.objects.filter(image_date_current__range=[start_date, end_date],
+                                                      image_date_previous__range=[start_date, end_date],
                                                       forest__exact=1)
     if date_filtered_clearcuts.count() == 0:
         return JsonResponse({})
 
-    zone_max_min_date_clearcuts = \
-        date_filtered_clearcuts \
-            .values('zone__id') \
-            .annotate(min_date=Min('image_date_0')) \
-            .annotate(max_date=Max('image_date_0')) \
-            .filter(max_date__gt=F('min_date'))
+    zone_max_min_date_clearcuts = date_filtered_clearcuts.values('zone__id').annotate(
+        min_date=Min('image_date_current')
+    ).annotate(
+        max_date=Max('image_date_current')
+    ).filter(max_date__gt=F('min_date')
+             )
 
     zone_max_min_date_clearcuts_unchanged = \
         date_filtered_clearcuts \
             .values('zone__id') \
-            .annotate(min_date=Min('image_date_0')) \
-            .annotate(max_date=Max('image_date_0')) \
+            .annotate(min_date=Min('image_date_current')) \
+            .annotate(max_date=Max('image_date_current')) \
             .filter(max_date=F('min_date'))
 
-    ordered_clearcuts = Clearcut.objects.filter(zone=OuterRef('pk')).order_by('-image_date_0', '-area')
+    ordered_clearcuts = Clearcut.objects.filter(zone=OuterRef('pk')).order_by('-image_date_current', '-area')
     newest_zone_clearcuts = Zone.objects \
-        .annotate(newest_clearcut_date=Subquery(ordered_clearcuts.values('image_date_0')[:1])) \
+        .annotate(newest_clearcut_date=Subquery(ordered_clearcuts.values('image_date_current')[:1])) \
         .annotate(newest_clearcut_poly=Subquery(ordered_clearcuts.values('mpoly')[:1])) \
         .annotate(newest_clearcut_pk=Subquery(ordered_clearcuts.values('pk')[:1])) \
         .values('pk', 'newest_clearcut_date', 'newest_clearcut_poly', 'newest_clearcut_pk')
 
     filtered_by_dates_zone_ids = date_filtered_clearcuts \
         .filter(zone__id__in=zone_max_min_date_clearcuts.values_list('zone__id', flat=True)) \
-        .values('area', 'zone__id', 'image_date_0')
+        .values('area', 'zone__id', 'image_date_current')
 
     zone_date_area = {}
     unchanged_zones = set()
@@ -71,9 +71,9 @@ def clearcuts_info(request, start_date, end_date):
             'max_date_area': 0
         }
     for clearcut in filtered_by_dates_zone_ids:
-        if clearcut['image_date_0'] == zone_date_area[clearcut['zone__id']]['min_date']:
+        if clearcut['image_date_current'] == zone_date_area[clearcut['zone__id']]['min_date']:
             zone_date_area[clearcut['zone__id']]['min_date_area'] += clearcut['area']
-        if clearcut['image_date_0'] == zone_date_area[clearcut['zone__id']]['max_date']:
+        if clearcut['image_date_current'] == zone_date_area[clearcut['zone__id']]['max_date']:
             zone_date_area[clearcut['zone__id']]['max_date_area'] += clearcut['area']
     for zone_id in zone_date_area:
         if zone_date_area[zone_id]['min_date_area'] < zone_date_area[zone_id]['max_date_area']:
@@ -126,9 +126,9 @@ def clearcut_area_chart(request, id, start_date, end_date):
     try:
         clearcut = Clearcut.objects.all().get(pk=id)
         zone_clearcuts = Clearcut.objects.filter(zone=clearcut.zone).filter(
-            image_date_0__range=[start_date, end_date], \
-            image_date_1__range=[start_date, end_date]).order_by('image_date_0') \
-            .values('image_date_0', 'zone_id').annotate(zone_area=Sum('area'))
+            image_date_current__range=[start_date, end_date],
+            image_date_previous__range=[start_date, end_date]
+        ).order_by('image_date_current').values('image_date_current', 'zone_id').annotate(zone_area=Sum('area'))
         serializer = ClearcutChartSerializer(zone_clearcuts, many=True)
         return JsonResponse(serializer.data, safe=False)
     except ObjectDoesNotExist:
