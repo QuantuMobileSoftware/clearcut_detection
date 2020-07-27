@@ -5,7 +5,7 @@ import urllib.request
 from configparser import ConfigParser
 from datetime import datetime
 
-from test.settings import DATA_DIR
+from test.settings import DATA_DIR, METRIC_CONFIG, TEST_CONFIG
 
 def download_file_from_google_drive(id, destination):
     # https://stackoverflow.com/questions/38511444/python-download-files-from-google-drive-using-url
@@ -43,18 +43,19 @@ def path_exists_or_create(path):
         os.makedirs(path)
     return path
 
-def download_polygons(polygons_url, polygons_save_path):
-    urllib.request.urlretrieve(polygons_url, polygons_save_path)
-    return polygons_save_path
+def download_dataset(file_url, save_path):
+    urllib.request.urlretrieve(file_url, save_path)
+    return save_path
 
 config_test = ConfigParser(allow_no_value=True)
-config_test.read('./test/test_config.ini')
+config_test.read(TEST_CONFIG)
 
 area_tile_set_test = set(config_test.get('config', 'AREA_TILE_SET').split())
 bands_to_download = config_test.get('config', 'BANDS_TO_DOWNLOAD').split()
 date_current_test = config_test.get('config', 'DATE_CURRENT')
 date_previous_test = config_test.get('config', 'DATE_PREVIOUS')
 test_polys_url = config_test.get('config', 'TEST_POLYGONS_URL')
+metrics_url = config_test.get('config', 'METRICS_URL')
 
 gdrive_ids = {}
 gdrive_ids['current'] = config_test.get('config', 'TEST_TILE_CURRENT_GDRIVE_ID')
@@ -63,13 +64,18 @@ gdrive_ids['cloud_current'] = config_test.get('config', 'TEST_CLOUDS_CURRENT_GDR
 gdrive_ids['cloud_previous'] = config_test.get('config', 'TEST_CLOUDS_PREVIOUS_GDRIVE_ID')
 
 
-TEST_POLYGONS = download_polygons(test_polys_url, f'{DATA_DIR}/test_clearcuts.geojson')
+TEST_POLYGONS = download_dataset(test_polys_url, f'{DATA_DIR}/test_clearcuts.geojson')
 DATE_CURRENT = datetime.strptime(date_current_test, '%Y%m%d')
 DATE_PREVIOUS = datetime.strptime(date_previous_test, '%Y%m%d')
 
 # Target metrics values
-GOLD_DICE = 0.2811
-GOLD_IOU = 0.2545
-IOU_THRESHOLD = 0.1
-GOLD_F1SCORE = 0.5283
-SUCCESS_THRESHOLD = 0.06
+download_dataset(metrics_url, METRIC_CONFIG)
+
+config_metrics = ConfigParser(allow_no_value=True)
+config_metrics.read(METRIC_CONFIG)
+
+GOLD_DICE = config_metrics.get('metric', 'GOLD_DICE')
+GOLD_IOU = config_metrics.get('metric', 'GOLD_IOU')
+IOU_THRESHOLD = config_metrics.get('metric', 'IOU_THRESHOLD')
+GOLD_F1SCORE = config_metrics.get('metric', 'GOLD_F1SCORE')
+SUCCESS_THRESHOLD = config_metrics.get('metric', 'SUCCESS_THRESHOLD')

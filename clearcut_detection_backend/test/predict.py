@@ -30,7 +30,6 @@ def file_download():
             if not os.path.exists(test_tile_path[order]):
                 executor.submit(download_file_from_google_drive, gdrive_ids[order], test_tile_path[order])
     
-    print(test_tile_path)
     return test_tile_path
     
 
@@ -38,10 +37,8 @@ def model_predict():
     test_tile_path = file_download()
     tif_path = "/".join(test_tile_path['current'].split('/')[:4])
     logger.info(f'raster_prediction {tif_path}')
-    print(f'raster_prediction {tif_path}')
     results = raster_prediction(tif_path)
     logger.info(f'results:\n{results}')
-    print(f'results:\n{results}')
     results_path = os.path.join(DATA_DIR, results[0].get('polygons'))
     return results, test_tile_path
 
