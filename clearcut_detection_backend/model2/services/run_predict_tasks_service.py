@@ -1,4 +1,3 @@
-import json
 from sqlalchemy import text
 from db_engin.common import DataBaseResponseMixin
 

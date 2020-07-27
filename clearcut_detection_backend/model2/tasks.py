@@ -3,7 +3,6 @@ from config import db_string
 from db_engin import make_session_factory
 from run_predict_tasks.run_predict import run_predict
 
-# broker = config.get('celery', 'broker')
 broker = 'amqp://guest:guest@rabbitmq:5672//'  # TODO
 app = Celery(
     'backtest',
@@ -17,4 +16,6 @@ def run_model_predict(**kwargs):
     print(f'get task_id: {task_id}')
     session_factory = make_session_factory(db_string)
     session = session_factory.make_session()
-    run_predict(session, task_id)
+    tile_info_id = run_predict(session, task_id)
+    print(f'job done, tile_info_id: {tile_info_id}')
+    return tile_info_id
