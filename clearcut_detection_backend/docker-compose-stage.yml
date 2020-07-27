@@ -1,6 +1,5 @@
 db_stage:
-  build: ./
-  dockerfile: postgis.Dockerfile
+  image: clearcut_detection/postgis
   expose:
     - 5432
   ports:
@@ -11,26 +10,8 @@ db_stage:
     - ./db-data_stage/data:/var/lib/postgresql/data
     - ./:/code
 
-#model_stage:
-#  build: ./model
-#  dockerfile: model.Dockerfile
-#  env_file:
-#    - ./model/model.env
-#  environment:
-#    - MODEL_HOST=model_stage
-#    - MODEL_PORT=5000
-#    - MODEL_ENDPOINT=raster_prediction
-#  volumes:
-#    - ./model/:/model
-#    - ./data/:/model/data
-#  working_dir: /model
-#  ports:
-#    - "5001:5000"
-#  command: /bin/bash -c "pip install -r requirements.txt && python app.py"
-
 model_stage_2:
-  build: ./model2
-  dockerfile: model.Dockerfile
+  image: clearcut_detection/model2
   env_file:
     - ./model2/model.env
     - ./model2/db.env
@@ -40,9 +21,6 @@ model_stage_2:
   working_dir: /model
   environment:
     - DB_HOST=db_stage
-#  expose:
-#      - 5000
-#      - 5672
   links:
     - "rabbitmq"
     - "db_stage"
@@ -60,8 +38,6 @@ react_stage:
   command: /bin/bash -c "npm install && npm run-script build"
 
 django_stage:
-#  build: ./
-#  dockerfile: django.Dockerfile
   image: clearcut_detection/backend
   env_file:
     - db.env
@@ -112,9 +88,5 @@ rabbitmq:
   expose:
     - 15672
     - 5672
-
-#  ports:
-#    - "15672:15672"
-#    - "5672:5672"
   restart: always
 
