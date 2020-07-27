@@ -80,7 +80,9 @@ class ModelCaller:
                         logger.info(f'start model_predict for {tile_index}')
                         # self.model_predict(TileInformation.objects.filter(tile_index__tile_index=tile_index))
 
-                        model_add_task(task.id)
+                        result = model_add_task(task.id)
+
+                        # logger.info(f'result: {result}')
 
         if len(results) > 0:
             logger.error(f'results after model_predict not empty.\n\
@@ -141,9 +143,11 @@ def model_add_task(task_id):
     :return:
     """
     logger.info(f'now we in model_add_task with kwargs[task_id] = {task_id}')
-    celery_app.send_task(
+    result = celery_app.send_task(
         name='tasks.run_model_predict',
         queue='model_predict_queue',
         kwargs={'task_id': task_id},
-    )
+        # link=success_callback.s(),
+        )
     logger.info(f'app.send_task is ok task_id = {task_id}')
+    return result
