@@ -56,7 +56,9 @@ django_stage:
     - "rabbitmq"
   expose:
     - 9000
-  command: /bin/bash -c "pip install -r requirements.txt && exec invoke runbackend --createdb"
+  ports:
+    - "9001:9000"
+  command: exec invoke runbackend"
 
 nginx_stage:
   image: nginx:1.15.8
@@ -64,6 +66,8 @@ nginx_stage:
     - "django_stage"
   expose:
     - "8082"
+  ports:
+    - "8082:8082"
   environment:
     - VIRTUAL_HOST=clearcut1.quantumobile.com
     - VIRTUAL_PORT=8082

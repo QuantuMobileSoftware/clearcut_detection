@@ -77,11 +77,8 @@ def predict_raster(img_current, img_previous, channels, network, model_weights_p
         meta = source_current.meta
         meta['count'] = 1
         clearcut_mask = np.zeros((source_current.height, source_current.width))
-        pbar = tqdm()
-        for i in range(2):  #(source_current.width // input_size):
-            for j in range(2):  #(source_current.height // input_size):
-                pbar.set_postfix(row=f'{i}', col=f'{j}', num_pixels=f'{clearcut_mask.sum()}')
-                
+        for i in tqdm(range(source_current.width // input_size)):
+            for j in range(source_current.height // input_size):
                 bottom_row = j * input_size
                 upper_row = (j + 1) * input_size
                 left_column = i * input_size
@@ -105,7 +102,6 @@ def predict_raster(img_current, img_previous, channels, network, model_weights_p
                 predicted = predict(image_tensor, model, channels, neighbours, input_size, device)
                 predicted = mask_postprocess(predicted)
                 clearcut_mask[left_column:right_column, bottom_row:upper_row] += predicted
-            pbar.update(1)
 
     meta['dtype'] = 'float32'
     return clearcut_mask.astype(np.float32), meta

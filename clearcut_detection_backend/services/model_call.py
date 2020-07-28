@@ -9,7 +9,7 @@ from django.conf import settings
 from clearcuts.geojson_save import save
 from clearcuts.models import TileInformation, RunUpdateTask, Tile
 from services.prepare_tif import prepare_tiff
-from clearcut_detection_backend import celery_app
+from clearcut_detection_backend import app
 
 model_call_config = './model_call_config.yml'
 logger = logging.getLogger('model_call')
@@ -81,8 +81,10 @@ class ModelCaller:
                         # self.model_predict(TileInformation.objects.filter(tile_index__tile_index=tile_index))
 
                         result = model_add_task(task.id)
-
-                        # logger.info(f'result: {result}')
+                        for res in result.collect():
+                            logger.info(f'model_predict for {tile_index} finished with status: {res[0].status}')
+                            if res[0].status == 'SUCCESS':
+                                save(task.id)
 
         if len(results) > 0:
             logger.error(f'results after model_predict not empty.\n\
@@ -142,12 +144,10 @@ def model_add_task(task_id):
     :param task_id:
     :return:
     """
-    logger.info(f'now we in model_add_task with kwargs[task_id] = {task_id}')
-    result = celery_app.send_task(
+    result = app.send_task(
         name='tasks.run_model_predict',
         queue='model_predict_queue',
         kwargs={'task_id': task_id},
-        # link=success_callback.s(),
+        task_track_started=True,
         )
-    logger.info(f'app.send_task is ok task_id = {task_id}')
     return result

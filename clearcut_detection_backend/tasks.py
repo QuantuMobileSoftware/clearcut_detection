@@ -58,8 +58,7 @@ def rundev(ctx, createdb=False):
 
 
 @task
-def runbackend(ctx, createdb=False):
-    # init_db(ctx, createdb)
+def runbackend(ctx):
     collect_static_element(ctx)
     thread_cron = threading.Thread(target=devcron, args=(ctx,))
     thread_cron.start()
