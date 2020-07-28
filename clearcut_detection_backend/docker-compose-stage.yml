@@ -58,7 +58,7 @@ django_stage:
     - 9000
   ports:
     - "9001:9000"
-  command: "exec invoke runbackend"
+  command: /bin/bash -c "exec invoke runbackend"
 
 nginx_stage:
   image: nginx:1.15.8
