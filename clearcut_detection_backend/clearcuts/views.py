@@ -124,7 +124,7 @@ def clearcut_area_chart(request, id, start_date, end_date):
     if not re.match(pattern, start_date) or not re.match(pattern, end_date):
         return HttpResponse(status=400)
     try:
-        clearcut = Clearcut.objects.all().get(pk=id)
+        clearcut = Clearcut.objects.get(pk=id)
         zone_clearcuts = Clearcut.objects.filter(zone=clearcut.zone).filter(
             image_date_current__range=[start_date, end_date],
             image_date_previous__range=[start_date, end_date]

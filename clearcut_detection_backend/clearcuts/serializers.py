@@ -7,4 +7,4 @@ class ClearcutChartSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Clearcut
-        fields = ['image_date', 'zone_area']
+        fields = ['image_date_current', 'zone_area']
