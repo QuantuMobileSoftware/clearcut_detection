@@ -22,16 +22,6 @@ class Migration(migrations.Migration):
             ],
         ),
         migrations.AlterField(
-            model_name='clearcut',
-            name='image_date_current',
-            field=models.DateField(default=django.utils.timezone.now),
-        ),
-        migrations.AlterField(
-            model_name='clearcut',
-            name='image_date_previous',
-            field=models.DateField(default=django.utils.timezone.now),
-        ),
-        migrations.AlterField(
             model_name='tileinformation',
             name='tile_date',
             field=models.DateField(default=django.utils.timezone.now),

@@ -127,7 +127,7 @@ def clearcut_area_chart(request, id, start_date, end_date):
         clearcut = Clearcut.objects.get(pk=id)
         zone_clearcuts = Clearcut.objects.filter(zone=clearcut.zone).filter(
             image_date_current__range=[start_date, end_date],
-            image_date_previous__range=[start_date, end_date]
+            # image_date_previous__range=[start_date, end_date]
         ).order_by('image_date_current').values('image_date_current', 'zone_id').annotate(zone_area=Sum('area'))
         serializer = ClearcutChartSerializer(zone_clearcuts, many=True)
         return JsonResponse(serializer.data, safe=False)

@@ -11,16 +11,7 @@ class Migration(migrations.Migration):
         ('clearcuts', '0006_01'),
     ]
     operations = [
-        migrations.AddField(
-            model_name='clearcut',
-            name='clouds',
-            field=models.PositiveIntegerField(default=0),
-        ),
-        migrations.AlterField(
-            model_name='clearcut',
-            name='forest',
-            field=models.PositiveIntegerField(default=0),
-        ),
+
         migrations.AlterField(
             model_name='tileinformation',
             name='model_tiff_location',
