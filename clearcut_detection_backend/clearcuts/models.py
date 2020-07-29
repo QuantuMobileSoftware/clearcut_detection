@@ -17,7 +17,7 @@ class Tile(models.Model):
 
 
 class Clearcut(models.Model):
-    image_date_previous = models.DateField(default=timezone.now)
+    image_date_previous = models.DateField(null=True)
     image_date_current = models.DateField(default=timezone.now)
     area = models.FloatField()
     forest = models.PositiveIntegerField(default=0)
