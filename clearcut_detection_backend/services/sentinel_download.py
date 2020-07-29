@@ -3,7 +3,7 @@ import re
 import datetime
 import logging
 from enum import Enum
-
+from distutils.util import strtobool
 from django.conf import settings
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from google.cloud import storage
@@ -13,11 +13,9 @@ from xml.etree.ElementTree import ParseError
 from clearcuts.models import Tile, TileInformation
 from services.configuration import bands_to_download, area_tile_set
 
+download_img = strtobool(os.environ.get('DOWNLOAD_IMG', 'true'))
+
 logger = logging.getLogger('sentinel')
-
-download_img = os.environ.get('DOWNLOAD_IMG', True)  # FIXME
-
-# logger.info(f'download_img type: {type(download_img)}')
 
 
 class TillNameError(Exception):

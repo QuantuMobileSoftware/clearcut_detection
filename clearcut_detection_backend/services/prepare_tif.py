@@ -5,16 +5,18 @@ Conversion raw satellite images to prepared model images
 # import os
 # from os.path import splitext
 import logging
-
+import os
 import imageio
 import rasterio
+from distutils.util import strtobool
 import numpy as np
 from osgeo import gdal
-
 from tqdm import tqdm
 from django.conf import settings
 from services.gdal_calc import Calc
 from services.gdal_merge import merge_img
+
+prepare_tif = strtobool(os.environ.get('PREPARE_TIF', 'true'))
 
 logger = logging.getLogger('prepare_tif')
 
@@ -177,11 +179,18 @@ def create_tiff_path(tile):
 
 
 def prepare_tiff(tile):
-    convert_to_tiff = 1
-    create_ndvi = 1
-    scaling = 1
-    merge = 1
-    save_in_png = 0
+    if not prepare_tif:
+        convert_to_tiff = 0
+        create_ndvi = 0
+        scaling = 0
+        merge = 0
+        save_in_png = 0
+    else:
+        convert_to_tiff = 1
+        create_ndvi = 1
+        scaling = 1
+        merge = 1
+        save_in_png = 0
 
     save_path, output_folder, tiff_output_name = create_tiff_path(tile)  # create path for tiff images
 
