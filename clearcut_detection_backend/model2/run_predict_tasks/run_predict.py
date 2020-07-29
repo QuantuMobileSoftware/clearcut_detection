@@ -12,7 +12,7 @@ from datetime import datetime, timezone
 
 def run_predict(session, task_id):
     """
-    Run algorithm with params
+    TODO
     """
     model_weights_path = None
 
@@ -58,17 +58,11 @@ def run_predict(session, task_id):
 
     polygons = postprocessing(image_path, clearcuts, meta['crs'])  # TODO
     save_polygons(polygons, result_directory_path, predicted_filename)
-    polygons_json = polygons.to_json()
 
-    params['result'] = polygons_json
+    params['result'] = result_directory_path / predicted_filename
     params['date_finished'] = str(datetime.now())
 
     RpT.update_task_by_id(session, task_id, params)
     RpT.update_tileinformation(session, params['tile_index_id'])
 
     return params['tile_index_id']
-#
-#
-# def save_raster(raster_array, save_path, filename):
-#     save_path = join(save_path, filename)
-#     imageio.imwrite(f'{save_path}.png', (np.abs(raster_array) * 255).astype(np.uint8))

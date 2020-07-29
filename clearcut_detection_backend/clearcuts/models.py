@@ -1,5 +1,4 @@
 from django.contrib.gis.db import models
-from django.contrib.postgres.fields import JSONField
 from django.utils import timezone
 
 
@@ -69,7 +68,7 @@ class RunUpdateTask(models.Model):
     image_date_1 = models.DateField(blank=False, null=False)  # TODO
     path_clouds_0 = models.URLField(max_length=200, blank=False, null=False, default='')
     path_clouds_1 = models.URLField(max_length=200, blank=False, null=False, default='')
-    result = JSONField(null=True)
+    result = models.URLField(max_length=200, null=True)
     date_created = models.DateTimeField(auto_now_add=True)
     date_started = models.DateTimeField(null=True, default=None)
     date_finished = models.DateTimeField(null=True, default=None)
