@@ -21,6 +21,7 @@ model_stage_2:
   working_dir: /model
   environment:
     - DB_HOST=db_stage
+    - CUDA_VISIBLE_DEVICES=0
   links:
     - "rabbitmq"
     - "db_stage"
