@@ -5,7 +5,7 @@ import os
 from pathlib import Path
 from config import models, threshold, input_size, save_path
 from utils import weights_exists_or_download
-from predict_raster import predict_raster, polygonize, postprocessing
+from predict_raster import predict_raster, polygonize, postprocessing, save_polygons
 from services.run_predict_tasks_service import RunPredictTasks as RpT
 from datetime import datetime, timezone
 
@@ -21,16 +21,17 @@ def run_predict(session, task_id):
     RpT.update_task_by_id(session, task_id, params)
 
     image_path = Path(params['path_img_0']).parent.parent
-    # list_tif_path = list(image_path.parts)
-    # filename = list_tif_path[-1]
+    list_tif_path = list(image_path.parts)
+    filename = list_tif_path[-1]
+    predicted_filename = f'predicted_{filename}'
     # print(filename)
     #
     # print(list_tif_path)
-    # list_tif_path[-1] = f'predicted_{filename}'
+    list_tif_path[-1] = f'predicted_{filename}'
     # print(list_tif_path)
-    # result_directory_path = Path(*list_tif_path)
+    result_directory_path = Path(*list_tif_path)
     # print(result_directory_path)
-    # result_directory_path.mkdir(parents=True, exist_ok=True)
+    result_directory_path.mkdir(parents=True, exist_ok=True)
 
     channels = models['deforestration_detection']['channels']
     network = models['deforestration_detection']['network']
@@ -53,9 +54,10 @@ def run_predict(session, task_id):
         input_size=input_size,
     )
 
-    clearcut = polygonize(raster_array > threshold, meta)
+    clearcuts = polygonize(raster_array > threshold, meta)
 
-    polygons = postprocessing(image_path, clearcut, meta['crs'])  # TODO
+    polygons = postprocessing(image_path, clearcuts, meta['crs'])  # TODO
+    save_polygons(polygons, result_directory_path, predicted_filename)
     polygons_json = polygons.to_json()
 
     params['result'] = polygons_json
