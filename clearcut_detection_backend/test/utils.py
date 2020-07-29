@@ -47,6 +47,8 @@ def download_dataset(file_url, save_path):
     urllib.request.urlretrieve(file_url, save_path)
     return save_path
 
+path_exists_or_create(DATA_DIR)
+
 config_test = ConfigParser(allow_no_value=True)
 config_test.read(TEST_CONFIG)
 
