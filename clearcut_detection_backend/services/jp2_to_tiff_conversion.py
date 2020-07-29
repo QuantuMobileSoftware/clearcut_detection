@@ -9,14 +9,20 @@ logger = logging.getLogger('jp2_to_tiff_conversion')
 settings.MAPBOX_TIFFS_DIR.mkdir(parents=True, exist_ok=True)
 
 
-def jp2_to_tiff():
+def jp2_to_tiff(tile_info_id=None):
     """
     Conversion raw satellite jp2 images to tiffs for mapbox
     """
-    jp2files = list(TileInformation.objects
-                    .filter(source_tci_location__contains='jp2')
-                    .filter(source_tci_location__contains='TCI')
-                    .values_list('source_tci_location', flat=True))
+    if tile_info_id:
+        jp2files = list(TileInformation.objects.filter(id=tile_info_id))
+    else:
+        jp2files = list(TileInformation.objects
+                        .filter(tile_index__is_tracked=1)
+                        .filter(is_prepared=1)
+                        .filter(is_converted=0)
+                        .filter(source_tci_location__contains='jp2')
+                        .filter(source_tci_location__contains='TCI')
+                        .values_list('source_tci_location', flat=True))
     for file in jp2files:
         filename = os.path.basename(file).split('.')[0]
         logger.info('Converting %s to TIFF format', file)
@@ -40,6 +46,7 @@ def jp2_to_tiff():
                 if result:
                     tile_info = TileInformation.objects.get(source_tci_location=file)
                     tile_info.tile_location = geo_tiff_file
+                    tile_info.is_converted = 1
                     tile_info.save()
             except (IOError, ValueError, FileNotFoundError, FileExistsError, Exception):
                 logger.error('Error\n\n', exc_info=True)

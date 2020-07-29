@@ -168,7 +168,7 @@ def create_tiff_path(tile):
     """
     create path for tiff images
     """
-    save_path = settings.MODEL_TIFFS_DIR / tile.tile_index
+    save_path = settings.MODEL_TIFFS_DIR / str(tile.tile_index)
     save_path.mkdir(parents=True, exist_ok=True)
     output_folder = save_path / tile.tile_name
     output_folder.mkdir(parents=True, exist_ok=True)
@@ -270,6 +270,7 @@ def prepare_tiff(tile):
     tiff_output_name = output_folder / f'{tile.tile_name}.tif'
 
     tile.model_tiff_location = tiff_output_name
+    tile.is_prepared = 1
     tile.save()
 
-    return save_path, tile.tile_name, tile.tile_index
+    return save_path, tile.tile_name, str(tile.tile_index)

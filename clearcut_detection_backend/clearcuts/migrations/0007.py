@@ -36,6 +36,7 @@ class Migration(migrations.Migration):
             name='tile_date',
             field=models.DateField(default=django.utils.timezone.now),
         ),
+        migrations.RunSQL('DELETE FROM clearcuts_tileinformation'),
         migrations.CreateModel(
             name='RunUpdateTask',
             fields=[

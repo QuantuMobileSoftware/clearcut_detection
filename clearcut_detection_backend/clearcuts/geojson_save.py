@@ -1,12 +1,13 @@
 import datetime
 from datetime import date
-
+import logging
 import geopandas as gp
 import numpy as np
 from django.contrib.gis.geos import GEOSGeometry
 from django.contrib.gis.measure import D
+from clearcuts.models import Clearcut, Zone, RunUpdateTask
 
-from .models import Clearcut, Zone
+logger = logging.getLogger('update')
 
 SEARCH_WINDOW = 50
 
@@ -38,8 +39,15 @@ def save_clearcut(poly, avg_area, detection_date, forest, cloud, area_in_meters,
         clearcut.save()
 
 
-def save(tile, poly_path, init_db=False):
-    predicted_clearcuts = gp.read_file(poly_path)
+def save(tile, poly_path=None, init_db=False):
+    print(tile)
+    task = RunUpdateTask.objects.get(id=tile)
+    print(task.result)
+
+    # predicted_clearcuts = gp.read_file(poly_path)
+    predicted_clearcuts = task.result
+    logger.info(f'predicted_clearcuts {predicted_clearcuts}')
+
     area_geodataframe = predicted_clearcuts['geometry'].area
     predicted_polys = predicted_clearcuts['geometry'].buffer(0).to_crs({'init': 'epsg:4326'})
 

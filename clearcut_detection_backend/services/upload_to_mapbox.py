@@ -24,8 +24,15 @@ def start_upload():
     Start upload in threads
     :return:
     """
+    tiles = list(TileInformation.objects
+                 .filter(tile_index__is_tracked=1)
+                 .filter(is_converted=1)
+                 .filter(is_uploaded=0)
+                 .filter(tile_location__contains='tiff')
+                 .filter(tile_location__contains='TCI')
+                 )
+
     with ThreadPoolExecutor(max_workers=settings.MAX_WORKERS) as executor:
-        tiles = TileInformation.objects.filter(tile_location__contains='tiff').filter(tile_location__contains='TCI')
         for tile in tiles:
             executor.submit(upload_to_mapbox, tile)
 
@@ -60,6 +67,7 @@ def upload_to_mapbox(tile):
 
     os.remove(tile.tile_location)
     tile.tile_location = None
+    tile.is_uploaded = 1
     tile.save()
 
     return mapbox_tile_info

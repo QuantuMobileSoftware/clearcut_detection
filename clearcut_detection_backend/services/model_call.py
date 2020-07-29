@@ -9,7 +9,7 @@ from django.conf import settings
 from clearcuts.geojson_save import save
 from clearcuts.models import TileInformation, RunUpdateTask, Tile
 from services.prepare_tif import prepare_tiff
-from services.configuration import area_tile_set
+from clearcut_detection_backend import app
 
 model_call_config = './model_call_config.yml'
 logger = logging.getLogger('model_call')
@@ -21,18 +21,7 @@ class ModelCaller:
     """
     def __init__(self):
         self.data_dir = settings.DATA_DIR
-        self.tile_index_distinct = set(area_tile_set)
-        self.query = TileInformation.objects.filter(tile_name__isnull=False,
-                                                    tile_index__isnull=False,
-                                                    source_b04_location__isnull=False,
-                                                    source_b08_location__isnull=False,
-                                                    source_b8a_location__isnull=False,
-                                                    source_b11_location__isnull=False,
-                                                    source_b12_location__isnull=False,
-                                                    source_tci_location__isnull=False,
-                                                    source_clouds_location__isnull=False,
-                                                    )
-
+        self.tile_index_distinct = Tile.objects.filter(is_tracked=1)
         logger.info(f'tile_index_distinct: {self.tile_index_distinct}')
 
     def start(self):
@@ -45,7 +34,7 @@ class ModelCaller:
         with ThreadPoolExecutor(max_workers=settings.MAX_WORKERS) as executor:
             future_list = []
             for tile_index in self.tile_index_distinct:
-                tiles = self.query.filter(tile_index__exact=tile_index)
+                tiles = TileInformation.objects.filter(tile_index__exact=tile_index)
                 if len(tiles) < 2:
                     logger.error(f'tile_index: {tile_index}, len(tiles) < 2')
                 else:
@@ -65,16 +54,18 @@ class ModelCaller:
                     else:
                         del results[tile_index]
 
-                        tile_list = self.query.filter(tile_index__exact=tile_index).order_by('tile_name')
+                        tile_list = TileInformation.objects.filter(
+                            tile_index__tile_index=tile_index
+                        ).order_by('tile_name')
                         path_img_0 = tile_list[0].model_tiff_location
                         path_img_1 = tile_list[1].model_tiff_location
                         image_date_0 = tile_list[0].tile_date
                         image_date_1 = tile_list[1].tile_date
 
-                        tile, created = Tile.objects.get_or_create(tile_index=tile_index)  # TODO
-                        if created:
-                            tile.is_tracked = 1
-                            tile.save()
+                        path_clouds_0 = str(Path(path_img_0).parent / 'clouds.tiff')
+                        path_clouds_1 = str(Path(path_img_1).parent / 'clouds.tiff')
+
+                        tile = Tile.objects.get(tile_index=tile_index)  # TODO
 
                         task = RunUpdateTask(tile_index=tile,
                                              path_type=path_type,
@@ -82,10 +73,18 @@ class ModelCaller:
                                              path_img_1=path_img_1,
                                              image_date_0=image_date_0,
                                              image_date_1=image_date_1,
+                                             path_clouds_0=path_clouds_0,
+                                             path_clouds_1=path_clouds_1
                                              )
                         task.save()
                         logger.info(f'start model_predict for {tile_index}')
-                        self.model_predict(self.query.filter(tile_index__exact=tile_index))
+                        # self.model_predict(TileInformation.objects.filter(tile_index__tile_index=tile_index))
+
+                        result = model_add_task(task.id)
+                        for res in result.collect():
+                            logger.info(f'model_predict for {tile_index} finished with status: {res[0].status}')
+                            if res[0].status == 'SUCCESS':
+                                save(task.id)
 
         if len(results) > 0:
             logger.error(f'results after model_predict not empty.\n\
@@ -124,9 +123,9 @@ def raster_prediction(tif_path):
         cfg = yaml.load(config, Loader=yaml.SafeLoader)
     model_api_cfg = cfg["model-api"]
     api_endpoint = "http://{host}:{port}/{endpoint}".format(
-        host=model_api_cfg["host"],
-        port=model_api_cfg["port"],
-        endpoint=model_api_cfg["endpoint"]
+        host=os.environ.get('MODEL_HOST', 'model'),
+        port=os.environ.get('MODEL_PORT', 5000),
+        endpoint=os.environ.get('MODEL_ENDPOINT', 'raster_prediction')
     )
     data = {"image_path": tif_path}
     logger.info(f'sending request to model API for\n{tif_path}')
@@ -137,3 +136,18 @@ def raster_prediction(tif_path):
         return datastore
     except (ValueError, Exception):
         logger.error('Error\n\n', exc_info=True)
+
+
+def model_add_task(task_id):
+    """
+    Add run update task task in to 'run_update_task' queue
+    :param task_id:
+    :return:
+    """
+    result = app.send_task(
+        name='tasks.run_model_predict',
+        queue='model_predict_queue',
+        kwargs={'task_id': task_id},
+        task_track_started=True,
+        )
+    return result

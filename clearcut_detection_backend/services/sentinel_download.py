@@ -10,10 +10,14 @@ from google.cloud import storage
 from google.cloud.exceptions import NotFound
 from xml.dom import minidom
 from xml.etree.ElementTree import ParseError
-from clearcuts.models import TileInformation
-from services.configuration import area_tile_set, bands_to_download
+from clearcuts.models import Tile, TileInformation
+from services.configuration import bands_to_download, area_tile_set
 
 logger = logging.getLogger('sentinel')
+
+download_img = os.environ.get('DOWNLOAD_IMG', True)  # FIXME
+
+# logger.info(f'download_img type: {type(download_img)}')
 
 
 class TillNameError(Exception):
@@ -41,7 +45,7 @@ class SentinelDownload:
         os.environ['GOOGLE_APPLICATION_CREDENTIALS'] = './key.json'
         self.tile_dates_count = settings.MAXIMUM_DATES_REVIEWED_FOR_TILE
         self.sequential_dates_count = settings.MAXIMUM_DATES_STORE_FOR_TILE
-        self.area_tile_set = area_tile_set
+        self.area_tile_set = Tile.objects.values_list('tile_index', flat=True).filter(is_tracked=1)
         self.bands_to_download = bands_to_download
         self.base_uri = 'gs://gcp-public-data-sentinel-2'  # TODO to settings
         self.bucket_name = 'gcp-public-data-sentinel-2'  # TODO to settings
@@ -104,7 +108,7 @@ class SentinelDownload:
         :param tiles_to_update:
         :return:
         """
-        with ThreadPoolExecutor(max_workers=settings.MAX_WORKERS) as executor:
+        with ThreadPoolExecutor(max_workers=settings.MAX_WORKERS*2) as executor:
             future_list = []
             for tile_name, tile_path in tiles_to_update.items():
                 future = executor.submit(self.download_images_from_tiles, tile_name, tile_path)
@@ -112,7 +116,7 @@ class SentinelDownload:
 
         for future in as_completed(future_list):
             if not future.result():
-                exit(1)
+                exit(1)  # TODO
             else:
                 logger.info(f'images for {future.result()[0]} were downloaded')
 
@@ -124,6 +128,7 @@ class SentinelDownload:
         :param tile_path:
         :return:
         """
+        tile_info = TileInformation.objects.get(tile_name=tile_name)
         tile_prefix = f'{tile_path}/IMG_DATA/R20m/'
         blobs = self.storage_bucket.list_blobs(prefix=tile_prefix)
 
@@ -133,8 +138,12 @@ class SentinelDownload:
             band, download_needed = self.file_need_to_be_downloaded(blob.name)
             if download_needed:
                 filename = settings.DOWNLOADED_IMAGES_DIR / f'{tile_name}_{band}.jp2'
-                self.download_file_from_storage(blob, filename)
-                tile_info = TileInformation.objects.get(tile_name=tile_name)
+
+                if download_img:
+                    self.download_file_from_storage(blob, filename)
+                else:
+                    logger.info(f'skip downloading {filename}')
+
                 if band == Bands.B11.value:
                     tile_info.source_b11_location = filename
                 elif band == Bands.B12.value:
@@ -143,9 +152,12 @@ class SentinelDownload:
                     tile_info.source_b8a_location = filename
                 else:
                     continue
+                tile_info.is_downloaded += 1
                 tile_info.save()
 
         if not is_blob:
+            tile_info.is_downloaded = -1
+            tile_info.save()
             logger.error(f'{__name__}.{self.download_images_from_tiles.__qualname__} Error in uri: {tile_prefix}')
             return
 
@@ -158,8 +170,10 @@ class SentinelDownload:
             band, download_needed = self.file_need_to_be_downloaded(blob.name)
             if download_needed:
                 filename = settings.DOWNLOADED_IMAGES_DIR / f'{tile_name}_{band}.jp2'
-                self.download_file_from_storage(blob, filename)
-                tile_info = TileInformation.objects.get(tile_name=tile_name)
+                if download_img:
+                    self.download_file_from_storage(blob, filename)
+                else:
+                    logger.info(f'skip downloading {filename}')
                 if band == Bands.B04.value:
                     tile_info.source_b04_location = filename
                 elif band == Bands.B08.value:
@@ -168,9 +182,12 @@ class SentinelDownload:
                     tile_info.source_tci_location = filename
                 else:
                     continue
+                tile_info.is_downloaded += 1
                 tile_info.save()
 
         if not is_blob:
+            tile_info.is_downloaded = -1
+            tile_info.save()
             logger.error(f'{__name__}.{self.download_images_from_tiles.__qualname__} Error in uri: {tile_prefix}')
             return
 
@@ -182,15 +199,20 @@ class SentinelDownload:
         for blob in blobs:
             is_blob = True
             if blob.name.endswith(endswith):
-                tile_info = TileInformation.objects.get(tile_name=tile_name)
                 filename = settings.DOWNLOADED_IMAGES_DIR / f"{tile_name}_{blob.name.split('/')[-1]}"
-                self.download_file_from_storage(blob, filename)
+                if download_img:
+                    self.download_file_from_storage(blob, filename)
+                else:
+                    logger.info(f'skip downloading {filename}')
                 tile_info.source_clouds_location = filename
+                tile_info.is_downloaded += 1
                 tile_info.save()
 
                 return tile_name, tile_path
 
         if not is_blob:
+            tile_info.is_downloaded = -1
+            tile_info.save()
             logger.error(f'{__name__}.{self.download_images_from_tiles.__qualname__} Error in uri: {tile_prefix}')
             return
         else:
@@ -251,7 +273,7 @@ class SentinelDownload:
                     if not blob:
                         raise NotFound(f'not found {updated_tile_uri}/{metadata_file}')
 
-                    update_needed = self.define_if_tile_update_needed(blob, f'{tile_name}_{granule_num}', filename)
+                    update_needed = self.define_if_tile_update_needed(blob, tile_name, granule_num, filename)
                     if update_needed:
                         logger.info(f'Tile {tile_name}_{granule_num} will be downloaded from {updated_tile_uri}')
                         tiles_to_be_downloaded[f'{tile_name}_{granule_num}'] = f'{updated_tile_uri}'
@@ -262,18 +284,24 @@ class SentinelDownload:
 
         return tiles_to_be_downloaded
 
-    def define_if_tile_update_needed(self, blob, tile_name, filename) -> bool:
+    def define_if_tile_update_needed(self, blob, tile_name, granule_num, filename) -> bool:
         """
         Checks hash of the metadata file for latest image and information from DB
         Downloads metadata file if hash is not equal
         Checks cloud coverage value from metadata file if it lower then one from settings - allows to download images
         :param blob:
         :param tile_name:
+        :param granule_num: int 0 or 1
         :param filename:
         :return:
         """
         filename = str(filename)
-        tile_info, created = TileInformation.objects.get_or_create(tile_name=tile_name)
+        tile = Tile.objects.get(tile_index=tile_name)
+
+        tile_info, created = TileInformation.objects.get_or_create(
+            tile_index=tile,
+            tile_name=f'{tile_name}_{granule_num}',
+        )
 
         if not created:
             update_needed = blob.md5_hash != tile_info.tile_metadata_hash
@@ -293,8 +321,27 @@ class SentinelDownload:
             tile_info.cloud_coverage = cloud_coverage_value
             tile_info.tile_metadata_hash = blob.md5_hash
             try:
-                tile_info.tile_index = tile_name.split('_')[0]
                 tile_info.tile_date = datetime.datetime.strptime(blob.name.split('_')[-2][:8], '%Y%m%d')
+                tile_info.tile_location = None
+                tile_info.source_tci_location = None
+                tile_info.source_b04_location = None
+                tile_info.source_b08_location = None
+                tile_info.source_b8a_location = None
+                tile_info.source_b11_location = None
+                tile_info.source_b12_location = None
+                tile_info.source_clouds_location = None
+                tile_info.model_tiff_location = None
+                tile_info.tile_metadata_hash = None
+                tile_info.cloud_coverage = 0
+                tile_info.mapbox_tile_id = None
+                tile_info.mapbox_tile_name = None
+                tile_info.mapbox_tile_layer = None
+                tile_info.coordinates = None
+                tile_info.is_downloaded = 0
+                tile_info.is_prepared = 0
+                tile_info.is_predicted = 0
+                tile_info.is_converted = 0
+                tile_info.is_uploaded = 0
                 tile_info.save()
                 return True
             except IndexError:
@@ -318,8 +365,11 @@ class SentinelDownload:
         :param filename:
         :return:
         """
+        logger.info(f'start download {filename}')
         with open(filename, 'wb') as new_file:
             blob.download_to_file(new_file)
+        logger.info(f'download {filename} finished')
+        return
 
     @staticmethod
     def define_xml_node_value(xml_file_name, node):

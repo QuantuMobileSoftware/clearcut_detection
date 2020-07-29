@@ -2,6 +2,7 @@
 
 import datetime
 from django.db import migrations, models
+from django.utils.timezone import utc
 
 
 class Migration(migrations.Migration):
@@ -11,24 +12,20 @@ class Migration(migrations.Migration):
     ]
 
     operations = [
-        migrations.RemoveField(
+        migrations.RenameField(
             model_name='clearcut',
-            name='image_date',
+            old_name='image_date',
+            new_name='image_date_current'
+        ),
+        migrations.AddField(
+            model_name='clearcut',
+            name='image_date_previous',
+            field=models.DateField(null=True),
         ),
         migrations.AddField(
             model_name='clearcut',
             name='forest',
             field=models.PositiveIntegerField(default=1),
-        ),
-        migrations.AddField(
-            model_name='clearcut',
-            name='image_date_0',
-            field=models.DateField(default=datetime.date.today),
-        ),
-        migrations.AddField(
-            model_name='clearcut',
-            name='image_date_1',
-            field=models.DateField(default=datetime.date.today),
         ),
         migrations.AddField(
             model_name='tileinformation',

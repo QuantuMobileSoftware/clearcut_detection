@@ -13,16 +13,6 @@ class Migration(migrations.Migration):
 
     operations = [
         migrations.AlterField(
-            model_name='clearcut',
-            name='image_date_0',
-            field=models.DateField(default=datetime.datetime(2020, 6, 25, 7, 57, 54, 386399, tzinfo=utc)),
-        ),
-        migrations.AlterField(
-            model_name='clearcut',
-            name='image_date_1',
-            field=models.DateField(default=datetime.datetime(2020, 6, 25, 7, 57, 54, 386504, tzinfo=utc)),
-        ),
-        migrations.AlterField(
             model_name='tileinformation',
             name='tile_date',
             field=models.DateField(default=datetime.datetime(2020, 6, 25, 7, 57, 54, 388930, tzinfo=utc)),
