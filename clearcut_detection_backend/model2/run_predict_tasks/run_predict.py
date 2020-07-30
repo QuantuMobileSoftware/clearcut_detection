@@ -52,8 +52,9 @@ def run_predict(session, task_id):
     )
 
     clearcuts = polygonize(raster_array > threshold, meta)
+    cloud_files = [params['path_clouds_0'], params['path_clouds_1']]
 
-    polygons = postprocessing(image_path, clearcuts, meta['crs'])  # TODO
+    polygons = postprocessing(filename, cloud_files, clearcuts, meta['crs'])  # TODO
     save_polygons(polygons, result_directory_path, predicted_filename)
 
     params['result'] = str(result_directory_path / predicted_filename)

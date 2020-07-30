@@ -234,7 +234,7 @@ def morphological_transform(img):
     return closing
 
 
-def postprocessing(img_path, clearcuts, src_crs):
+def postprocessing(tile, cloud_files, clearcuts, src_crs):
 
     def get_intersected_polygons(polygons, masks, mask_column_name):
         """Finding in GeoDataFrame with clearcuts the masked polygons.
@@ -261,12 +261,12 @@ def postprocessing(img_path, clearcuts, src_crs):
         polygons[mask_column_name] = masked_values
         return polygons
 
-    tile = os.path.basename(img_path)
+    # tile = os.path.basename(img_path)
 
     landcover = LandcoverPolygons(tile, src_crs)
     forest_polygons = landcover.get_polygon()
 
-    cloud_files = [f"{img_path}/{tile}_{i}/clouds.tiff" for i in range(DATES_FOR_TILE)]
+    # cloud_files = [f"{img_path}/{tile}_{i}/clouds.tiff" for i in range(DATES_FOR_TILE)]
     cloud_polygons = []
     for cloud_file in cloud_files:
         with rasterio.open(cloud_file) as src:
