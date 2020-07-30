@@ -1,4 +1,5 @@
 import logging
+import time
 import geopandas as gp
 import numpy as np
 from django.contrib.gis.geos import GEOSGeometry
@@ -85,6 +86,7 @@ def save(tile, poly_path, init_db=False):
 
 def save_from_task(task_id):
     logger.info(f'task_id: {task_id}')
+    start_time = time.time()
     task = RunUpdateTask.objects.get(id=task_id)
     detection_date = [task.image_date_0, task.image_date_1]
     logger.info(f'detection_date: {detection_date}')
@@ -128,3 +130,5 @@ def save_from_task(task_id):
                 save_clearcut(geopoly, avg_area, detection_date,
                               flags_forest[idx], flags_clouds[idx],
                               area_geodataframe[idx], create_new_zone=True)
+
+    logger.info(f'---{time.time() - start_time} seconds --- for saving task_id: {task_id}')
