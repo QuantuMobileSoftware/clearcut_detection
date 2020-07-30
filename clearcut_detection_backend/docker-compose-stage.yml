@@ -48,16 +48,15 @@ django_stage:
     - DJANGO_SETTINGS_MODULE=clearcut_detection_backend.prod_settings
     - DB_HOST=db_stage
     - SENTINEL_DOWNLOAD=true  # prevent requesting to sentinel
-    - DOWNLOAD_IMG=false  # skip downloading images if SENTINEL_DOWNLOAD=true
-    - PREPARE_TIF=false  # skip preprocessing images
-    - CONVERT_TO_TIFF=false  # skip converting to tiff for uploading
-    - UPLOAD_TO_MAPBOX=false  # skip uploading to mapbox server
+    - DOWNLOAD_IMG=true  # skip downloading images if SENTINEL_DOWNLOAD=true
+    - PREPARE_TIF=true  # skip preprocessing images
+    - CONVERT_TO_TIFF=true  # skip converting to tiff for uploading
+    - UPLOAD_TO_MAPBOX=true  # skip uploading to mapbox server
   volumes:
     - ./:/code
   working_dir: /code
   links:
     - "db_stage"
-#    - "model_stage"
     - "model_stage_2"
     - "rabbitmq"
   expose:

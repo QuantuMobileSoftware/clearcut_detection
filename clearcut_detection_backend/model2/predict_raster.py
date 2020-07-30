@@ -35,6 +35,7 @@ os.environ.get('CUDA_VISIBLE_DEVICES', '0')
 
 logging.basicConfig(format='%(asctime)s %(message)s')
 
+
 def load_model(network, model_weights_path, channels, neighbours):
     device = 'gpu' if torch.cuda.is_available() else 'cpu'
     model = get_model(network)
@@ -69,8 +70,6 @@ def mask_postprocess(mask):
 
 
 def predict_raster(img_current, img_previous, channels, network, model_weights_path, input_size=56, neighbours=3):
-    # tile = os.path.basename(img_path)
-    # tiff_files = [os.path.join(img_path, f'{tile}_{i}', f'{tile}_{i}.tif') for i in range(DATES_FOR_TILE)]
     model, device = load_model(network, model_weights_path, channels, neighbours)
 
     with rasterio.open(img_current) as source_current, \
@@ -79,8 +78,8 @@ def predict_raster(img_current, img_previous, channels, network, model_weights_p
         meta = source_current.meta
         meta['count'] = 1
         clearcut_mask = np.zeros((source_current.height, source_current.width))
-        for i in tqdm(range(50)):  #(range(source_current.width // input_size)):
-            for j in range(50):  #(source_current.height // input_size):
+        for i in tqdm(range(source_current.width // input_size)):
+            for j in range(source_current.height // input_size):
                 bottom_row = j * input_size
                 upper_row = (j + 1) * input_size
                 left_column = i * input_size
