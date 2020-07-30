@@ -79,8 +79,8 @@ def predict_raster(img_current, img_previous, channels, network, model_weights_p
         meta = source_current.meta
         meta['count'] = 1
         clearcut_mask = np.zeros((source_current.height, source_current.width))
-        for i in tqdm(range(source_current.width // input_size)):
-            for j in range(source_current.height // input_size):
+        for i in tqdm(25):  #(range(source_current.width // input_size)):
+            for j in range(25):  #(source_current.height // input_size):
                 bottom_row = j * input_size
                 upper_row = (j + 1) * input_size
                 left_column = i * input_size
@@ -210,8 +210,8 @@ def save_polygons(polygons, save_path, filename):
         os.makedirs(save_path, exist_ok=True)
         logging.info("Data directory created.")
 
-    logging.info(f'{filename}.geojson saved.')
-    polygons.to_file(os.path.join(save_path, f'{filename}.geojson'), driver='GeoJSON')
+    logging.info(f'{filename} saved.')
+    polygons.to_file(os.path.join(save_path, filename), driver='GeoJSON')
 
 
 def intersection_poly(test_poly, mask_poly):

@@ -19,18 +19,15 @@ def run_predict(session, task_id):
     params = RpT.get_task_by_id(session, task_id)
     params['date_started'] = str(datetime.now())
     RpT.update_task_by_id(session, task_id, params)
-
-    image_path = Path(params['path_img_0']).parent.parent
+    image_path = Path(params['path_img_0'])
     list_tif_path = list(image_path.parts)
-    filename = list_tif_path[-1]
-    predicted_filename = f'predicted_{filename}'
-    # print(filename)
-    #
-    # print(list_tif_path)
-    list_tif_path[-1] = f'predicted_{filename}'
-    # print(list_tif_path)
+    filename = list_tif_path[2]
+    predicted_filename = f'predicted_{filename}.geojson'
+    list_tif_path = list_tif_path[:1]
+    list_tif_path.append('predicted')
+    list_tif_path.append(filename)
     result_directory_path = Path(*list_tif_path)
-    # print(result_directory_path)
+    print(result_directory_path)
     result_directory_path.mkdir(parents=True, exist_ok=True)
 
     channels = models['deforestration_detection']['channels']
@@ -59,7 +56,7 @@ def run_predict(session, task_id):
     polygons = postprocessing(image_path, clearcuts, meta['crs'])  # TODO
     save_polygons(polygons, result_directory_path, predicted_filename)
 
-    params['result'] = result_directory_path / predicted_filename
+    params['result'] = str(result_directory_path / predicted_filename)
     params['date_finished'] = str(datetime.now())
 
     RpT.update_task_by_id(session, task_id, params)
