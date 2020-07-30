@@ -15,6 +15,12 @@ from clearcut_detection_backend import app
 model_call_config = './model_call_config.yml'
 logger = logging.getLogger('model_call')
 
+if settings.PATH_TYPE == 'fs':
+    path_type = 0
+else:
+    logger.error(f'Unsupported file path in settings.PATH_TYPE: {settings.PATH_TYPE}')
+    raise ValueError
+
 
 class ModelCaller:
     """
@@ -26,12 +32,6 @@ class ModelCaller:
         logger.info(f'tile_index_distinct: {self.tile_index_distinct}')
 
     def start(self):
-        if settings.PATH_TYPE == 'fs':
-            path_type = 0
-        else:
-            logger.error(f'Unsupported file path in settings.PATH_TYPE: {settings.PATH_TYPE}')
-            raise ValueError
-
         with ThreadPoolExecutor(max_workers=settings.MAX_WORKERS) as executor:
             future_list = []
             for tile_index in self.tile_index_distinct:
@@ -45,49 +45,60 @@ class ModelCaller:
                         future_list.append(future)
 
         results = {}
-        for future in as_completed(future_list):
-            if future.result()[0]:
-                self.remove_temp_files(future.result()[0], future.result()[1])
-                if future.result()[2]:
-                    tile_index = future.result()[2]
-                    if tile_index not in results:
-                        results[tile_index] = 1
-                    else:
-                        del results[tile_index]
+        future_predict_list = []
+        with ThreadPoolExecutor(max_workers=settings.MAX_WORKERS) as executor:
+            for future in as_completed(future_list):
+                if future.result()[0]:
+                    self.remove_temp_files(future.result()[0], future.result()[1])
+                    if future.result()[2]:
+                        tile_index = future.result()[2]
+                        if tile_index not in results:
+                            results[tile_index] = 1
+                        else:
+                            del results[tile_index]
+                            future_predict = executor.submit(self.predict_and_save_from_result, tile_index)
+                            future_predict_list.append(future_predict)
 
-                        tile_list = TileInformation.objects.filter(
-                            tile_index__tile_index=tile_index
-                        ).order_by('tile_name')
-                        path_img_0 = tile_list[0].model_tiff_location
-                        path_img_1 = tile_list[1].model_tiff_location
-                        image_date_0 = tile_list[0].tile_date
-                        image_date_1 = tile_list[1].tile_date
+                            if len(results) > 0:
+                                logger.error(f'results after model_predict not empty.\n\
+                                  results: {results}')
 
-                        path_clouds_0 = str(Path(path_img_0).parent / 'clouds.tiff')
-                        path_clouds_1 = str(Path(path_img_1).parent / 'clouds.tiff')
+        for future_predicted in as_completed(future_predict_list):
+            logger.info(future_predicted)
+            
+    @staticmethod
+    def predict_and_save_from_result(tile_index):
+        tile_list = TileInformation.objects.filter(
+            tile_index__tile_index=tile_index
+        ).order_by('tile_name')
+        path_img_0 = tile_list[0].model_tiff_location
+        path_img_1 = tile_list[1].model_tiff_location
+        image_date_0 = tile_list[0].tile_date
+        image_date_1 = tile_list[1].tile_date
 
-                        tile = Tile.objects.get(tile_index=tile_index)  # TODO
+        path_clouds_0 = str(Path(path_img_0).parent / 'clouds.tiff')
+        path_clouds_1 = str(Path(path_img_1).parent / 'clouds.tiff')
 
-                        task = RunUpdateTask(tile_index=tile,
-                                             path_type=path_type,
-                                             path_img_0=path_img_0,
-                                             path_img_1=path_img_1,
-                                             image_date_0=image_date_0,
-                                             image_date_1=image_date_1,
-                                             path_clouds_0=path_clouds_0,
-                                             path_clouds_1=path_clouds_1
-                                             )
-                        task.save()
-                        result = model_add_task(task.id)
-                        res = result.get()
-                        try:
-                            save_from_task(res)
-                        except Exception:
-                            logger.error(f'cant do save_from_task({res})')
+        tile = Tile.objects.get(tile_index=tile_index)  # TODO
 
-        if len(results) > 0:
-            logger.error(f'results after model_predict not empty.\n\
-              results: {results}')
+        task = RunUpdateTask(tile_index=tile,
+                             path_type=path_type,
+                             path_img_0=path_img_0,
+                             path_img_1=path_img_1,
+                             image_date_0=image_date_0,
+                             image_date_1=image_date_1,
+                             path_clouds_0=path_clouds_0,
+                             path_clouds_1=path_clouds_1
+                             )
+
+        task.save()
+        result = model_add_task(task.id)
+        res = result.get()
+        try:
+            save_from_task(res)
+            return f'task_id: {res} done'
+        except Exception:
+            logger.error(f'cant do save_from_task({res})')
 
     @staticmethod
     def remove_temp_files(path, tile_name):

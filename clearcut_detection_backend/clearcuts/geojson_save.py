@@ -37,6 +37,7 @@ def save_clearcut(poly, avg_area, detection_date, forest, cloud, area_in_meters,
             centroid=poly.centroid
         )
         clearcut.save()
+        logger.info(f'clearcut saved with id={clearcut.id}')
 
 
 def save(tile, poly_path, init_db=False):
