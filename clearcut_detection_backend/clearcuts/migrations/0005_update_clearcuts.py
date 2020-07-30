@@ -29,7 +29,7 @@ class Migration(migrations.Migration):
         migrations.AddField(
             model_name='clearcut',
             name='forest',
-            field=models.PositiveIntegerField(default=0),
+            field=models.PositiveIntegerField(default=1),
         ),
         migrations.AddField(
             model_name='clearcut',
