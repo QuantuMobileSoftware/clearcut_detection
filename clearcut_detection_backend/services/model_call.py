@@ -24,7 +24,7 @@ else:
 
 class ModelCaller:
     """
-    Class for asynchronous calling of model's API
+    Class for asynchronous  calling of model's API
     """
     def __init__(self):
         self.data_dir = settings.DATA_DIR
@@ -45,32 +45,31 @@ class ModelCaller:
                         future_list.append(future)
 
         results = {}
-        future_predict_list = []
-        with ThreadPoolExecutor(max_workers=settings.MAX_WORKERS) as executor:
-            for future in as_completed(future_list):
-                if future.result()[0]:
-                    self.remove_temp_files(future.result()[0], future.result()[1])
-                    if future.result()[2]:
-                        tile_index = future.result()[2]
-                        if tile_index not in results:
-                            results[tile_index] = 1
-                        else:
-                            del results[tile_index]
-                            future_predict = executor.submit(self.predict_and_save_from_result, tile_index)
-                            future_predict_list.append(future_predict)
+        for future in as_completed(future_list):
+            if future.result()[0]:
+                self.remove_temp_files(future.result()[0], future.result()[1])
+                if future.result()[2]:
+                    tile_index = future.result()[2]
+                    if tile_index not in results:
+                        results[tile_index] = 1
+                    else:
+                        del results[tile_index]
 
-                            if len(results) > 0:
-                                logger.error(f'results after model_predict not empty.\n\
-                                  results: {results}')
+                        self.predict_and_save_from_result(tile_index)
 
-        for future_predicted in as_completed(future_predict_list):
-            logger.info(future_predicted)
-            
+                        if len(results) > 0:
+                            logger.error(f'results after model_predict not empty.\n\
+                              results: {results}')
+
     @staticmethod
     def predict_and_save_from_result(tile_index):
         tile_list = TileInformation.objects.filter(
-            tile_index__tile_index=tile_index
+            tile_index__tile_index=tile_index,
+            is_prepared=1
         ).order_by('tile_name')
+        if len(tile_list) < 2:
+            logger.error(f'cant predict tile {tile_index}, len(tiles) < 2')
+            return
         path_img_0 = tile_list[0].model_tiff_location
         path_img_1 = tile_list[1].model_tiff_location
         image_date_0 = tile_list[0].tile_date
@@ -90,8 +89,8 @@ class ModelCaller:
                              path_clouds_0=path_clouds_0,
                              path_clouds_1=path_clouds_1
                              )
-
         task.save()
+
         result = model_add_task(task.id)
         res = result.get()
         try:
