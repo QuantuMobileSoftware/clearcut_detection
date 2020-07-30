@@ -19,7 +19,7 @@ function prepareActivePolygonData(data) {
         const INDEX = i % 3;
 
         return {
-            name: item.image_date,
+            name: item.image_date_current,
             y: item.zone_area,
             color: CHART_COLORS[INDEX]
         };
