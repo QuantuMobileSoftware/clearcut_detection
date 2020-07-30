@@ -1,12 +1,13 @@
 import json
 import os
 import logging
+from celery import group
 from concurrent.futures import as_completed, ThreadPoolExecutor
 import requests
 import yaml
 from pathlib import Path
 from django.conf import settings
-from clearcuts.geojson_save import save
+from clearcuts.geojson_save import save, save_from_task
 from clearcuts.models import TileInformation, RunUpdateTask, Tile
 from services.prepare_tif import prepare_tiff
 from clearcut_detection_backend import app
@@ -77,14 +78,12 @@ class ModelCaller:
                                              path_clouds_1=path_clouds_1
                                              )
                         task.save()
-                        logger.info(f'start model_predict for {tile_index}')
-                        # self.model_predict(TileInformation.objects.filter(tile_index__tile_index=tile_index))
-
                         result = model_add_task(task.id)
-                        for res in result.collect():
-                            logger.info(f'model_predict for {tile_index} finished with status: {res[0].status}')
-                            if res[0].status == 'SUCCESS':
-                                save(task.id)
+                        res = result.get()
+                        try:
+                            save_from_task(res)
+                        except Exception:
+                            logger.error(f'cant do save_from_task({res})')
 
         if len(results) > 0:
             logger.error(f'results after model_predict not empty.\n\

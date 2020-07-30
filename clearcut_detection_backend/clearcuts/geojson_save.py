@@ -1,5 +1,3 @@
-# import datetime
-# from datetime import date
 import logging
 import geopandas as gp
 import numpy as np
@@ -87,12 +85,10 @@ def save(tile, poly_path, init_db=False):
 def save_from_task(task_id):
     logger.info(f'task_id: {task_id}')
     task = RunUpdateTask.objects.get(id=task_id)
-    logger.info(task.result)
-
-    # predicted_clearcuts = gp.read_file(poly_path)
-    predicted_clearcuts = task.result
-    logger.info(f'predicted_clearcuts {predicted_clearcuts}')
-    exit(0)
+    detection_date = [task.image_date_0, task.image_date_1]
+    logger.info(f'detection_date: {detection_date}')
+    predicted_clearcuts = gp.read_file(task.result)
+    logger.info(f'opened: {task.result}')
     area_geodataframe = predicted_clearcuts['geometry'].area
     predicted_polys = predicted_clearcuts['geometry'].buffer(0).to_crs({'init': 'epsg:4326'})
 
@@ -102,7 +98,6 @@ def save_from_task(task_id):
     geospolygons = convert_geodataframe_to_geospolygons(geodataframe)
 
     avg_area = np.mean(area_geodataframe)
-    detection_date = [tile.first().tile_date, tile.last().tile_date]
 
     if Clearcut.objects.all().count() == 0:
         for idx, geopoly in enumerate(geospolygons):
@@ -124,7 +119,7 @@ def save_from_task(task_id):
                 if flags_forest[idx] == 1 and flags_clouds[idx] == 0:
                     for poly in polys:
                         geopoly = geopoly.union(poly.mpoly)
-                    detection_date_union = [tile.first().tile_date, min(dates)]
+                    detection_date_union = [task.image_date_0, min(dates)]
                 save_clearcut(geopoly, avg_area, detection_date_union,
                               flags_forest[idx], flags_clouds[idx],
                               area_geodataframe[idx], zone=polys[max_intersection_area].zone)
@@ -132,4 +127,3 @@ def save_from_task(task_id):
                 save_clearcut(geopoly, avg_area, detection_date,
                               flags_forest[idx], flags_clouds[idx],
                               area_geodataframe[idx], create_new_zone=True)
-

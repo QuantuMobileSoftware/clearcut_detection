@@ -22,6 +22,7 @@ model_stage_2:
   environment:
     - DB_HOST=db_stage
     - CUDA_VISIBLE_DEVICES=0
+    - PREDICT=true
   links:
     - "rabbitmq"
     - "db_stage"

@@ -31,8 +31,8 @@ def collect_static_element(ctx):
 def init_db(ctx, create_db=False):
     wait_port_is_open(os.getenv('DB_HOST', 'db'), 5432)
     ctx.run('python manage.py migrate')
-    # if create_db:
-    #     ctx.run('python manage.py loaddata db.json')
+    if create_db:
+        ctx.run('python manage.py loaddata db.json')
 
 
 def wait_port_is_open(host, port):

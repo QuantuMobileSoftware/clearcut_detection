@@ -21,6 +21,6 @@ def run_model_predict(**kwargs):
     print(f'get task_id: {task_id}')
     session_factory = make_session_factory(db_string)
     session = session_factory.make_session()
-    tile_info_id = run_predict(session, task_id)
-    print(f'job done, tile_info_id: {tile_info_id}')
-    return tile_info_id
+    json_file = run_predict(session, task_id)
+    print(f'job done, all poligons in: {json_file}')
+    return task_id
