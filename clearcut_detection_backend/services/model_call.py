@@ -1,13 +1,8 @@
-import json
-import os
 import logging
-from celery import group
 from concurrent.futures import as_completed, ThreadPoolExecutor
-import requests
-import yaml
 from pathlib import Path
 from django.conf import settings
-from clearcuts.geojson_save import save, save_from_task
+from clearcuts.geojson_save import save_from_task
 from clearcuts.models import TileInformation, RunUpdateTask, Tile
 from services.prepare_tif import prepare_tiff
 from clearcut_detection_backend import app
@@ -109,42 +104,6 @@ class ModelCaller:
             logger.info(f'temp files for {tile_name} were removed')
         except OSError:
             logger.error('Error\n\n', exc_info=True)
-
-    def model_predict(self, tile):
-        """
-        Sending unique tile_index to model and saving results to db
-        """
-        src_tile = tile.first()
-        tif_path = src_tile.model_tiff_location.split('/')[:-2]
-
-        tif_path = os.path.join(*tif_path)
-        logger.info(f'raster_prediction {tif_path}')
-        results = raster_prediction(tif_path)
-        logger.info(f'results:\n{results}')
-        results_path = os.path.join(self.data_dir, results[0].get('polygons'))
-        if os.path.exists(results_path):
-            save(tile, results_path)
-
-
-# TODO: add docstring
-def raster_prediction(tif_path):
-    with open(model_call_config, 'r') as config:
-        cfg = yaml.load(config, Loader=yaml.SafeLoader)
-    model_api_cfg = cfg["model-api"]
-    api_endpoint = "http://{host}:{port}/{endpoint}".format(
-        host=os.environ.get('MODEL_HOST', 'model'),
-        port=os.environ.get('MODEL_PORT', 5000),
-        endpoint=os.environ.get('MODEL_ENDPOINT', 'raster_prediction')
-    )
-    data = {"image_path": tif_path}
-    logger.info(f'sending request to model API for\n{tif_path}')
-    try:
-        response = requests.post(url=api_endpoint, json=data)
-        result = response.text
-        datastore = json.loads(result)
-        return datastore
-    except (ValueError, Exception):
-        logger.error('Error\n\n', exc_info=True)
 
 
 def model_add_task(task_id):

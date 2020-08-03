@@ -3,7 +3,7 @@ from django.utils import timezone
 
 
 class Tile(models.Model):
-    tile_index = models.CharField(max_length=7, blank=False, null=False)
+    tile_index = models.CharField(unique=True, max_length=7, blank=False, null=False)
     is_tracked = models.SmallIntegerField(default=0, null=False)
 
     def __str__(self):

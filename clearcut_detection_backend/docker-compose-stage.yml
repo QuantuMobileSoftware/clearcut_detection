@@ -47,11 +47,11 @@ django_stage:
   environment:
     - DJANGO_SETTINGS_MODULE=clearcut_detection_backend.prod_settings
     - DB_HOST=db_stage
-    - SENTINEL_DOWNLOAD=true  # prevent requesting to sentinel
-    - DOWNLOAD_IMG=true  # skip downloading images if SENTINEL_DOWNLOAD=true
-    - PREPARE_TIF=true  # skip preprocessing images
-    - CONVERT_TO_TIFF=true  # skip converting to tiff for uploading
-    - UPLOAD_TO_MAPBOX=true  # skip uploading to mapbox server
+    - SENTINEL_DOWNLOAD=1  # prevent requesting to sentinel
+    - DOWNLOAD_IMG=1  # skip downloading images if SENTINEL_DOWNLOAD=true
+    - PREPARE_TIF=1  # skip preprocessing images
+    - CONVERT_TO_TIFF=1  # skip converting to tiff for uploading
+    - UPLOAD_TO_MAPBOX=1  # skip uploading to mapbox server
   volumes:
     - ./:/code
   working_dir: /code
