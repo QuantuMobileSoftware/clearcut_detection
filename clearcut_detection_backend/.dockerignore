@@ -1,2 +1,4 @@
 /data
+/db-data
+/db-data_stage
 *.Dockerfile

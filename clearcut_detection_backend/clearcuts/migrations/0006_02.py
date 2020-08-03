@@ -10,36 +10,8 @@ class Migration(migrations.Migration):
     dependencies = [
         ('clearcuts', '0006_01'),
     ]
-
     operations = [
-        migrations.RemoveField(
-            model_name='clearcut',
-            name='image_date_0',
-        ),
-        migrations.RemoveField(
-            model_name='clearcut',
-            name='image_date_1',
-        ),
-        migrations.AddField(
-            model_name='clearcut',
-            name='clouds',
-            field=models.PositiveIntegerField(default=0),
-        ),
-        migrations.AddField(
-            model_name='clearcut',
-            name='image_date_current',
-            field=models.DateField(default=datetime.datetime(2020, 7, 20, 6, 57, 9, 251236, tzinfo=utc)),
-        ),
-        migrations.AddField(
-            model_name='clearcut',
-            name='image_date_previous',
-            field=models.DateField(default=datetime.datetime(2020, 7, 20, 6, 57, 9, 251198, tzinfo=utc)),
-        ),
-        migrations.AlterField(
-            model_name='clearcut',
-            name='forest',
-            field=models.PositiveIntegerField(default=0),
-        ),
+
         migrations.AlterField(
             model_name='tileinformation',
             name='model_tiff_location',

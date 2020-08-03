@@ -36,7 +36,7 @@ services:
     working_dir: /model
     ports:
       - '5000:5000'
-    command: /bin/bash -c "pip install -r requirements.txt && python app.py"
+    command: /bin/bash -c "pip3 install -r requirements.txt && python3 app.py"
 
   django:
     build:

@@ -43,7 +43,8 @@ INSTALLED_APPS = [
     'clearcuts',
     'rest_framework',
     'rest_framework_swagger',
-    'corsheaders'
+    'corsheaders',
+    'django_celery_results',
 ]
 
 REST_FRAMEWORK = {
@@ -151,7 +152,7 @@ STATIC_ROOT = os.path.join(BASE_DIR, "static")
 LANDCOVER_URL = 'https://s3-eu-west-1.amazonaws.com\
 /vito.landcover.global/2015/E020N60_ProbaV_LC100_epoch2015_global_v2.0.2_products_EPSG-4326.zip'
 
-MAX_WORKERS = 6
+MAX_WORKERS = 10
 
 DATA_DIR = Path('data')
 DOWNLOADED_IMAGES_DIR = Path('./data/source_images/')
@@ -159,6 +160,18 @@ MODEL_TIFFS_DIR = Path('./data/model_tiffs')
 MAPBOX_TIFFS_DIR = Path('./data/mapbox_tiffs')
 
 PATH_TYPE = 'fs'
+
+# Celery settings
+CELERY_BROKER_URL = 'amqp://guest:guest@rabbitmq:5672//'
+CELERY_ACCEPT_CONTENT = ['json']
+CELERY_TASK_SERIALIZER = 'json'
+CELERY_RESULT_SERIALIZER = 'json'
+
+CELERY_RESULT_BACKEND = f'db+postgresql://{DATABASES["default"]["USER"]}:{os.getenv("DB_PASSWORD", "zys8rwTAC9VIR1X9")}\
+@{os.environ.get("DB_HOST", "db")}/{DATABASES["default"]["NAME"]}'
+
+# CELERY_RESULT_BACKEND = 'django-db'
+
 
 LOGGING = {
     'version': 1,
