@@ -82,3 +82,5 @@ docker-compose-django-debug.yml
 dyman_settings.py
 
 gcp_config.ini
+prod.sql
+prod.json

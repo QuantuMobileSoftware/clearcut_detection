@@ -1,4 +1,4 @@
-db:
+db_prod:
   build: ./
   dockerfile: postgis.Dockerfile
   expose:
@@ -6,23 +6,27 @@ db:
   env_file:
     - db.env
   volumes:
-    - db-data:/var/lib/postgresql/data
+    - ./db-data/data:/var/lib/postgresql/data
     - ./:/code
 
-model:
-  build: ./model
-  dockerfile: model.Dockerfile
+model_prod_2:
+  image: clearcut_detection/model2
   env_file:
-    - ./model/model.env
+    - ./model2/model.env
+    - ./model2/db.env
   volumes:
-    - ./model/:/model
+    - ./model2/:/model
     - ./data/:/model/data
   working_dir: /model
-  ports:
-    - "5000:5000"
-  command: /bin/bash -c "pip3 install -r requirements.txt && python3 app.py"
+  environment:
+    - DB_HOST=db_stage
+    - CUDA_VISIBLE_DEVICES=0
+  links:
+    - "rabbitmq_prod"
+    - "db_prod"
+  command: /bin/bash -c "./run_predict.sh"
 
-react:
+react_prod:
   image: node:10.15.0
   volumes:
     - ./frontend:/frontend
@@ -30,30 +34,31 @@ react:
   ports:
     - "3000:3000"
   links: 
-    - "django"
+    - "django_prod"
   command: /bin/bash -c "npm install && npm run-script build"
 
-django:
-  build: ./
-  dockerfile: django.Dockerfile
+django_prod:
+  image: clearcut_detection/backend
+  env_file:
+    - db.env
+    - django.env
   environment:
     - DJANGO_SETTINGS_MODULE=clearcut_detection_backend.prod_settings
-  env_file:
-    - django.env
   volumes:
     - ./:/code
   working_dir: /code
   links:
-    - "db"
-    - "model"
+    - "db_prod"
+    - "model_prod_2"
+    - "rabbitmq_prod"
   expose:
     - 9000
-  command: /bin/bash -c "pip install -r requirements.txt && exec invoke runbackend"
+  command: /bin/bash -c "exec invoke runbackend"
 
 nginx:
   image: nginx:1.15.8
   links:
-    - "django"
+    - "django_prod"
   expose:
     - "8080"
   environment:
@@ -64,4 +69,20 @@ nginx:
   volumes:
     - ./nginx/nginx.conf:/etc/nginx/conf.d/default.conf
     - ./frontend/build:/frontend/build
+
+rabbitmq_prod:
+  hostname: "rabbitmq_prod"
+  labels:
+    NAME: "rabbitmq_prod"
+  image: "rabbitmq"
+  environment:
+    RABBITMQ_DEFAULT_USER: "guest"
+    RABBITMQ_DEFAULT_PASS: "guest"
+    RABBITMQ_DEFAULT_VHOST: "/"
+    RABBITMQ_NODE_PORT_NUMBER: "5672"
+    RABBITMQ_MANAGER_PORT_NUMBER: "15672"
+  expose:
+    - 15672
+    - 5672
+  restart: always
 
