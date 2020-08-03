@@ -28,8 +28,9 @@ def clearcuts_info(request, start_date, end_date):
         return JsonResponse({})
 
     date_filtered_clearcuts = Clearcut.objects.filter(image_date_current__range=[start_date, end_date],
-                                                      # image_date_previous__range=[start_date, end_date],
-                                                      forest__exact=1)
+                                                      forest=1,
+                                                      clouds=0,
+                                                      )
     if date_filtered_clearcuts.count() == 0:
         return JsonResponse({})
 

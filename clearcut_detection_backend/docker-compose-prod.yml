@@ -1,6 +1,5 @@
 db_prod:
-  build: ./
-  dockerfile: postgis.Dockerfile
+  image: clearcut_detection/postgis
   expose:
     - 5432
   env_file:
@@ -19,7 +18,7 @@ model_prod_2:
     - ./data/:/model/data
   working_dir: /model
   environment:
-    - DB_HOST=db_stage
+    - DB_HOST=db_prod
     - CUDA_VISIBLE_DEVICES=0
   links:
     - "rabbitmq_prod"
@@ -44,6 +43,7 @@ django_prod:
     - django.env
   environment:
     - DJANGO_SETTINGS_MODULE=clearcut_detection_backend.prod_settings
+    - DB_HOST=db_prod
   volumes:
     - ./:/code
   working_dir: /code
@@ -61,13 +61,16 @@ nginx:
     - "django_prod"
   expose:
     - "8080"
+  ports:
+    - "8080:8080"
+    - "80:80"
   environment:
     - VIRTUAL_HOST=clearcut.quantumobile.com
     - VIRTUAL_PORT=8080
     - LETSENCRYPT_HOST=clearcut.quantumobile.com
     - LETSENCRYPT_EMAIL=o.tsiapa@quantumobile.com
   volumes:
-    - ./nginx/nginx.conf:/etc/nginx/conf.d/default.conf
+    - ./nginx/nginx_prod.conf:/etc/nginx/conf.d/default.conf
     - ./frontend/build:/frontend/build
 
 rabbitmq_prod:
