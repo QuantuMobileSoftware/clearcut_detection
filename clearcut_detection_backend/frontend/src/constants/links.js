@@ -11,4 +11,8 @@ export default [
     url: 'https://github.com/QuantuMobileSoftware/clearcut_detection',
     text: 'GitHub repository'
   },
+  {
+    url: 'mailto:clearcutsupport@quantumobile.com',
+    text: 'Contact support'
+  },
 ];
