@@ -259,7 +259,9 @@ def prepare_tiff(tile):
             logger.error('Error\n\n', exc_info=True)
             return save_path, tile.tile_name, None
 
+    logger.info(f'creating clouds.tiff for {tile.tile_name} started')
     to_tiff(tile.source_clouds_location, output_folder / 'clouds.tiff')
+    logger.info(f'creating clouds.tiff for {tile.tile_name} finished')
     tile.model_tiff_location = tiff_output_name
     tile.save()
 
