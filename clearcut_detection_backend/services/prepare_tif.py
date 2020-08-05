@@ -232,7 +232,7 @@ def prepare_tiff(tile):
         logger.info(f'scaling all bands to 8-bit images for {tile.tile_name} finished')
 
     if merge:
-        logger.info('\nall bands are being merged...\n')
+        logger.info(f'merge all bands for {tile.tile_name} started')
         # os.system(
         #     f"gdal_merge.py -separate -o {tiff_output_name} \
         #     {output_tiffs.get('tiff_rgb_name')} \
@@ -254,6 +254,7 @@ def prepare_tiff(tile):
                       separate=1,
                       frmt='GTiff'
                       )
+            logger.info(f'merge all bands for {tile.tile_name} finished')
         except (IOError, ValueError, Exception):
             logger.error('Error\n\n', exc_info=True)
             return save_path, tile.tile_name, None
