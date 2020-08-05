@@ -5,9 +5,6 @@ from datetime import datetime
 from decimal import Decimal
 from sqlalchemy.exc import IntegrityError, InternalError
 from sqlalchemy.dialects import postgresql
-from config import db_string
-
-
 
 
 class DataBaseResponseMixin:
@@ -15,7 +12,7 @@ class DataBaseResponseMixin:
     @staticmethod
     def get_single_obj(session, text_obj):
         """
-        Обрабатывает запросы предполагающие возврат одного поля
+        Handles requests that return one field
         :return:
         """
         try:
@@ -74,7 +71,7 @@ class DataBaseResponseMixin:
     @staticmethod
     def get_json(session, text_obj):
         """
-        Обрабатывает запросы предполагающие возврат одного поля содержащего json ответ
+        Handles requests that return one field containing a json response
         :return:
         """
         try:

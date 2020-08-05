@@ -1,13 +1,16 @@
+import os
 import logging
 from concurrent.futures import as_completed, ThreadPoolExecutor
 from pathlib import Path
+from distutils.util import strtobool
 from django.conf import settings
 from clearcuts.geojson_save import save_from_task
 from clearcuts.models import TileInformation, RunUpdateTask, Tile
 from services.prepare_tif import prepare_tiff
 from clearcut_detection_backend import app
 
-model_call_config = './model_call_config.yml'
+make_predict = strtobool(os.environ.get('MAKE_PREDICT', 'true'))
+
 logger = logging.getLogger('model_call')
 
 if settings.PATH_TYPE == 'fs':
@@ -86,13 +89,18 @@ class ModelCaller:
                              )
         task.save()
 
-        result = model_add_task(task.id)
-        res = result.get()
-        try:
-            save_from_task(res)
-            return f'task_id: {res} done'
-        except Exception:
-            logger.error(f'cant do save_from_task({res})')
+        if make_predict:
+            logger.info(f'send task_id: {task.id} to queue')
+            result = model_add_task(task.id)
+            res = result.get()
+            try:
+                save_from_task(res)
+                return f'task_id: {res} done'
+            except (ValueError, Exception):
+                logger.error(f'cant do save_from_task({res})')
+        else:
+            logger.info(f'skip predict, save task_id: {task.id}')
+            save_from_task(task.id)
 
     @staticmethod
     def remove_temp_files(path, tile_name):

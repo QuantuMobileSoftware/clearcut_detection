@@ -1,12 +1,13 @@
-import os
 from celery import Celery
-from config import db_string
+from config import (POSTGRES_USER, POSTGRES_PASSWORD, POSTGRES_DB, DB_HOST,
+                    RABBITMQ_USER, RABBITMQ_PASS, RABBITMQ_HOST, RABBITMQ_PORT_NUMBER)
 from db_engin import make_session_factory
 from run_predict_tasks.run_predict import run_predict
 
-broker = 'amqp://guest:guest@rabbitmq:5672//'  # TODO
-backend = f'db+postgresql://{os.environ.get("POSTGRES_USER", "ecoProj")}:{os.getenv("DB_PASSWORD", "zys8rwTAC9VIR1X9")}\
-@{os.environ.get("DB_HOST", "db")}/{os.environ.get("POSTGRES_DB", "clearcuts_db")}'
+
+broker = f'amqp://{RABBITMQ_USER}:{RABBITMQ_PASS}@{RABBITMQ_HOST}:{RABBITMQ_PORT_NUMBER}//'
+backend = f'db+postgresql://{POSTGRES_USER}:{POSTGRES_PASSWORD}@{DB_HOST}/{POSTGRES_DB}'
+db_string = f'postgresql://{POSTGRES_USER}:{POSTGRES_PASSWORD}@{DB_HOST}/{POSTGRES_DB}'
 
 app = Celery(
     'model',
