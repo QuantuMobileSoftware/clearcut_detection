@@ -11,6 +11,8 @@ services:
             - ./model/:/model
             - ./data/:/model/data
         working_dir: /model
+        environment:
+            - CUDA_VISIBLE_DEVICES=0
         ports:
             - '5000:5000'
         command: /bin/bash -c "python app.py"

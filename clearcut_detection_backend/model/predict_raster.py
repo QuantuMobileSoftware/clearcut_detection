@@ -31,6 +31,8 @@ DATES_FOR_TILE = 2
 import warnings
 warnings.filterwarnings('ignore')
 
+os.environ.get('CUDA_VISIBLE_DEVICES', '0')
+
 logging.basicConfig(format='%(asctime)s %(message)s')
 
 def load_model(network, model_weights_path, channels, neighbours):
