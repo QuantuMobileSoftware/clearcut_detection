@@ -152,7 +152,7 @@ STATIC_ROOT = os.path.join(BASE_DIR, "static")
 LANDCOVER_URL = 'https://s3-eu-west-1.amazonaws.com\
 /vito.landcover.global/2015/E020N60_ProbaV_LC100_epoch2015_global_v2.0.2_products_EPSG-4326.zip'
 
-MAX_WORKERS = 10
+MAX_WORKERS = 6
 
 DATA_DIR = Path('data')
 DOWNLOADED_IMAGES_DIR = Path('./data/source_images/')
