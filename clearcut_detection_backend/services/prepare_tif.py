@@ -184,12 +184,14 @@ def prepare_tiff(tile):
         create_ndvi = 0
         scaling = 0
         merge = 0
+        create_clouds = 0
         save_in_png = 0
     else:
         convert_to_tiff = 1
         create_ndvi = 1
         scaling = 1
         merge = 1
+        create_clouds = 1
         save_in_png = 0
 
     save_path, output_folder, tiff_output_name = create_tiff_path(tile)  # create path for tiff images
@@ -259,10 +261,11 @@ def prepare_tiff(tile):
             logger.error('Error\n\n', exc_info=True)
             return save_path, tile.tile_name, None
 
-    logger.info(f'creating clouds.tiff for {tile.tile_name} started')
-    to_tiff(tile.source_clouds_location, output_folder / 'clouds.tiff')
-    logger.info(f'creating clouds.tiff for {tile.tile_name} finished')
-    tile.model_tiff_location = tiff_output_name
+    if create_clouds:
+        logger.info(f'creating clouds.tiff for {tile.tile_name} started')
+        to_tiff(tile.source_clouds_location, output_folder / 'clouds.tiff')
+        logger.info(f'creating clouds.tiff for {tile.tile_name} finished')
+        tile.model_tiff_location = tiff_output_name
     tile.save()
 
     if save_in_png:
