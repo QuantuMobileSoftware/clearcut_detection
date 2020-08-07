@@ -15,7 +15,7 @@ services:
             - CUDA_VISIBLE_DEVICES=0
         ports:
             - '5000:5000'
-        command: /bin/bash -c "python app.py"
+        command: /bin/bash -c "python3 app.py"
 
     test:
         build:
