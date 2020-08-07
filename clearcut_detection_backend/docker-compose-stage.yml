@@ -95,12 +95,6 @@ rabbitmq_stage:
   image: "rabbitmq"
   env_file:
     - rabbitmq.env
-#  environment:
-#    RABBITMQ_DEFAULT_USER: "guest"
-#    RABBITMQ_DEFAULT_PASS: "guest"
-#    RABBITMQ_DEFAULT_VHOST: "/"
-#    RABBITMQ_NODE_PORT_NUMBER: "5672"
-#    RABBITMQ_MANAGER_PORT_NUMBER: "15672"
   expose:
     - 15672
     - 5672
