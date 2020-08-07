@@ -152,7 +152,7 @@ STATIC_ROOT = os.path.join(BASE_DIR, "static")
 LANDCOVER_URL = 'https://s3-eu-west-1.amazonaws.com\
 /vito.landcover.global/2015/E020N60_ProbaV_LC100_epoch2015_global_v2.0.2_products_EPSG-4326.zip'
 
-MAX_WORKERS = 10
+MAX_WORKERS = 6
 
 DATA_DIR = Path('data')
 DOWNLOADED_IMAGES_DIR = Path('./data/source_images/')
@@ -162,15 +162,18 @@ MAPBOX_TIFFS_DIR = Path('./data/mapbox_tiffs')
 PATH_TYPE = 'fs'
 
 # Celery settings
-CELERY_BROKER_URL = 'amqp://guest:guest@rabbitmq:5672//'
+RABBITMQ_USER = os.environ.get('RABBITMQ_DEFAULT_USER', 'guest')
+RABBITMQ_PASS = os.environ.get('RABBITMQ_DEFAULT_PASS', 'guest')
+RABBITMQ_HOST = os.environ.get('RABBITMQ_HOST', 'rabbitmq_prod')
+RABBITMQ_PORT_NUMBER = os.environ.get('RABBITMQ_NODE_PORT_NUMBER', 5672)
+
+CELERY_BROKER_URL = f'amqp://{RABBITMQ_USER}:{RABBITMQ_PASS}@{RABBITMQ_HOST}:{RABBITMQ_PORT_NUMBER}//'
 CELERY_ACCEPT_CONTENT = ['json']
 CELERY_TASK_SERIALIZER = 'json'
 CELERY_RESULT_SERIALIZER = 'json'
 
 CELERY_RESULT_BACKEND = f'db+postgresql://{DATABASES["default"]["USER"]}:{os.getenv("DB_PASSWORD", "zys8rwTAC9VIR1X9")}\
 @{os.environ.get("DB_HOST", "db")}/{DATABASES["default"]["NAME"]}'
-
-# CELERY_RESULT_BACKEND = 'django-db'
 
 
 LOGGING = {

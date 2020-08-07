@@ -14,17 +14,19 @@ model_stage_2:
   image: clearcut_detection/model2
   env_file:
     - ./model2/model.env
-    - ./model2/db.env
+#    - ./model2/db.env
+#    - ./model2/rabbitmq.env
   volumes:
     - ./model2/:/model
     - ./data/:/model/data
   working_dir: /model
   environment:
     - DB_HOST=db_stage
+    - RABBITMQ_HOST=rabbitmq_stage
     - CUDA_VISIBLE_DEVICES=0
-    - PREDICT=true
+    - PREDICT=1
   links:
-    - "rabbitmq"
+    - "rabbitmq_stage"
     - "db_stage"
   command: /bin/bash -c "./run_predict.sh"  # todo
 
@@ -44,12 +46,15 @@ django_stage:
   env_file:
     - db.env
     - django.env
+    - rabbitmq.env
   environment:
     - DJANGO_SETTINGS_MODULE=clearcut_detection_backend.prod_settings
     - DB_HOST=db_stage
+    - RABBITMQ_HOST=rabbitmq_stage
     - SENTINEL_DOWNLOAD=1  # prevent requesting to sentinel
     - DOWNLOAD_IMG=1  # skip downloading images if SENTINEL_DOWNLOAD=true
     - PREPARE_TIF=1  # skip preprocessing images
+    - MAKE_PREDICT=1  # skip predicting of clearcuts
     - CONVERT_TO_TIFF=1  # skip converting to tiff for uploading
     - UPLOAD_TO_MAPBOX=1  # skip uploading to mapbox server
   volumes:
@@ -57,8 +62,8 @@ django_stage:
   working_dir: /code
   links:
     - "db_stage"
-    - "model_stage_2"
-    - "rabbitmq"
+#    - "model_stage_2"
+    - "rabbitmq_stage"
   expose:
     - 9000
   ports:
@@ -83,17 +88,13 @@ nginx_stage:
     - ./frontend/build:/frontend/build
     - ./db-data_stage/data:/var/lib/postgresql/data
 
-rabbitmq:
-  hostname: "rabbitmq"
+rabbitmq_stage:
+  hostname: "rabbitmq_stage"
   labels:
-    NAME: "rabbitmq"
+    NAME: "rabbitmq_stage"
   image: "rabbitmq"
-  environment:
-    RABBITMQ_DEFAULT_USER: "guest"
-    RABBITMQ_DEFAULT_PASS: "guest"
-    RABBITMQ_DEFAULT_VHOST: "/"
-    RABBITMQ_NODE_PORT_NUMBER: "5672"
-    RABBITMQ_MANAGER_PORT_NUMBER: "15672"
+  env_file:
+    - rabbitmq.env
   expose:
     - 15672
     - 5672
