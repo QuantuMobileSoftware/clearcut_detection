@@ -1,10 +1,10 @@
-version: '3'
+version: '2'
 services:
     model:
         build:
             context: ./model
             dockerfile: model.Dockerfile
-        image: clearcut_detection/model
+        image: clearcut_detection/model_test
         env_file:
             - ./model/model.env
         volumes:
