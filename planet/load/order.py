@@ -52,7 +52,6 @@ def post_orders(auth, items, item_type, asset_type, verbose):
 
 
 def _poll_order(order_id, auth, verbose):
-
     if not order_id:
         return
 
@@ -84,8 +83,8 @@ def poll_order_mult(items, auth, cores, tries, delay, verbose):
         # Start the pooling Planet API for order status
         future_to_activate = {
             executor.submit(retry_call, _poll_order, exceptions=RuntimeError,
-                            fargs=[item.get("order_id"), auth, verbose], delay=delay, tries=tries):
-                item_id for item_id, item in items.items()}
+                            fargs=[item.get("order_id"), auth, verbose], delay=delay, tries=tries): item_id
+            for item_id, item in items.items()}
 
         for future in as_completed(future_to_activate):
             item_id = future_to_activate[future]

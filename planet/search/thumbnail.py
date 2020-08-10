@@ -4,7 +4,6 @@ import requests
 import time
 
 from requests.auth import HTTPBasicAuth
-
 from search.helper import pprint
 
 
@@ -18,20 +17,22 @@ def _load_thumbnail(thb_url, api_key, width, password):
             f"Cannot load thumbnail for {thb_url}, status code: {response.status_code}, {response.text}")
 
 
-def _save_thumbnail(tile_id, content, path):
+def _save_thumbnail(item, content, path):
+
     os.makedirs(path, exist_ok=True)
-    with open(f"{path}/{tile_id}.png", "wb") as file:
+    path = f"{path}/{item['id']}.png"
+    item['thumbnail_path'] = path
+    with open(path, "wb") as file:
         file.write(content)
 
 
 def store_thumbnails(items, api_key, width, path, verbose, password='', tries=2):
-
     for item in items:
         thb_url = item['thumbnail']
         for try_ in range(tries):
             try:
                 content = _load_thumbnail(thb_url, api_key, width, password)
-                _save_thumbnail(item['id'], content, path)
+                _save_thumbnail(item, content, path)
                 break
             except Exception as err:
                 pause = random.uniform(0.5, 1.9)

@@ -1,8 +1,8 @@
-import json
-
 from shapely.geometry import Polygon, mapping
 from planet.api import filters
 from datetime import datetime
+
+from search.helper import pprint
 
 
 def extract_results(results, limit=100):
@@ -16,7 +16,7 @@ def extract_results(results, limit=100):
         for item in results.items_iter(limit) if 'visible_percent' in item['properties']]
 
     # for item in results.items_iter(limit):
-    #   print(item)
+    # print(item)
 
     return items
 
@@ -56,33 +56,11 @@ def get_best_items(items, cloud_percent):
 
     # Get items with min cloud_percent
     result_list = list(filter(lambda item: item['cloud_percent'] <= cloud_percent, result_list))
-    result_list = sorted(result_list, key=lambda item: item['cloud_percent'])
+
+    result_list = sorted(result_list, key=lambda item: (item['overlap_percent'], item['cloud_percent']),
+                         reverse=True)
 
     return result_list
-
-
-def print_item(item):
-    print(f"id: {item['id']}, "
-          f"overlap percent: {item['overlap_percent']}, "
-          f"visible percent {item['visible_percent']}, "
-          f"cloud percent {item['cloud_percent']}")
-
-
-def write_items(items, output):
-    with open(output, 'w') as f:
-        items_dict = dict()
-        for item in items:
-            items_dict[item["id"]] = {"overlap percent": item['overlap_percent'],
-                                      "visible percent": item['visible_percent'],
-                                      "cloud percent": item['cloud_percent'],
-                                      }
-
-        json.dump(items_dict, f, indent=1)
-
-
-def pprint(text, verbose=True):
-    if verbose:
-        print(text)
 
 
 def create_request(geometry, start, end, item_types=["PSOrthoTile"]):
@@ -93,7 +71,7 @@ def create_request(geometry, start, end, item_types=["PSOrthoTile"]):
     }
 
     start_date = datetime.strptime(start, '%Y-%m-%d')
-    end_date = datetime.strptime(end, '%Y-%m-%d')
+    end_date = datetime.strptime(end, '%Y-%m-%d').replace(hour=23, minute=59, second=59)
     date_filter = filters.date_range("acquired", gte=start_date, lte=end_date)
 
     filter = filters.and_filter(date_filter, geometry_filter)

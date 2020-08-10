@@ -3,10 +3,12 @@
 import time as t
 import easyargs
 import geopandas as gp
-from planet import api
-from search.helper import *
-from search.thumbnail import store_thumbnails
 
+from planet import api
+from search.draw import draw_aoi
+from search.helper import *
+from search.search import *
+from search.thumbnail import store_thumbnails
 from dateutil.relativedelta import relativedelta
 from datetime import datetime
 
@@ -31,16 +33,9 @@ def main(credentials,
     :param width: a thumbnail size, default: 512x512. Can be scaled up to 2048 if you have access to the visual asset.
     :param cloud_percent: max cloud coverage, default: 30.0
     :param overlap_percent: min overlap coverage, default 5.0
-    :param verbose: flag, verbose mode
+    :param verbose: flag, verbose mode, default=True
     """
-
     start_time = t.time()
-
-    """credentials = "credentials.json"
-    input = "input/b.geojson"
-    start = "2020-07-01"
-    end = "2020-07-14" 
-    """
 
     pprint(f"Start script execution\n"
            f"start date: {start}\n"
@@ -50,11 +45,11 @@ def main(credentials,
         api_key = json.load(credentials)["api_key"]
 
     request_df = gp.read_file(input)
-    geometry = get_agg_polygon(request_df)
+    search_geometry = get_agg_polygon(request_df)
 
     client = api.ClientV1(api_key)
 
-    request = create_request(geometry, start, end)
+    request = create_request(search_geometry, start, end)
     results = client.quick_search(request)
     result_list = extract_results(results)
 
@@ -63,22 +58,23 @@ def main(credentials,
     else:
         pprint(f"\nFound {len(result_list)} items", verbose)
 
-        result_list = overlap(geometry, result_list, overlap_percent, verbose)
+        result_list = overlap(search_geometry, result_list, overlap_percent, verbose)
         best_items = get_best_items(result_list, cloud_percent)
 
         if best_items:
 
-            pprint("Loading and saving thumbnails of best quality items", verbose)
-            store_thumbnails(best_items, api_key, width, thumbnails_dir, verbose)
-
-            print(f"\nBEST QUALITY ITEMS in input file:\n")
-            best_items = sorted(best_items, key=lambda value: (value['overlap_percent'], value['cloud_percent']),
-                                reverse=True)
-
+            print(f"\nBEST QUALITY ITEMS:\n")
             for item in best_items:
                 print_item(item)
 
             write_items(best_items, output)
+
+            pprint("Loading and saving thumbnails of best quality items", verbose)
+            store_thumbnails(best_items, api_key, width, thumbnails_dir, verbose)
+
+            pprint("Drawing input AOI on thumbnails")
+            draw_aoi(search_geometry, best_items, verbose)
+
         else:
             print("Quality items not found. Try to change input args\n")
 
