@@ -22,7 +22,7 @@ call_model = 1
 logger = logging.getLogger('update')
 
 if __name__ == '__main__':
-    Tile.objects.exclude(tile_index__in=area_tile_set).update(is_tracked=0)
+    # Tile.objects.exclude(tile_index__in=area_tile_set).update(is_tracked=0)
     for tile_index in area_tile_set:
         tile, created = Tile.objects.get_or_create(tile_index=tile_index)  # TODO
         tile.is_tracked = 1
