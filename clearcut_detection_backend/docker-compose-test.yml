@@ -1,31 +1,31 @@
-version: '2'
-services:
-    model:
-        build:
-            context: ./model
-            dockerfile: model.Dockerfile
-        image: clearcut_detection/model_test
-        env_file:
-            - ./model/model.env
-        volumes:
-            - ./model/:/model
-            - ./data/:/model/data
-        working_dir: /model
-        environment:
-            - CUDA_VISIBLE_DEVICES=0
-        ports:
-            - '5000:5000'
-        command: /bin/bash -c "python3 app.py"
+# version: '2'
+# services:
+model:
+    #build:
+    #    context: ./model
+    #    dockerfile: model.Dockerfile
+    image: clearcut_detection/model_test
+    env_file:
+        - ./model/model.env
+    volumes:
+        - ./model/:/model
+        - ./data/:/model/data
+    working_dir: /model
+    environment:
+        - CUDA_VISIBLE_DEVICES=0
+    ports:
+        - '5000:5000'
+    command: /bin/bash -c "python3 app.py"
 
-    test:
-        build:
-            context: ./
-            dockerfile: test.Dockerfile
-        image: clearcut_detection/test
-        volumes:
-            - ./:/code
-        working_dir: /code
-        command: /bin/bash -c "pip install -r ./test/requirements.txt && python test.py"
-    
-volumes:
-  data:
+test:
+    #build:
+    #    context: ./
+    #    dockerfile: test.Dockerfile
+    image: clearcut_detection/test
+    volumes:
+        - ./:/code
+    working_dir: /code
+    command: /bin/bash -c "python test.py"
+        
+# volumes:
+#   data:
