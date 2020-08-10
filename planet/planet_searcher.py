@@ -1,13 +1,13 @@
 #!/usr/bin/python
-
-import time as t
+import json
+import time
 import easyargs
 import geopandas as gp
 
 from planet import api
 from search.draw import draw_aoi
-from search.helper import *
-from search.search import *
+from search.helper import pprint, print_item, write_items
+from search.search import get_agg_polygon, create_request, extract_results, overlap, get_best_items
 from search.thumbnail import store_thumbnails
 from dateutil.relativedelta import relativedelta
 from datetime import datetime
@@ -19,7 +19,7 @@ def main(credentials,
          start=(datetime.utcnow().date() - relativedelta(days=7)).strftime('%Y-%m-%d'),
          end=datetime.utcnow().date().strftime('%Y-%m-%d'),
          thumbnails_dir="thumbnails", output="load_assets.json",
-         width=512, cloud_percent=100.0, overlap_percent=5.0, verbose=True
+         width=512, cloud_percent=30.0, overlap_percent=5.0, verbose=True
          ):
     """
     Script for searching best quality PSOrthoTile tiles using Planet API. !Not implemented for other items_types!
@@ -35,7 +35,7 @@ def main(credentials,
     :param overlap_percent: min overlap coverage, default 5.0
     :param verbose: flag, verbose mode, default=True
     """
-    start_time = t.time()
+    start_time = time.time()
 
     pprint(f"Start script execution\n"
            f"start date: {start}\n"
@@ -78,7 +78,7 @@ def main(credentials,
         else:
             print("Quality items not found. Try to change input args\n")
 
-    pprint(f"\nFinished execution at {t.strftime('%H:%M:%S', t.gmtime(t.time() - start_time))}", verbose)
+    pprint(f"\nFinished execution at {time.strftime('%H:%M:%S', time.gmtime(time.time() - start_time))}", verbose)
 
 
 if __name__ == '__main__':

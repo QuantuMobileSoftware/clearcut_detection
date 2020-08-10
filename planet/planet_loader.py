@@ -1,6 +1,6 @@
 #!/usr/bin/python
 
-import time as t
+import time
 import easyargs
 
 from load.helper import quota, read_items, check_loaded, get_auth, save_not_loaded
@@ -32,7 +32,7 @@ def main(credentials,
     :param verbose: verbose mode, default=True
     """
 
-    start = t.time()
+    start = time.time()
     pprint(f"Start script execution\n"
            f"Loading {item_type} assets and {asset_type} type", verbose)
 
@@ -55,7 +55,7 @@ def main(credentials,
         print(f"Not loaded items:\n{sorted(not_loaded.keys())}")
         save_not_loaded(not_loaded, output)
 
-    pprint(f"\nFinished execution at {t.strftime('%H:%M:%S', t.gmtime(t.time() - start))}", verbose)
+    pprint(f"\nFinished execution at {time.strftime('%H:%M:%S', time.gmtime(time.time() - start))}", verbose)
 
 
 if __name__ == '__main__':
