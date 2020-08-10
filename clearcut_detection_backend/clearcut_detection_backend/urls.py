@@ -14,6 +14,7 @@ Including another URLconf
     2. Add a URL to urlpatterns:  path('blog/', include('blog.urls'))
 """
 from django.contrib import admin
+from django.contrib.auth import views as auth_views
 from django.urls import include, path
 from clearcuts import views
 
@@ -27,4 +28,7 @@ urlpatterns = [
     path('api/clearcuts_info/<start_date>/<end_date>', views.clearcuts_info),
     path('api/clearcut_area_chart/<int:id>/<start_date>/<end_date>', views.clearcut_area_chart),
     path('admin/', admin.site.urls),
+
+    path('accounts/login', auth_views.LoginView.as_view(), name='login'),
+    path('accounts/logout', auth_views.LogoutView.as_view(), name='logout'),
 ]
