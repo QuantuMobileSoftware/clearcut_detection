@@ -1,5 +1,5 @@
 db_prod:
-  image: clearcut_detection/postgis
+  image: clearcut_detection/postgis_prod
   expose:
     - 5432
 #  ports:
