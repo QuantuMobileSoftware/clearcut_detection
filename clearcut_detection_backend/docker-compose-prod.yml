@@ -51,12 +51,12 @@ django_prod:
     - DJANGO_SETTINGS_MODULE=clearcut_detection_backend.prod_settings
     - DB_HOST=db_prod
     - RABBITMQ_HOST=rabbitmq_prod
-    - SENTINEL_DOWNLOAD=1  # prevent requesting to sentinel
-    - DOWNLOAD_IMG=0  # skip downloading images if SENTINEL_DOWNLOAD=true
-    - PREPARE_TIF=1  # skip preprocessing images
-    - MAKE_PREDICT=0  # skip predicting of clearcuts
-    - CONVERT_TO_TIFF=0  # skip converting to tiff for uploading
-    - UPLOAD_TO_MAPBOX=1  # skip uploading to mapbox server
+#    - SENTINEL_DOWNLOAD=1  # prevent requesting to sentinel
+#    - DOWNLOAD_IMG=0  # skip downloading images if SENTINEL_DOWNLOAD=true
+#    - PREPARE_TIF=1  # skip preprocessing images
+#    - MAKE_PREDICT=0  # skip predicting of clearcuts
+#    - CONVERT_TO_TIFF=0  # skip converting to tiff for uploading
+#    - UPLOAD_TO_MAPBOX=1  # skip uploading to mapbox server
   volumes:
     - ./:/code
   working_dir: /code
