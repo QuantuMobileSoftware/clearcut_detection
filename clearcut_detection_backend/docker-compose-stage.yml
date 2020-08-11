@@ -28,7 +28,7 @@ model_stage_2:
   links:
     - "rabbitmq_stage"
     - "db_stage"
-  command: /bin/bash -c "./run_predict.sh"  # todo
+  command: /bin/bash -c "celery -A tasks worker -Q model_predict_queue --concurrency=2 --loglevel=DEBUG"  # todo
 
 react_stage:
   image: node:10.15.0
@@ -51,7 +51,7 @@ django_stage:
     - DJANGO_SETTINGS_MODULE=clearcut_detection_backend.prod_settings
     - DB_HOST=db_stage
     - RABBITMQ_HOST=rabbitmq_stage
-    - SENTINEL_DOWNLOAD=1  # prevent requesting to sentinel
+    - SENTINEL_DOWNLOAD=0  # prevent requesting to sentinel
     - DOWNLOAD_IMG=1  # skip downloading images if SENTINEL_DOWNLOAD=true
     - PREPARE_TIF=1  # skip preprocessing images
     - MAKE_PREDICT=1  # skip predicting of clearcuts
