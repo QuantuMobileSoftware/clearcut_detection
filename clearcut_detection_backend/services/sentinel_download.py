@@ -59,7 +59,7 @@ class SentinelDownload:
         try:
             return self.storage_client.get_bucket(self.bucket_name)
         except NotFound:
-            logger.error('Error\n\n', exc_info=True)
+            logger.error(f'Error, cant find bucket {self.bucket_name} \n\n', exc_info=True)
 
     def process_download(self):
         """
@@ -341,6 +341,7 @@ class SentinelDownload:
                 tile_info.is_converted = 0
                 tile_info.is_uploaded = 0
                 tile_info.save()
+                logger.info(f'record for {tile_info.tile_name}-{tile_info.tile_date} is updated')
                 return True
             except IndexError:
                 logger.error('Error\n\n', exc_info=True)

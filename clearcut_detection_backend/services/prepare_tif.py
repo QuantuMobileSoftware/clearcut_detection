@@ -203,7 +203,7 @@ def prepare_tiff(tile):
         try:
             all_bands_to_tif(tile, output_tiffs)
         except (IOError, ValueError, Exception):
-            logger.error('Error\n\n', exc_info=True)
+            logger.error(f'Error when converting all bands to *tif for {tile.tile_name}\n\n', exc_info=True)
             return save_path, tile.tile_name, None
         logger.info(f'converting all bands to *tif for {tile.tile_name} finished')
 
@@ -212,7 +212,7 @@ def prepare_tiff(tile):
         try:
             get_ndvi(output_tiffs.get('tiff_b4_name'), output_tiffs.get('tiff_b8_name'), output_tiffs.get('tiff_ndvi_name'))
         except (IOError, ValueError, Exception):
-            logger.error('Error\n\n', exc_info=True)
+            logger.error(f'Error when creating ndvi band for {tile.tile_name}\n\n', exc_info=True)
             return save_path, tile.tile_name, None
         logger.info(f'creating ndvi band for {tile.tile_name} finished')
 
@@ -220,7 +220,7 @@ def prepare_tiff(tile):
         try:
             get_ndvi(output_tiffs.get('tiff_b11_name'), output_tiffs.get('tiff_b8a_name'), output_tiffs.get('tiff_ndmi_name'))
         except (IOError, ValueError, Exception):
-            logger.error('Error\n\n', exc_info=True)
+            logger.error(f'Error when creating ndmi band for {tile.tile_name}\n\n', exc_info=True)
             return save_path, tile.tile_name, None
         logger.info(f'creating ndmi band for {tile.tile_name} finished')
 
@@ -229,7 +229,7 @@ def prepare_tiff(tile):
         try:
             scale_all(tile, output_tiffs)
         except (IOError, ValueError, Exception):
-            logger.error('Error\n\n', exc_info=True)
+            logger.error(f'Error when scaling all bands to 8-bit images for {tile.tile_name}\n\n', exc_info=True)
             return save_path, tile.tile_name, None
         logger.info(f'scaling all bands to 8-bit images for {tile.tile_name} finished')
 
@@ -258,12 +258,15 @@ def prepare_tiff(tile):
                       )
             logger.info(f'merge all bands for {tile.tile_name} finished')
         except (IOError, ValueError, Exception):
-            logger.error('Error\n\n', exc_info=True)
+            logger.error(f'Error when merge all bands for {tile.tile_name} \n\n', exc_info=True)
             return save_path, tile.tile_name, None
 
     if create_clouds:
         logger.info(f'creating clouds.tiff for {tile.tile_name} started')
-        to_tiff(tile.source_clouds_location, output_folder / 'clouds.tiff')
+        try:
+            to_tiff(tile.source_clouds_location, output_folder / 'clouds.tiff')
+        except (IOError, ValueError, Exception):
+            logger.error(f'Error when creating clouds.tiff for {tile.tile_name} \n\n', exc_info=True)
         logger.info(f'creating clouds.tiff for {tile.tile_name} finished')
         tile.model_tiff_location = tiff_output_name
     tile.save()

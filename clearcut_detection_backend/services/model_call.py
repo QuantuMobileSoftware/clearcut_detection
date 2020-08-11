@@ -30,10 +30,17 @@ class ModelCaller:
         logger.info(f'tile_index_distinct: {self.tile_index_distinct}')
 
     def start(self):
-        with ThreadPoolExecutor(max_workers=settings.MAX_WORKERS) as executor:
+        with ThreadPoolExecutor(max_workers=int(settings.MAX_WORKERS/2)) as executor:
             future_list = []
             for tile_index in self.tile_index_distinct:
-                tiles = TileInformation.objects.filter(tile_index__exact=tile_index)
+                tiles = TileInformation.objects.filter(tile_index__exact=tile_index,
+                                                       source_tci_location__isnull=False,
+                                                       source_b04_location__isnull=False,
+                                                       source_b08_location__isnull=False,
+                                                       source_b8a_location__isnull=False,
+                                                       source_b11_location__isnull=False,
+                                                       source_b12_location__isnull=False,
+                                                       source_clouds_location__isnull=False)
                 if len(tiles) < 2:
                     logger.error(f'tile_index: {tile_index}, len(tiles) < 2')
                 else:
