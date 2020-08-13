@@ -7,12 +7,16 @@ from distutils.util import strtobool
 import django
 django.setup()
 from clearcuts.geojson_save import save_from_task
+from clearcuts.models import RunUpdateTask
 
 
 logger = logging.getLogger('update')
 
 
 if __name__ == '__main__':
-    print(sys.argv[1:])
-    task_id = int(sys.argv[1])
-    save_from_task(task_id)
+
+    tasks = RunUpdateTask.objects.filter(result__isnull=False)
+
+    for task in tasks:
+        task_id = task.id
+        save_from_task(task_id)

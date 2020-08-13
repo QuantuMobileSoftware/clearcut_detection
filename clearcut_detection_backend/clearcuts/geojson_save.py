@@ -4,8 +4,9 @@ import geopandas as gp
 import numpy as np
 from django.contrib.gis.geos import GEOSGeometry
 from django.contrib.gis.measure import D
-
 from .models import Clearcut, Zone, RunUpdateTask
+
+from django.contrib.gis.db.models.functions import Distance
 
 SEARCH_WINDOW = 50
 
@@ -83,24 +84,23 @@ def save_from_task(task_id):
                           )
     else:
         for idx, geopoly in enumerate(geospolygons):
-            intersecting_polys = Clearcut.objects.filter(zone__tile_index=task.tile_index,
-                                                         mpoly__distance_lt=(geopoly, D(m=SEARCH_WINDOW)),
+
+            intersecting_polys = Clearcut.objects.filter(zone__tile_index_id=task.tile_index_id,
+                                                         mpoly__distance_lt=(geopoly, D(m=SEARCH_WINDOW), 'spheroid'),
                                                          forest=1,
                                                          clouds=0,
                                                          )
             forest = flags_forest[idx]
             cloud = flags_clouds[idx]
-            if intersecting_polys.count() > 0:
+            if forest == 1 and cloud == 0 and intersecting_polys.count() > 0:
                 polys = [poly for poly in intersecting_polys]
                 areas = [poly.mpoly.intersection(geopoly).area for poly in polys]
                 dates = [poly.image_date_previous for poly in polys]
                 max_intersection_area = np.argmax(areas)
                 # Union of intersecting forest polygons:
-                detection_date_union = detection_date
-                if forest == 1 and cloud == 0:
-                    for poly in polys:
-                        geopoly = geopoly.union(poly.mpoly)
-                    detection_date_union = [task.image_date_0, min(dates)]
+                for poly in polys:
+                    geopoly = geopoly.union(poly.mpoly)
+                detection_date_union = [task.image_date_0, min(dates)]
                 save_clearcut(geopoly,
                               avg_area,
                               detection_date_union,

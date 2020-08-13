@@ -30,34 +30,55 @@ def clearcuts_info(request, start_date, end_date):
     date_filtered_clearcuts = Clearcut.objects.filter(image_date_current__range=[start_date, end_date],
                                                       forest=1,
                                                       clouds=0,
+                                                      zone__tile_index__isnull=False
                                                       )
     if date_filtered_clearcuts.count() == 0:
         return JsonResponse({})
 
-    zone_max_min_date_clearcuts = date_filtered_clearcuts.values('zone__id').annotate(
+    # Select Zone.id, Min('image_date_current') as min_date and Max('image_date_current') as max_date
+    zone_max_min_date_clearcuts = date_filtered_clearcuts.values(
+        'zone__id'
+    ).annotate(
         min_date=Min('image_date_current')
     ).annotate(
         max_date=Max('image_date_current')
-    ).filter(max_date__gt=F('min_date')
+    ).filter(
+        max_date__gt=F('min_date')
              )
 
-    zone_max_min_date_clearcuts_unchanged = \
-        date_filtered_clearcuts \
-            .values('zone__id') \
-            .annotate(min_date=Min('image_date_current')) \
-            .annotate(max_date=Max('image_date_current')) \
-            .filter(max_date=F('min_date'))
+    zone_max_min_date_clearcuts_unchanged = date_filtered_clearcuts.values(
+        'zone__id'
+    ).annotate(
+        min_date=Min('image_date_current')
+    ).annotate(
+        max_date=Max('image_date_current')
+    ).filter(
+        max_date=F('min_date')
+    )
 
-    ordered_clearcuts = Clearcut.objects.filter(zone=OuterRef('pk')).order_by('-image_date_current', '-area')
-    newest_zone_clearcuts = Zone.objects \
-        .annotate(newest_clearcut_date=Subquery(ordered_clearcuts.values('image_date_current')[:1])) \
-        .annotate(newest_clearcut_poly=Subquery(ordered_clearcuts.values('mpoly')[:1])) \
-        .annotate(newest_clearcut_pk=Subquery(ordered_clearcuts.values('pk')[:1])) \
-        .values('pk', 'newest_clearcut_date', 'newest_clearcut_poly', 'newest_clearcut_pk')
+    ordered_clearcuts = Clearcut.objects.filter(
+        zone=OuterRef('pk'),
+        forest=1,
+        clouds=0,
+        zone__tile_index__isnull=False
+    ).order_by('-image_date_current', '-area')
 
-    filtered_by_dates_zone_ids = date_filtered_clearcuts \
-        .filter(zone__id__in=zone_max_min_date_clearcuts.values_list('zone__id', flat=True)) \
-        .values('area', 'zone__id', 'image_date_current')
+    newest_zone_clearcuts = Zone.objects.annotate(
+        newest_clearcut_date=Subquery(ordered_clearcuts.values('image_date_current')[:1])
+    ).annotate(
+        newest_clearcut_poly=Subquery(ordered_clearcuts.values('mpoly')[:1])
+    ).annotate(
+        newest_clearcut_pk=Subquery(ordered_clearcuts.values('pk')[:1])
+    ).values(
+        'pk',
+        'newest_clearcut_date',
+        'newest_clearcut_poly',
+        'newest_clearcut_pk',
+    ).filter(newest_clearcut_date__isnull=False)
+
+    filtered_by_dates_zone_ids = date_filtered_clearcuts.filter(
+        zone__id__in=zone_max_min_date_clearcuts.values_list('zone__id', flat=True)
+    ).values('area', 'zone__id', 'image_date_current')
 
     zone_date_area = {}
     unchanged_zones = set()
