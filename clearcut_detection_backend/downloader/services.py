@@ -107,18 +107,10 @@ class SentinelDownload:
         :return:
         """
         with ThreadPoolExecutor(max_workers=settings.MAX_WORKERS*4) as executor:
-            future_list = []
             for source_jp2_images in Sjp.objects.select_related('tile').filter(tile__tile_index=tile_name).order_by(
                     'image_date'
             ):
-                future = executor.submit(self.download_images_from_tiles, source_jp2_images)
-                future_list.append(future)
-
-        for future in as_completed(future_list):
-            if not future.result():
-                exit(1)  # TODO
-            else:
-                logger.info(f'images for {future.result()[0]} were downloaded')
+                executor.submit(self.download_images_from_tiles, source_jp2_images)
 
     def r_10m_download(self, source_jp2_images):
         tile_uri = source_jp2_images.tile_uri
@@ -269,17 +261,6 @@ class SentinelDownload:
         self.qi_data_download(source_jp2_images)
 
         logger.info(f'finish for {source_jp2_images.image_date}')
-
-    def file_need_to_be_downloaded(self, name):
-        """
-        Checks if blob is eligible for download through formats specified in config
-        :param name:
-        :return:
-        """
-        for band in self.bands_to_download:
-            if name.endswith(f'_{band}_10m.jp2') or name.endswith(f'_{band}_20m.jp2'):
-                return band, True
-        return None, False
 
     def request_google_cloud_storage_for_historical_data(self, tile_name):
         """
