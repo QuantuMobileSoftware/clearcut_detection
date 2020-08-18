@@ -22,7 +22,7 @@ def run_predict(session, task_id):
     image_path = Path(params['path_img_0'])
     list_tif_path = list(image_path.parts)
     filename = list_tif_path[2]
-    predicted_filename = f'predicted_{filename}.geojson'
+    predicted_filename = f'predicted_{params["image_date_0"]}-{params["image_date_1"]}_{filename}.geojson'
     list_tif_path = list_tif_path[:1]
     list_tif_path.append('predicted')
     list_tif_path.append(filename)
