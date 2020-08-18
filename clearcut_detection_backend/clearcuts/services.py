@@ -32,13 +32,13 @@ class CreateUpdateTask:
             return
 
         for i in range(len(prepared)-1):
-            path_img_0 = prepared[i].model_tiff_location
-            path_img_1 = prepared[i + 1].model_tiff_location
-            image_date_0 = prepared[i].image_date
-            image_date_1 = prepared[i + 1].image_date
+            path_img_1 = prepared[i].model_tiff_location
+            path_img_0 = prepared[i + 1].model_tiff_location
+            image_date_1 = prepared[i].image_date
+            image_date_0 = prepared[i + 1].image_date
 
-            path_clouds_0 = prepared[i].cloud_tiff_location
-            path_clouds_1 = prepared[i + 1].cloud_tiff_location
+            path_clouds_1 = prepared[i].cloud_tiff_location
+            path_clouds_0 = prepared[i + 1].cloud_tiff_location
 
             tile = Tile.objects.get(tile_index=tile_index)  # TODO
 
