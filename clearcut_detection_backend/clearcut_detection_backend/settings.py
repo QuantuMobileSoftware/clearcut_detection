@@ -221,5 +221,15 @@ LOGGING = {
             'propagate': False,
             'level': os.getenv('DJANGO_LOG_LEVEL', 'INFO')
         },
+        'create_update_task': {
+            'handlers': ['file', 'console', 'mail_on_error'],
+            'propagate': False,
+            'level': os.getenv('DJANGO_LOG_LEVEL', 'INFO')
+        },         
+        'img_preprocessing': {
+            'handlers': ['file', 'console', 'mail_on_error'],
+            'propagate': False,
+            'level': os.getenv('DJANGO_LOG_LEVEL', 'INFO')
+        },
     },
 }

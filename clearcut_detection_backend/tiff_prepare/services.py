@@ -2,20 +2,17 @@ import os
 import logging
 import time
 from osgeo import gdal
-from concurrent.futures import as_completed, ThreadPoolExecutor, ProcessPoolExecutor
+from concurrent.futures import as_completed, ProcessPoolExecutor
 from pathlib import Path
 from distutils.util import strtobool
 from django.conf import settings
-from django.core.exceptions import ObjectDoesNotExist
-from clearcuts.geojson_save import save_from_task
-from clearcuts.models import TileInformation, RunUpdateTask, Tile
 from downloader.models import SourceJp2Images
 from tiff_prepare.prepare_tif import to_tiff, get_ndvi, scale_img, merge_img_extra
 from tiff_prepare.models import Prepared
-from clearcut_detection_backend import app
+
 
 prepare_tif = strtobool(os.environ.get('PREPARE_TIF', 'true'))
-make_predict = strtobool(os.environ.get('MAKE_PREDICT', 'true'))
+
 
 if not prepare_tif:
     convert_to_tiff = 0
@@ -30,18 +27,12 @@ else:
     merge = 1
 
 
-logger = logging.getLogger('model_call')
-
-if settings.PATH_TYPE == 'fs':
-    path_type = 0
-else:
-    logger.error(f'Unsupported file path in settings.PATH_TYPE: {settings.PATH_TYPE}')
-    raise ValueError
+logger = logging.getLogger('img_preprocessing')
 
 
-class ModelCaller:
+class ImgPreprocessing:
     """
-    Class for asynchronous  calling of model's API
+    Class for preprocessing images
     """
     def __init__(self, tile_index):
         self.data_dir = settings.DATA_DIR
@@ -93,7 +84,7 @@ class ModelCaller:
 
         # for future in as_completed(future_to_tiff_list):
         #     logger.info(future.result())
-        logger.info(f'{time.time() - start_time} seconds for for converting to tiff images for {self.tile_index}' )
+        logger.info(f'{time.time() - start_time} seconds for for converting to tiff images for {self.tile_index}')
         logger.info(f'converting all bands to *tif for {self.tile_index} finished')
         return
 
@@ -259,49 +250,6 @@ class ModelCaller:
                 }
 
     @staticmethod
-    def predict_and_save_from_result(tile_index):
-        tile_list = TileInformation.objects.filter(
-            tile_index__tile_index=tile_index,
-            is_prepared=1
-        ).order_by('tile_name')
-        if len(tile_list) < 2:
-            logger.error(f'cant predict tile {tile_index}, len(tiles) < 2')
-            return
-        path_img_0 = tile_list[0].model_tiff_location
-        path_img_1 = tile_list[1].model_tiff_location
-        image_date_0 = tile_list[0].tile_date
-        image_date_1 = tile_list[1].tile_date
-
-        path_clouds_0 = str(Path(path_img_0).parent / 'clouds.tiff')
-        path_clouds_1 = str(Path(path_img_1).parent / 'clouds.tiff')
-
-        tile = Tile.objects.get(tile_index=tile_index)  # TODO
-
-        task = RunUpdateTask(tile_index=tile,
-                             path_type=path_type,
-                             path_img_0=path_img_0,
-                             path_img_1=path_img_1,
-                             image_date_0=image_date_0,
-                             image_date_1=image_date_1,
-                             path_clouds_0=path_clouds_0,
-                             path_clouds_1=path_clouds_1
-                             )
-        task.save()
-
-        if make_predict:
-            logger.info(f'send task_id: {task.id} to queue')
-            result = model_add_task(task.id)
-            res = result.get()
-            try:
-                save_from_task(res)
-                return f'task_id: {res} done'
-            except (ValueError, Exception):
-                logger.error(f'cant do save_from_task({res})')
-        else:
-            logger.info(f'skip predict, save task_id: {task.id}')
-            save_from_task(task.id)
-
-    @staticmethod
     def remove_temp_files(path):
         path = Path(path).parent
         logger.info(f'Try remove temp files for {path}')
@@ -312,18 +260,3 @@ class ModelCaller:
             logger.info(f'temp files for {path} were removed')
         except OSError:
             logger.error('Error\n\n', exc_info=True)
-
-
-def model_add_task(task_id):
-    """
-    Add run update task task in to 'run_update_task' queue
-    :param task_id:
-    :return:
-    """
-    result = app.send_task(
-        name='tasks.run_model_predict',
-        queue='model_predict_queue',
-        kwargs={'task_id': task_id},
-        task_track_started=True,
-        )
-    return result

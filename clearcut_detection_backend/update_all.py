@@ -7,22 +7,32 @@ from distutils.util import strtobool
 import django
 django.setup()
 from clearcuts.models import Tile
-from services.jp2_to_tiff_conversion import jp2_to_tiff
-from tiff_prepare.services import ModelCaller
-from services.upload_to_mapbox import start_upload
+from clearcuts.services import CreateUpdateTask
 from services.configuration import area_tile_set
+from services.jp2_to_tiff_conversion import jp2_to_tiff
+from tiff_prepare.services import ImgPreprocessing
+from services.upload_to_mapbox import start_upload
 from downloader.services import SentinelDownload
 
 sentinel_download = strtobool(os.environ.get('SENTINEL_DOWNLOAD', 'true'))
+prepare_tif = strtobool(os.environ.get('PREPARE_TIF', 'true'))
+add_tasks = strtobool(os.environ.get('ADD_TASKS', 'true'))
 convert_to_tiff = strtobool(os.environ.get('CONVERT_TO_TIFF', 'true'))
+
+make_predict = strtobool(os.environ.get('MAKE_PREDICT', 'true'))
 mapbox_upload = strtobool(os.environ.get('UPLOAD_TO_MAPBOX', 'true'))
-call_model = 1
+
 
 
 logger = logging.getLogger('update')
 
 if __name__ == '__main__':
     # Tile.objects.exclude(tile_index__in=area_tile_set).update(is_tracked=0)
+    for tile_index in area_tile_set:
+        tile, created = Tile.objects.get_or_create(tile_index=tile_index)  # TODO
+        tile.is_tracked = 1
+        tile.save()
+
     for tile in Tile.objects.filter(is_tracked=1).order_by('tile_index'):
 
         if sentinel_download:
@@ -30,9 +40,12 @@ if __name__ == '__main__':
             sentinel_downloader.process_download()
         logger.info(f'Sentinel pictures for {tile.tile_index} were downloaded')
 
-        if call_model:
-            model_caller = ModelCaller(tile.tile_index)
-            model_caller.start()
+        if prepare_tif:
+            img_preprocessing = ImgPreprocessing(tile.tile_index)
+            img_preprocessing.start()
+
+        if add_tasks:
+            CreateUpdateTask.run_all_from_prepared(tile.tile_index)
             exit(0)
         if convert_to_tiff:
             logger.info('Start convert jp2_to_tiff')
