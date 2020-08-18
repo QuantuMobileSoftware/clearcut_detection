@@ -156,6 +156,10 @@ class SentinelDownload:
 
                 source_jp2_images.save()
 
+            elif filename and filename.is_file():
+                source_jp2_images.is_downloaded += 1
+                source_jp2_images.save()
+
         if not is_blob:
             source_jp2_images.is_downloaded = -1
             source_jp2_images.save()
@@ -204,6 +208,10 @@ class SentinelDownload:
 
                 source_jp2_images.save()
 
+            elif filename and filename.is_file():
+                source_jp2_images.is_downloaded += 1
+                source_jp2_images.save()
+
         if not is_blob:
             source_jp2_images.is_downloaded = -1
             source_jp2_images.save()
@@ -241,6 +249,10 @@ class SentinelDownload:
                     logger.error(
                         f'{__name__}.{self.download_images_from_tiles.__qualname__} Error in uri: {blob.name}')
 
+                source_jp2_images.save()
+
+            elif filename and filename.is_file():
+                source_jp2_images.is_downloaded += 1
                 source_jp2_images.save()
 
         if not is_blob:
