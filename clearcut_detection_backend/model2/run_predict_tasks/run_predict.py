@@ -22,7 +22,7 @@ def run_predict(session, task_id):
     image_path = Path(params['path_img_0'])
     list_tif_path = list(image_path.parts)
     filename = list_tif_path[2]
-    predicted_filename = f'predicted_{params["image_date_0"]}-{params["image_date_1"]}_{filename}.geojson'
+    predicted_filename = f'predicted_{filename}_{params["image_date_0"]}_{params["image_date_1"]}.geojson'
     list_tif_path = list_tif_path[:1]
     list_tif_path.append('predicted')
     list_tif_path.append(filename)
@@ -44,8 +44,8 @@ def run_predict(session, task_id):
 
     if predict:
         raster_array, meta = predict_raster(
-            params['path_img_0'],
             params['path_img_1'],
+            params['path_img_0'],
             channels,
             network,
             model_weights_path,
@@ -53,7 +53,7 @@ def run_predict(session, task_id):
         )
 
         clearcuts = polygonize(raster_array > threshold, meta)
-        cloud_files = [params['path_clouds_0'], params['path_clouds_1']]
+        cloud_files = [params['path_clouds_1'], params['path_clouds_0']]
 
         polygons = postprocessing(filename, cloud_files, clearcuts, meta['crs'])
         save_polygons(polygons, result_directory_path, predicted_filename)
