@@ -1,5 +1,8 @@
 import os
 import logging
+import time
+from datetime import datetime, timedelta
+from celery import group
 from pathlib import Path
 from distutils.util import strtobool
 from django.conf import settings
@@ -31,6 +34,7 @@ class CreateUpdateTask:
             logger.error(f'cant predict tile {tile_index}, len(prepared) < 2')
             return
 
+        task_list = []
         for i in range(len(prepared)-1):
             path_img_0 = prepared[i].model_tiff_location
             path_img_1 = prepared[i + 1].model_tiff_location
@@ -53,19 +57,43 @@ class CreateUpdateTask:
                                  )
             task.save()
 
-            if make_predict:
-                logger.info(f'send task_id: {task.id} to queue')
-                result = model_add_task(task.id)
-                res = result.get()
-                try:
-                    save_from_task(res)
-                    return f'task_id: {res} done'
-                except (ValueError, Exception):
-                    logger.error(f'cant do save_from_task({res})')
-            else:
-                logger.info(f'skip predict, save task_id: {task.id}')
-                save_from_task(task.id)
+            logger.info(f'send task_id: {task.id} to queue')
+            task_list.append(app.send_task(
+                name='tasks.run_model_predict',
+                queue='model_predict_queue',
+                kwargs={'task_id': task.id},
+                # task_track_started=True,
+                ignore_result=False,
+                # countdown=100,
+                # timeout = 10000000,
+                # soft_time_limit=15 * 60
+                ))
 
+        if make_predict:
+            job = group(task_list)
+            logger.info(type(job))
+            logger.info(job.task)
+            logger.info(job.__dir__())
+            logger.info(job.tasks)
+
+            while len(job.tasks):
+                time.sleep(10)
+                logger.info(f'len(job.tasks): {len(job.tasks)}')
+                cnt = 0
+                for j in job.tasks:
+                    logger.info(j)
+                    logger.info(j.successful())
+                    if j.successful():
+                        logger.info(j.result)
+                        task_id = j.result
+                        job.tasks.pop(cnt)
+                        try:
+                            save_from_task(task_id)
+                        except (ValueError, Exception):
+                            logger.error(f'cant do save_from_task({task_id})')
+
+                        continue
+                    cnt += 1
 
     @staticmethod
     def predict_and_save_from_result(tile_index):
@@ -101,6 +129,8 @@ class CreateUpdateTask:
             logger.info(f'send task_id: {task.id} to queue')
             result = model_add_task(task.id)
             res = result.get()
+            logger.info(res)
+            logger.info(result.backend)
             try:
                 save_from_task(res)
                 return f'task_id: {res} done'
@@ -122,5 +152,6 @@ def model_add_task(task_id):
         queue='model_predict_queue',
         kwargs={'task_id': task_id},
         task_track_started=True,
+        ignore_result=False,
         )
     return result

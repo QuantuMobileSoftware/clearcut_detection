@@ -44,7 +44,7 @@ INSTALLED_APPS = [
     'rest_framework',
     'rest_framework_swagger',
     'corsheaders',
-    # 'django_celery_results',
+    'django_celery_results',
     'downloader.apps.DownloaderConfig',
     'tiff_prepare.apps.TiffPrepareConfig',
 ]

@@ -29,39 +29,42 @@ def run_predict(session, task_id):
     result_directory_path = Path(*list_tif_path)
     # print(result_directory_path)
     result_directory_path.mkdir(parents=True, exist_ok=True)
+    if not (result_directory_path / predicted_filename).is_file():
 
-    channels = models['deforestration_detection']['channels']
-    network = models['deforestration_detection']['network']
-    weights = models['deforestration_detection']['weights']
+        channels = models['deforestration_detection']['channels']
+        network = models['deforestration_detection']['network']
+        weights = models['deforestration_detection']['weights']
 
-    try:
-        model_weights_path = weights_exists_or_download(
-            weights,
-            os.environ.get('GOOGLE_DRIVE_FILE_ID'),
-        )
-    except (ValueError, Exception) as e:
-        print(e)  # TODO
+        try:
+            model_weights_path = weights_exists_or_download(
+                weights,
+                os.environ.get('GOOGLE_DRIVE_FILE_ID'),
+            )
+        except (ValueError, Exception) as e:
+            print(e)  # TODO
 
-    if predict:
-        raster_array, meta = predict_raster(
-            params['path_img_1'],
-            params['path_img_0'],
-            channels,
-            network,
-            model_weights_path,
-            input_size=input_size,
-        )
+        if predict:
+            raster_array, meta = predict_raster(
+                params['path_img_1'],
+                params['path_img_0'],
+                channels,
+                network,
+                model_weights_path,
+                input_size=input_size,
+            )
 
-        clearcuts = polygonize(raster_array > threshold, meta)
-        cloud_files = [params['path_clouds_1'], params['path_clouds_0']]
+            clearcuts = polygonize(raster_array > threshold, meta)
+            cloud_files = [params['path_clouds_1'], params['path_clouds_0']]
 
-        polygons = postprocessing(filename, cloud_files, clearcuts, meta['crs'])
-        save_polygons(polygons, result_directory_path, predicted_filename)
+            polygons = postprocessing(filename, cloud_files, clearcuts, meta['crs'])
+            save_polygons(polygons, result_directory_path, predicted_filename)
 
-    params['result'] = str(result_directory_path / predicted_filename)
-    params['date_finished'] = str(datetime.now())
+        params['result'] = str(result_directory_path / predicted_filename)
+        params['date_finished'] = str(datetime.now())
 
-    RpT.update_task_by_id(session, task_id, params)
-    RpT.update_tileinformation(session, params['tile_index_id'])
+        RpT.update_task_by_id(session, task_id, params)
+        RpT.update_tileinformation(session, params['tile_index_id'])
 
-    return params['result']
+        return params['result']
+    else:
+        return str(result_directory_path / predicted_filename)
