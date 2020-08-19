@@ -53,7 +53,7 @@ django_stage:
     - RABBITMQ_HOST=rabbitmq_stage
     - SENTINEL_DOWNLOAD=0   # prevent requesting to sentinel
     - DOWNLOAD_IMG=1  # skip downloading images if SENTINEL_DOWNLOAD=true
-    - PREPARE_TIF=0  # skip preprocessing images
+    - PREPARE_TIF=1  # skip preprocessing images
     - ADD_TASKS=1  # skip adding tasks
     - MAKE_PREDICT=1  # skip predicting of clearcuts
     - CONVERT_TO_TIFF=1  # skip converting to tiff for uploading
