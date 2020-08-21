@@ -15,7 +15,7 @@ from clearcuts.models import Tile
 from services.configuration import bands_to_download
 from downloader.models import SourceJp2Images as Sjp
 
-download_img = strtobool(os.environ.get('DOWNLOAD_IMG', 'true'))
+force_download_img = strtobool(os.environ.get('FORCE_DOWNLOAD_IMG', 'true'))
 
 logger = logging.getLogger('sentinel')
 
@@ -144,7 +144,7 @@ class SentinelDownload:
                 source_jp2_images.save()
 
             logger.info(f'filename: {filename}')
-            if filename and download_img and not filename.is_file():
+            if filename and not filename.is_file() or filename and force_download_img:
                 try:
                     self.download_file_from_storage(blob, filename)
                     source_jp2_images.is_downloaded += 1
@@ -196,7 +196,7 @@ class SentinelDownload:
                 source_jp2_images.source_b8a_location = filename
                 source_jp2_images.save()
 
-            if filename and download_img and not filename.is_file():
+            if filename and not filename.is_file() or filename and force_download_img:
                 try:
                     self.download_file_from_storage(blob, filename)
                     source_jp2_images.is_downloaded += 1
@@ -239,7 +239,7 @@ class SentinelDownload:
                 source_jp2_images.source_clouds_location = filename
                 source_jp2_images.save()
 
-            if filename and download_img and not filename.is_file():
+            if filename and not filename.is_file() or filename and force_download_img:
                 try:
                     self.download_file_from_storage(blob, filename)
                     source_jp2_images.is_downloaded += 1
@@ -274,6 +274,38 @@ class SentinelDownload:
 
         logger.info(f'finish for {source_jp2_images.image_date}')
 
+    def request_google_cloud_storage_for_data(self, tile_name):
+        pass
+
+    def request_google_cloud_storage_for_update_data(self, tile_name):
+        """
+        Iterates over tile blobs.
+        Select tile uri by clouds coverage and nodata_pixel and store it to db.
+        :param tile_name: str
+        :return:
+        """
+        metadata_file = 'MTD_TL.xml'
+
+        tile_path = self.get_tile_uri(tile_name)
+
+        tile_uri = f'L2/tiles/{tile_path}/'
+
+        blobs = self.storage_client.list_blobs(self.storage_bucket, prefix=tile_uri, delimiter='/')
+        blobs._next_page()
+
+        prefixes = list(blobs.prefixes)
+        if not prefixes:
+            raise NotFound(f'no such tile_uri: {tile_uri}')
+
+        tile = Tile.objects.get(tile_index=tile_name)
+        if tile.last_date is not None:
+            granule_id_list = []
+            prefixes.sort(key=self.get_granule_date, reverse=True)
+            for prefix in prefixes:
+                if self.get_granule_date(prefix) > tile.last_date:
+                    granule_id_list.append(prefix)
+            """create here for update"""
+
     def request_google_cloud_storage_for_historical_data(self, tile_name):
         """
         Iterates over tile blobs.
@@ -293,11 +325,16 @@ class SentinelDownload:
         prefixes = list(blobs.prefixes)
         if not prefixes:
             raise NotFound(f'no such tile_uri: {tile_uri}')
-        prefixes.sort(key=self.get_folders_date, reverse=True)
-        granule_id_list = prefixes[:self.tile_dates_count]
+
+        prefixes.sort(key=self.get_granule_date)
+        granule_id_list = []
+        for prefix in prefixes:
+            if str(self.get_granule_date(prefix)) > settings.START_DATE_FOR_SCAN:
+                granule_id_list.append(prefix)
 
         for granule_id in granule_id_list:
-
+            granule_date = self.get_granule_date(granule_id)
+            logger.info(f'granule_date: {granule_date}')
             prefix = f'{granule_id}GRANULE/'
             blobs = self.storage_client.list_blobs(self.storage_bucket, prefix=prefix, delimiter='/')
             blobs._next_page()
@@ -381,10 +418,13 @@ class SentinelDownload:
             # logger.info(f'Tile {tile_name}-{source_jp2_images.image_date} will be downloaded from {tile_uri}')
         return
 
-    def get_folders_date(self, path):
+    def get_granule_date(self, path):
         match = re.search(r'_\d{8}T\d{6}', path)
         if match:
-            return match[0]
+            date_time_str = match[0][1:]
+            date_time_obj = datetime.datetime.strptime(date_time_str, '%Y%m%dT%H%M%S')
+            granule_date = date_time_obj.date()
+            return granule_date
         else:
             raise ValueError(f'No date in {self.bucket_name} for {path}')
 

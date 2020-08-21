@@ -173,6 +173,12 @@ class ImgPreprocessing:
                 output_tiffs = self.create_output_tiffs(tiff_dir)  # defining temporary files names
                 tiff_output_name = tiff_dir / f'{tile_by_date.tile.tile_index}_{tile_by_date.image_date}_output.tif'
                 prepared = Prepared.objects.get(tile=tile_by_date.tile, image_date=tile_by_date.image_date)
+                if tiff_output_name.is_file():
+                    prepared.success = 1
+                    prepared.model_tiff_location = str(tiff_output_name)
+                    prepared.save()
+                    self.remove_temp_files(str(tiff_output_name))
+                    continue
                 if prepared != -1:
                     future = executor.submit(merge_img_extra,
                                              str(tiff_output_name),

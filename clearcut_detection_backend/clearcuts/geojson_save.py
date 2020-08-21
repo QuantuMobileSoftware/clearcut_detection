@@ -34,12 +34,12 @@ def save_clearcut(poly,
                   zone=None,
                   create_new_zone=False,
                   area_threshold=0.2,
-                  tile_index=None,
+                  tile=None,
                   ):
     if area_in_meters > avg_area * area_threshold and poly.geom_type == 'Polygon':
         if create_new_zone:
             zone = Zone()
-            zone.tile_index = tile_index
+            zone.tile = tile
             zone.save()
         clearcut = Clearcut(
             image_date_previous=detection_date[1],
@@ -80,12 +80,12 @@ def save_from_task(task_id):
                           flags_clouds[idx],
                           area_geodataframe[idx],
                           create_new_zone=True,
-                          tile_index=task.tile_index,
+                          tile=task.tile,
                           )
     else:
         for idx, geopoly in enumerate(geospolygons):
 
-            intersecting_polys = Clearcut.objects.filter(zone__tile_index_id=task.tile_index_id,
+            intersecting_polys = Clearcut.objects.filter(zone__tile_id=task.tile_id,
                                                          mpoly__distance_lt=(geopoly, D(m=SEARCH_WINDOW), 'spheroid'),
                                                          forest=1,
                                                          clouds=0,
@@ -108,7 +108,7 @@ def save_from_task(task_id):
                               cloud,
                               area_geodataframe[idx],
                               zone=polys[max_intersection_area].zone,
-                              tile_index=task.tile_index,
+                              tile=task.tile,
                               )
             else:
                 save_clearcut(geopoly,
@@ -118,7 +118,7 @@ def save_from_task(task_id):
                               cloud,
                               area_geodataframe[idx],
                               create_new_zone=True,
-                              tile_index=task.tile_index,
+                              tile=task.tile,
                               )
 
     logger.info(f'---{time.time() - start_time} seconds --- for saving task_id: {task_id}')

@@ -51,8 +51,8 @@ django_stage:
     - DJANGO_SETTINGS_MODULE=clearcut_detection_backend.prod_settings
     - DB_HOST=db_stage
     - RABBITMQ_HOST=rabbitmq_stage
-    - SENTINEL_DOWNLOAD=0   # prevent requesting to sentinel
-    - DOWNLOAD_IMG=1  # skip downloading images if SENTINEL_DOWNLOAD=true
+    - SENTINEL_DOWNLOAD=1   # prevent requesting to sentinel
+    - FORCE_DOWNLOAD_IMG=0  # force downloading images even if file exists
     - PREPARE_TIF=1  # skip preprocessing images
     - ADD_TASKS=1  # skip adding tasks
     - MAKE_PREDICT=1  # skip predicting of clearcuts

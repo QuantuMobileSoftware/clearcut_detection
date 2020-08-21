@@ -5,13 +5,15 @@ from django.utils import timezone
 class Tile(models.Model):
     tile_index = models.CharField(unique=True, max_length=7, blank=False, null=False)
     is_tracked = models.SmallIntegerField(default=0, null=False)
+    first_date = models.DateField(default=None, null=True)
+    last_date = models.DateField(default=None, null=True)
 
     def __str__(self):
         return self.tile_index
 
 
 class Zone(models.Model):
-    tile_index = models.ForeignKey(Tile, null=True, on_delete=models.CASCADE, related_name='tile_zones')
+    tile = models.ForeignKey(Tile, null=True, on_delete=models.CASCADE, related_name='tile_zones')
 
     def __str__(self):
         return f"Zone {self.id}"
@@ -62,7 +64,7 @@ class TileInformation(models.Model):
 
 
 class RunUpdateTask(models.Model):
-    tile_index = models.ForeignKey(Tile, on_delete=models.CASCADE, related_name='run_update_task')
+    tile = models.ForeignKey(Tile, on_delete=models.CASCADE, related_name='run_update_task')
     path_type = models.SmallIntegerField(default=0, null=False)
     path_img_0 = models.URLField(max_length=200, blank=False, null=False, default='')
     path_img_1 = models.URLField(max_length=200, blank=False, null=False, default='')

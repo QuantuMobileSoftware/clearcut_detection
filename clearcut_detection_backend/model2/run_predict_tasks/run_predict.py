@@ -63,8 +63,11 @@ def run_predict(session, task_id):
         params['date_finished'] = str(datetime.now())
 
         RpT.update_task_by_id(session, task_id, params)
-        RpT.update_tileinformation(session, params['tile_index_id'])
-
+        # RpT.update_tileinformation(session, params['tile_id'])
         return params['result']
     else:
+        params['result'] = str(result_directory_path / predicted_filename)
+        params['date_finished'] = str(datetime.now())
+        RpT.update_task_by_id(session, task_id, params)
+        print(f'file {str(result_directory_path / predicted_filename)} exist. Skip')
         return str(result_directory_path / predicted_filename)

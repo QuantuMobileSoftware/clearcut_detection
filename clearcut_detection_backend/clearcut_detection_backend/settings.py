@@ -44,7 +44,7 @@ INSTALLED_APPS = [
     'rest_framework',
     'rest_framework_swagger',
     'corsheaders',
-    'django_celery_results',
+    # 'django_celery_results',
     'downloader.apps.DownloaderConfig',
     'tiff_prepare.apps.TiffPrepareConfig',
 ]
@@ -123,6 +123,8 @@ AUTH_PASSWORD_VALIDATORS = [
 ]
 
 # In summer can lower cloud percentage to 5-10, amd enlarge nodata pixel threshold to 50 and dates reviewed to 20-25
+START_DATE_FOR_SCAN = "2017-01-01"
+
 MAXIMUM_CLOUD_PERCENTAGE_ALLOWED = 20.0
 MAXIMUM_EMPTY_PIXEL_PERCENTAGE = 5.0
 MAXIMUM_DATES_REVIEWED_FOR_TILE = 100
