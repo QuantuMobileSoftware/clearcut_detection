@@ -30,7 +30,7 @@ def clearcuts_info(request, start_date, end_date):
     date_filtered_clearcuts = Clearcut.objects.filter(image_date_current__range=[start_date, end_date],
                                                       forest=1,
                                                       clouds=0,
-                                                      zone__tile_index__isnull=False
+                                                      zone__tile__isnull=False
                                                       )
     if date_filtered_clearcuts.count() == 0:
         return JsonResponse({})
@@ -60,7 +60,7 @@ def clearcuts_info(request, start_date, end_date):
         zone=OuterRef('pk'),
         forest=1,
         clouds=0,
-        zone__tile_index__isnull=False
+        zone__tile__isnull=False
     ).order_by('-image_date_current', '-area')
 
     newest_zone_clearcuts = Zone.objects.annotate(
