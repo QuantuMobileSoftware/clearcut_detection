@@ -84,6 +84,7 @@ TEMPLATES = [
 
 # Database
 # https://docs.djangoproject.com/en/2.2/ref/settings/#databases
+CONN_MAX_AGE = None
 
 DATABASES = {
     'default': {

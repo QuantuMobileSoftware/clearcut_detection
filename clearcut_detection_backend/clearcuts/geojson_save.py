@@ -116,7 +116,7 @@ def save_from_task(task_id):
 
         intersecting_polys = list(Clearcut.objects.filter(
             zone__tile_id=task.tile_id,
-            mpoly__distance_lt=(geopoly, D(m=SEARCH_WINDOW), 'spheroid'),
+            mpoly__dwithin=(geopoly, D(m=SEARCH_WINDOW), 'spheroid'),
             ))
         if len(intersecting_polys) == 0:
             save_clearcut(geopoly,
