@@ -4,7 +4,7 @@ import geopandas as gp
 import numpy as np
 from django.contrib.gis.geos import GEOSGeometry
 from django.contrib.gis.measure import D
-from .models import Clearcut, Zone, RunUpdateTask
+from .models import Clearcut, Zone, RunUpdateTask, NotClearcut
 
 from django.contrib.gis.db.models.functions import Distance
 
@@ -26,25 +26,52 @@ def convert_geodataframe_to_geospolygons(dataframe):
     return geometries
 
 
-def save_clearcut(poly,
-                  avg_area,
-                  detection_date,
-                  forest, cloud,
-                  area_in_meters,
-                  zone=None,
-                  create_new_zone=False,
-                  area_threshold=0.2,
-                  tile_index=None,
-                  ):
+def save_not_clearcut(
+        poly,
+        avg_area,
+        detection_date,
+        forest,
+        cloud,
+        area_in_meters,
+        tile=None,
+        area_threshold=0.2,
+):
+    if area_in_meters > avg_area * area_threshold and poly.geom_type == 'Polygon':
+        zone = Zone()
+        zone.tile = tile
+        zone.save()
+        not_clearcut = NotClearcut(
+            image_date_previous=detection_date[0],
+            image_date_current=detection_date[1],
+            mpoly=poly, area=area_in_meters, zone=zone,
+            forest=forest,
+            clouds=cloud,
+            centroid=poly.centroid
+        )
+        not_clearcut.save()
+        logger.info(f'not_clearcut saved with id={not_clearcut.id}')
+
+
+def save_clearcut(
+        poly,
+        avg_area,
+        detection_date,
+        forest, cloud,
+        area_in_meters,
+        zone=None,
+        create_new_zone=False,
+        area_threshold=0.2,
+        tile=None,
+        ):
     if area_in_meters > avg_area * area_threshold and poly.geom_type == 'Polygon':
         if create_new_zone:
             zone = Zone()
-            zone.tile_index = tile_index
+            zone.tile = tile
             zone.save()
         clearcut = Clearcut(
-            image_date_previous=detection_date[1],
-            image_date_current=detection_date[0], 
-            mpoly=poly, area=area_in_meters, zone=zone, 
+            image_date_previous=detection_date[0],
+            image_date_current=detection_date[1],
+            mpoly=poly, area=area_in_meters, zone=zone,
             forest=forest,
             clouds=cloud,
             centroid=poly.centroid
@@ -71,54 +98,54 @@ def save_from_task(task_id):
 
     avg_area = np.mean(area_geodataframe)
 
-    if Clearcut.objects.all().count() == 0:
-        for idx, geopoly in enumerate(geospolygons):
+    for idx, geopoly in enumerate(geospolygons):
+        forest = flags_forest[idx]
+        cloud = flags_clouds[idx]
+
+        if forest == 0 or cloud == 1:
+            save_not_clearcut(
+                geopoly,
+                avg_area,
+                detection_date,
+                flags_forest[idx],
+                flags_clouds[idx],
+                area_geodataframe[idx],
+                tile=task.tile,
+            )
+            continue
+
+        intersecting_polys = list(Clearcut.objects.filter(
+            zone__tile_id=task.tile_id,
+            mpoly__distance_lt=(geopoly, D(m=SEARCH_WINDOW), 'spheroid'),
+            ))
+        if len(intersecting_polys) == 0:
             save_clearcut(geopoly,
                           avg_area,
                           detection_date,
-                          flags_forest[idx],
-                          flags_clouds[idx],
+                          forest,
+                          cloud,
                           area_geodataframe[idx],
                           create_new_zone=True,
-                          tile_index=task.tile_index,
+                          tile=task.tile,
                           )
-    else:
-        for idx, geopoly in enumerate(geospolygons):
+        else:
+            areas = []
+            dates = []
+            for poly in intersecting_polys:
+                areas.append(poly.mpoly.intersection(geopoly).area)
+                dates.append(poly.image_date_previous)
+                geopoly = geopoly.union(poly.mpoly)
 
-            intersecting_polys = Clearcut.objects.filter(zone__tile_index_id=task.tile_index_id,
-                                                         mpoly__distance_lt=(geopoly, D(m=SEARCH_WINDOW), 'spheroid'),
-                                                         forest=1,
-                                                         clouds=0,
-                                                         )
-            forest = flags_forest[idx]
-            cloud = flags_clouds[idx]
-            if forest == 1 and cloud == 0 and intersecting_polys.count() > 0:
-                polys = [poly for poly in intersecting_polys]
-                areas = [poly.mpoly.intersection(geopoly).area for poly in polys]
-                dates = [poly.image_date_previous for poly in polys]
-                max_intersection_area = np.argmax(areas)
-                # Union of intersecting forest polygons:
-                for poly in polys:
-                    geopoly = geopoly.union(poly.mpoly)
-                detection_date_union = [task.image_date_0, min(dates)]
-                save_clearcut(geopoly,
-                              avg_area,
-                              detection_date_union,
-                              forest,
-                              cloud,
-                              area_geodataframe[idx],
-                              zone=polys[max_intersection_area].zone,
-                              tile_index=task.tile_index,
-                              )
-            else:
-                save_clearcut(geopoly,
-                              avg_area,
-                              detection_date,
-                              forest,
-                              cloud,
-                              area_geodataframe[idx],
-                              create_new_zone=True,
-                              tile_index=task.tile_index,
-                              )
+            max_intersection_area = np.argmax(areas)
+            detection_date_union = [task.image_date_0, min(dates)]
 
+            save_clearcut(geopoly,
+                          avg_area,
+                          detection_date_union,
+                          forest,
+                          cloud,
+                          area_geodataframe[idx],
+                          zone=intersecting_polys[max_intersection_area].zone,
+                          tile=task.tile,
+                          )
     logger.info(f'---{time.time() - start_time} seconds --- for saving task_id: {task_id}')

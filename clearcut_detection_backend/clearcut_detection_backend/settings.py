@@ -44,11 +44,16 @@ INSTALLED_APPS = [
     'rest_framework',
     'rest_framework_swagger',
     'corsheaders',
-    'django_celery_results',
+    # 'django_celery_results',
+    'downloader.apps.DownloaderConfig',
+    'tiff_prepare.apps.TiffPrepareConfig',
 ]
 
 REST_FRAMEWORK = {
-    'DEFAULT_SCHEMA_CLASS': 'rest_framework.schemas.coreapi.AutoSchema'
+    'DEFAULT_SCHEMA_CLASS': 'rest_framework.schemas.coreapi.AutoSchema',
+    'DEFAULT_AUTHENTICATION_CLASSES': (
+        'rest_framework_simplejwt.authentication.JWTAuthentication',
+    )
 }
 
 MIDDLEWARE = [
@@ -121,6 +126,8 @@ AUTH_PASSWORD_VALIDATORS = [
 ]
 
 # In summer can lower cloud percentage to 5-10, amd enlarge nodata pixel threshold to 50 and dates reviewed to 20-25
+START_DATE_FOR_SCAN = "2017-01-01"
+
 MAXIMUM_CLOUD_PERCENTAGE_ALLOWED = 20.0
 MAXIMUM_EMPTY_PIXEL_PERCENTAGE = 5.0
 MAXIMUM_DATES_REVIEWED_FOR_TILE = 100
@@ -177,7 +184,7 @@ CELERY_RESULT_BACKEND = f'db+postgresql://{DATABASES["default"]["USER"]}:{os.get
 
 
 LOGGING = {
-    'version': 1,
+        'version': 1,
     'disable_existing_loggers': False,
     'handlers': {
         'file': {
@@ -215,6 +222,16 @@ LOGGING = {
             'level': os.getenv('DJANGO_LOG_LEVEL', 'INFO')
         },
         'model_call': {
+            'handlers': ['file', 'console', 'mail_on_error'],
+            'propagate': False,
+            'level': os.getenv('DJANGO_LOG_LEVEL', 'INFO')
+        },
+        'create_update_task': {
+            'handlers': ['file', 'console', 'mail_on_error'],
+            'propagate': False,
+            'level': os.getenv('DJANGO_LOG_LEVEL', 'INFO')
+        },         
+        'img_preprocessing': {
             'handlers': ['file', 'console', 'mail_on_error'],
             'propagate': False,
             'level': os.getenv('DJANGO_LOG_LEVEL', 'INFO')

@@ -5,13 +5,15 @@ from django.utils import timezone
 class Tile(models.Model):
     tile_index = models.CharField(unique=True, max_length=7, blank=False, null=False)
     is_tracked = models.SmallIntegerField(default=0, null=False)
+    first_date = models.DateField(default=None, null=True)
+    last_date = models.DateField(default=None, null=True)
 
     def __str__(self):
         return self.tile_index
 
 
 class Zone(models.Model):
-    tile_index = models.ForeignKey(Tile, null=True, on_delete=models.CASCADE, related_name='tile_zones')
+    tile = models.ForeignKey(Tile, null=True, on_delete=models.CASCADE, related_name='tile_zones')
 
     def __str__(self):
         return f"Zone {self.id}"
@@ -25,10 +27,31 @@ class Clearcut(models.Model):
     clouds = models.PositiveIntegerField(default=0)
     centroid = models.PointField()
     zone = models.ForeignKey(Zone, on_delete=models.CASCADE)
-    mpoly = models.PolygonField()
+    mpoly = models.PolygonField(geography=True, srid=4326, spatial_index=True)
+    status = models.SmallIntegerField(default=0)
 
     def __str__(self):
         return f"Clearcut {self.id}"
+
+    class Meta:
+        permissions = (
+            ("can_set_status_as_right", "Set polygon as right predicted"),
+            ("can_set_status_as_wrong", "Set polygon as wrong predicted")
+        )
+
+
+class NotClearcut(models.Model):
+    image_date_previous = models.DateField(null=True)
+    image_date_current = models.DateField(default=timezone.now)
+    area = models.FloatField()
+    forest = models.PositiveIntegerField(default=1)
+    clouds = models.PositiveIntegerField(default=0)
+    centroid = models.PointField()
+    zone = models.ForeignKey(Zone, on_delete=models.CASCADE)
+    mpoly = models.PolygonField()
+
+    def __str__(self):
+        return f"NotClearcut {self.id}"
 
 
 class TileInformation(models.Model):
@@ -62,7 +85,7 @@ class TileInformation(models.Model):
 
 
 class RunUpdateTask(models.Model):
-    tile_index = models.ForeignKey(Tile, on_delete=models.CASCADE, related_name='run_update_task')
+    tile = models.ForeignKey(Tile, on_delete=models.CASCADE, related_name='run_update_task')
     path_type = models.SmallIntegerField(default=0, null=False)
     path_img_0 = models.URLField(max_length=200, blank=False, null=False, default='')
     path_img_1 = models.URLField(max_length=200, blank=False, null=False, default='')

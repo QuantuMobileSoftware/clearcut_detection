@@ -15,7 +15,7 @@ logger = logging.getLogger('update')
 
 if __name__ == '__main__':
 
-    tasks = RunUpdateTask.objects.filter(result__isnull=False)
+    tasks = RunUpdateTask.objects.filter(result__isnull=False).order_by('image_date_1')
 
     for task in tasks:
         task_id = task.id
