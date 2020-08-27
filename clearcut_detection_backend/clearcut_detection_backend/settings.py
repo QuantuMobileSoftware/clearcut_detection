@@ -50,7 +50,10 @@ INSTALLED_APPS = [
 ]
 
 REST_FRAMEWORK = {
-    'DEFAULT_SCHEMA_CLASS': 'rest_framework.schemas.coreapi.AutoSchema'
+    'DEFAULT_SCHEMA_CLASS': 'rest_framework.schemas.coreapi.AutoSchema',
+    'DEFAULT_AUTHENTICATION_CLASSES': (
+        'rest_framework_simplejwt.authentication.JWTAuthentication',
+    )
 }
 
 MIDDLEWARE = [
@@ -181,7 +184,7 @@ CELERY_RESULT_BACKEND = f'db+postgresql://{DATABASES["default"]["USER"]}:{os.get
 
 
 LOGGING = {
-    'version': 1,
+        'version': 1,
     'disable_existing_loggers': False,
     'handlers': {
         'file': {

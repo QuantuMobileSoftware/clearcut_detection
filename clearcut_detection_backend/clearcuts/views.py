@@ -3,12 +3,56 @@ import re
 
 from django.db.models import Max, Subquery, Sum, Min, F, OuterRef
 from django.core.exceptions import ObjectDoesNotExist
-from django.http import JsonResponse, HttpResponse
+from django.http import JsonResponse, HttpResponse, Http404
 from rest_framework.decorators import api_view, parser_classes
 from rest_framework.parsers import JSONParser
+from rest_framework.response import Response
+from rest_framework.permissions import IsAuthenticated, IsAdminUser
+from rest_framework import status
+from rest_framework.views import APIView
+from rest_framework import mixins
+from rest_framework import generics
 
-from clearcuts.models import Clearcut, Zone
-from clearcuts.serializers import ClearcutChartSerializer
+from clearcuts.models import Clearcut, Zone, RunUpdateTask
+from clearcuts.serializers import ClearcutChartSerializer, ClearcutSerializer, RunUpdateTaskSerializer
+
+
+class ClearcutDetail(APIView):
+    """
+    Retrieve or update clearcut instance.
+    """
+    permission_classes = [IsAuthenticated]
+
+    def get_object(self, pk):
+        try:
+            return Clearcut.objects.get(pk=pk)
+        except Clearcut.DoesNotExist:
+            raise Http404
+
+    def get(self, request, pk, format=None):
+        snippet = self.get_object(pk)
+        serializer = ClearcutSerializer(snippet)
+        return Response(serializer.data)
+
+    def put(self, request, pk, format=None):
+        snippet = self.get_object(pk)
+        serializer = ClearcutSerializer(snippet, data=request.data)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+class RunUpdateTaskList(mixins.ListModelMixin, generics.GenericAPIView):
+    """
+    List all clearcuts_run_update_task
+    """
+    permission_classes = [IsAdminUser]
+    queryset = RunUpdateTask.objects.all()
+    serializer_class = RunUpdateTaskSerializer
+
+    def get(self, request, *args, **kwargs):
+        return self.list(request, *args, **kwargs)
 
 
 @api_view(['GET'])
@@ -155,3 +199,9 @@ def clearcut_area_chart(request, id, start_date, end_date):
         return JsonResponse(serializer.data, safe=False)
     except ObjectDoesNotExist:
         return HttpResponse(status=404)
+
+
+def update_clearcut_status(request):
+    pass
+    id = None
+    status = 0

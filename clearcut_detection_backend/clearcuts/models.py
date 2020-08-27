@@ -28,9 +28,16 @@ class Clearcut(models.Model):
     centroid = models.PointField()
     zone = models.ForeignKey(Zone, on_delete=models.CASCADE)
     mpoly = models.PolygonField(geography=True, srid=4326, spatial_index=True)
+    status = models.SmallIntegerField(default=0)
 
     def __str__(self):
         return f"Clearcut {self.id}"
+
+    class Meta:
+        permissions = (
+            ("can_set_status_as_right", "Set polygon as right predicted"),
+            ("can_set_status_as_wrong", "Set polygon as wrong predicted")
+        )
 
 
 class NotClearcut(models.Model):
