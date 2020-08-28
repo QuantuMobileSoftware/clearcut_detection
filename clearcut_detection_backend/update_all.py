@@ -35,7 +35,7 @@ if __name__ == '__main__':
         tile.last_date = None
         tile.save()
 
-    for tile in Tile.objects.filter(is_tracked=1).order_by('tile_index'):
+    for tile in Tile.objects.filter(is_tracked=1, first_date__isnull=True).order_by('tile_index'):
 
         if sentinel_download:
             sentinel_downloader = SentinelDownload(tile.tile_index)
