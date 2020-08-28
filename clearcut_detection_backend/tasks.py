@@ -60,6 +60,6 @@ def rundev(ctx, createdb=False):
 @task
 def runbackend(ctx):
     collect_static_element(ctx)
-    thread_cron = threading.Thread(target=devcron, args=(ctx,))
-    thread_cron.start()
+    # thread_cron = threading.Thread(target=devcron, args=(ctx,))
+    # thread_cron.start()
     ctx.run('uwsgi --ini uwsgi.ini')
