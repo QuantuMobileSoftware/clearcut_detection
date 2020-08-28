@@ -10,7 +10,7 @@ from downloader.models import SourceJp2Images
 from tiff_prepare.prepare_tif import to_tiff, get_ndvi, scale_img, merge_img_extra
 from tiff_prepare.models import Prepared
 
-
+force_download_img = strtobool(os.environ.get('FORCE_DOWNLOAD_IMG', 'false'))
 prepare_tif = strtobool(os.environ.get('PREPARE_TIF', 'true'))
 
 
@@ -67,7 +67,7 @@ class ImgPreprocessing:
         start_time = time.time()
         with ProcessPoolExecutor(max_workers=int(settings.MAX_WORKERS/2)) as executor:
             for tile_by_date in tile_source_jp2_images_all:
-                tiff_dir = self.create_tiff_path(tile_by_date)  # create path for tiff images
+                tiff_dir, tiff_output_name = self.create_tiff_path(tile_by_date)  # create path for tiff images
                 output_tiffs = self.create_output_tiffs(tiff_dir)  # defining temporary files names
                 prepared, created = Prepared.objects.get_or_create(
                     tile=tile_by_date.tile,
@@ -77,10 +77,17 @@ class ImgPreprocessing:
                     prepared.success = 0
                     prepared.save()
 
-                for band_to_tiff in self.all_bands_to_tif(tile_by_date, output_tiffs):
-                    # here run executor
-                    future = executor.submit(to_tiff, *band_to_tiff, prepared=prepared)
-                    future_to_tiff_list.append(future)
+                if output_tiffs['tiff_clouds_name'].is_file() and tiff_output_name.is_file() and not force_download_img:
+                    prepared.cloud_tiff_location = output_tiffs['tiff_clouds_name']
+                    prepared.save()
+
+                if not output_tiffs['tiff_clouds_name'].is_file() or not tiff_output_name.is_file() \
+                        or force_download_img:
+
+                    for band_to_tiff in self.all_bands_to_tif(tile_by_date, output_tiffs):
+                        # here run executor
+                        future = executor.submit(to_tiff, *band_to_tiff, prepared=prepared)
+                        future_to_tiff_list.append(future)
 
         # for future in as_completed(future_to_tiff_list):
         #     logger.info(future.result())
@@ -94,12 +101,13 @@ class ImgPreprocessing:
             future_to_ndvi_list = []
             start_time = time.time()
             for tile_by_date in tile_source_jp2_images_all:
-                tiff_dir = self.create_tiff_path(tile_by_date)  # create path for tiff images
+                tiff_dir, tiff_output_name = self.create_tiff_path(tile_by_date)  # create path for tiff images
 
                 output_tiffs = self.create_output_tiffs(tiff_dir)  # defining temporary files names
 
                 prepared = Prepared.objects.get(tile=tile_by_date.tile, image_date=tile_by_date.image_date)
-                if prepared != -1:
+
+                if not tiff_output_name.is_file() and prepared != -1 or force_download_img and prepared != -1:
                     # here run executor
                     future = executor.submit(
                         get_ndvi,
@@ -122,10 +130,11 @@ class ImgPreprocessing:
         start_time = time.time()
         with ProcessPoolExecutor(max_workers=int(settings.MAX_WORKERS / 2)) as executor:
             for tile_by_date in tile_source_jp2_images_all:
-                tiff_dir = self.create_tiff_path(tile_by_date)  # create path for tiff images
+                tiff_dir, tiff_output_name = self.create_tiff_path(tile_by_date)  # create path for tiff images
                 output_tiffs = self.create_output_tiffs(tiff_dir)  # defining temporary files names
                 prepared = Prepared.objects.get(tile=tile_by_date.tile, image_date=tile_by_date.image_date)
-                if prepared != -1:
+
+                if not tiff_output_name.is_file() and prepared != -1 or force_download_img and prepared != -1:
                     # here run executor
                     future = executor.submit(
                         get_ndvi,
@@ -148,10 +157,11 @@ class ImgPreprocessing:
         start_time = time.time()
         with ProcessPoolExecutor(max_workers=int(settings.MAX_WORKERS / 2)) as executor:
             for tile_by_date in tile_source_jp2_images_all:
-                tiff_dir = self.create_tiff_path(tile_by_date)  # create path for tiff images
+                tiff_dir, tiff_output_name = self.create_tiff_path(tile_by_date)  # create path for tiff images
                 output_tiffs = self.create_output_tiffs(tiff_dir)  # defining temporary files names
                 prepared = Prepared.objects.get(tile=tile_by_date.tile, image_date=tile_by_date.image_date)
-                if prepared != -1:
+
+                if not tiff_output_name.is_file() and prepared != -1 or force_download_img and prepared != -1:
                     for band_to_scale in self.all_bands_to_scale(tile_by_date, output_tiffs):
                         # here run executor
                         future = executor.submit(scale_img, *band_to_scale, prepared=prepared)
@@ -169,11 +179,11 @@ class ImgPreprocessing:
         start_time = time.time()
         with ProcessPoolExecutor(max_workers=int(settings.MAX_WORKERS/2)) as executor:
             for tile_by_date in tile_source_jp2_images_all:
-                tiff_dir = self.create_tiff_path(tile_by_date)  # create path for tiff images
+                tiff_dir, tiff_output_name = self.create_tiff_path(tile_by_date)  # create path for tiff images
                 output_tiffs = self.create_output_tiffs(tiff_dir)  # defining temporary files names
-                tiff_output_name = tiff_dir / f'{tile_by_date.tile.tile_index}_{tile_by_date.image_date}_output.tif'
                 prepared = Prepared.objects.get(tile=tile_by_date.tile, image_date=tile_by_date.image_date)
-                if tiff_output_name.is_file():
+
+                if tiff_output_name.is_file() and not force_download_img:
                     prepared.success = 1
                     prepared.model_tiff_location = str(tiff_output_name)
                     prepared.save()
@@ -226,11 +236,12 @@ class ImgPreprocessing:
     @staticmethod
     def create_tiff_path(tile_by_date):
         """
-        create path for tiff images
+        create path for tiff images and tiff_output_name
         """
         tiff_dir = settings.MODEL_TIFFS_DIR / tile_by_date.tile.tile_index / str(tile_by_date.image_date)
         tiff_dir.mkdir(parents=True, exist_ok=True)
-        return tiff_dir
+        tiff_output_name = tiff_dir / f'{tile_by_date.tile.tile_index}_{tile_by_date.image_date}_output.tif'
+        return tiff_dir, tiff_output_name
 
     @staticmethod
     def create_output_tiffs(tiff_dir):

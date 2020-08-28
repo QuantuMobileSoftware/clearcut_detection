@@ -50,9 +50,10 @@ django_stage:
   environment:
     - DJANGO_SETTINGS_MODULE=clearcut_detection_backend.prod_settings
     - DB_HOST=db_stage
+    - START_DATE_FOR_SCAN=2017-01-01  # start date for searching in Sentinel images
     - RABBITMQ_HOST=rabbitmq_stage
     - SENTINEL_DOWNLOAD=1   # prevent requesting to sentinel
-    - FORCE_DOWNLOAD_IMG=0  # force downloading images even if file exists
+    - FORCE_DOWNLOAD_IMG=0  # force downloading and preprocessing images even if file exists
     - PREPARE_TIF=1  # skip preprocessing images
     - ADD_TASKS=1  # skip adding tasks
     - MAKE_PREDICT=1  # skip predicting of clearcuts
