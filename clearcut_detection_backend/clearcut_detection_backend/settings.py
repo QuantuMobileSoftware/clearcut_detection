@@ -126,7 +126,7 @@ AUTH_PASSWORD_VALIDATORS = [
 ]
 
 # In summer can lower cloud percentage to 5-10, amd enlarge nodata pixel threshold to 50 and dates reviewed to 20-25
-START_DATE_FOR_SCAN = "2017-01-01"
+START_DATE_FOR_SCAN = os.environ.get("START_DATE_FOR_SCAN", "2017-01-01")
 
 MAXIMUM_CLOUD_PERCENTAGE_ALLOWED = 20.0
 MAXIMUM_EMPTY_PIXEL_PERCENTAGE = 5.0

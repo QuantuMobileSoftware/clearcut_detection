@@ -15,7 +15,7 @@ from clearcuts.models import Tile
 from services.configuration import bands_to_download
 from downloader.models import SourceJp2Images as Sjp
 
-force_download_img = strtobool(os.environ.get('FORCE_DOWNLOAD_IMG', 'true'))
+force_download_img = strtobool(os.environ.get('FORCE_DOWNLOAD_IMG', 'false'))
 
 logger = logging.getLogger('sentinel')
 

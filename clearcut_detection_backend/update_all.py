@@ -40,7 +40,7 @@ if __name__ == '__main__':
         if sentinel_download:
             sentinel_downloader = SentinelDownload(tile.tile_index)
             sentinel_downloader.process_download()
-        logger.info(f'Sentinel pictures for {tile.tile_index} were downloaded')
+            logger.info(f'Sentinel pictures for {tile.tile_index} were downloaded')
 
         if prepare_tif:
             img_preprocessing = ImgPreprocessing(tile.tile_index)
@@ -48,7 +48,8 @@ if __name__ == '__main__':
 
         if add_tasks:
             CreateUpdateTask().run_all_from_prepared(tile.tile_index)
-        exit(0)
+        continue
+        # exit(0)
 
         if convert_to_tiff:
             logger.info('Start convert jp2_to_tiff')
