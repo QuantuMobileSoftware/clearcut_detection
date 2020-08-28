@@ -25,7 +25,7 @@ class Clearcut(models.Model):
     area = models.FloatField()
     forest = models.PositiveIntegerField(default=1)
     clouds = models.PositiveIntegerField(default=0)
-    centroid = models.PointField()
+    centroid = models.PointField(spatial_index=False)
     zone = models.ForeignKey(Zone, on_delete=models.CASCADE)
     mpoly = models.PolygonField(geography=True, srid=4326, spatial_index=True)
     status = models.SmallIntegerField(default=0)
@@ -46,9 +46,9 @@ class NotClearcut(models.Model):
     area = models.FloatField()
     forest = models.PositiveIntegerField(default=1)
     clouds = models.PositiveIntegerField(default=0)
-    centroid = models.PointField()
+    centroid = models.PointField(spatial_index=False)
     zone = models.ForeignKey(Zone, on_delete=models.CASCADE)
-    mpoly = models.PolygonField()
+    mpoly = models.PolygonField(spatial_index=False)
 
     def __str__(self):
         return f"NotClearcut {self.id}"
@@ -74,7 +74,7 @@ class TileInformation(models.Model):
     mapbox_tile_id = models.CharField(max_length=32, blank=True, null=True)
     mapbox_tile_name = models.CharField(max_length=32, blank=True, null=True)
     mapbox_tile_layer = models.CharField(max_length=32, blank=True, null=True)
-    coordinates = models.PolygonField(blank=True, null=True)
+    coordinates = models.PolygonField(blank=True, null=True, spatial_index=False)
     is_downloaded = models.SmallIntegerField(default=0)
     is_prepared = models.SmallIntegerField(default=0)
     is_predicted = models.SmallIntegerField(default=0)
