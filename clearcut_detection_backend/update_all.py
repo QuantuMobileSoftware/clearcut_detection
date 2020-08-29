@@ -30,10 +30,11 @@ if __name__ == '__main__':
     # Tile.objects.exclude(tile_index__in=area_tile_set).update(is_tracked=0)
     for tile_index in area_tile_set:
         tile, created = Tile.objects.get_or_create(tile_index=tile_index)  # TODO
-        tile.is_tracked = 1
-        tile.first_date = None
-        tile.last_date = None
-        tile.save()
+        if created:
+            tile.is_tracked = 1
+            tile.first_date = None
+            tile.last_date = None
+            tile.save()
 
     for tile in Tile.objects.filter(is_tracked=1, first_date__isnull=True).order_by('tile_index'):
 
