@@ -22,15 +22,31 @@ else:
 
 
 class CreateUpdateTask:
-    # def __init__(self, tile_index):
-    #     self.tile_index = tile_index
+    def __init__(self, tile_index):
+        self.tile_index = tile_index
 
-    def run_all_from_prepared(self, tile_index):
+    @property
+    def get_all_prepared(self):
+        """
+        get all records for prepared images
+        """
+        return Prepared.objects.filter(tile_id__tile_index=self.tile_index, success=1).order_by('image_date')
 
-        prepared = Prepared.objects.filter(success=1, tile_id__tile_index=tile_index).order_by('image_date')
+    @property
+    def get_new_prepared(self):
+        """
+        get all new records for prepared images
+        """
+        return Prepared.objects.filter(tile_id__tile_index=self.tile_index, success=1, is_new=1)
+
+    def run_from_prepared(self, prepared):
+        """
+        create tasks for update from prepared records
+        :prepared: list of Prepared.objects
+        """
         logger.info(f'len(prepared): {len(prepared)}')
         if len(prepared) < 2:
-            logger.error(f'cant predict tile {tile_index}, len(prepared) < 2')
+            logger.error(f'cant predict tile {self.tile_index}, len(prepared) < 2')
             return
 
         task_list = []
@@ -43,7 +59,7 @@ class CreateUpdateTask:
             path_clouds_0 = prepared[i].cloud_tiff_location
             path_clouds_1 = prepared[i + 1].cloud_tiff_location
 
-            tile = Tile.objects.get(tile_index=tile_index)
+            tile = Tile.objects.get(tile_index=self.tile_index)
 
             task = RunUpdateTask(tile=tile,
                                  path_type=path_type,
@@ -55,16 +71,15 @@ class CreateUpdateTask:
                                  path_clouds_1=path_clouds_1
                                  )
             task.save()
+            prepared[i].is_new = 0
+            prepared[i].save()
 
             logger.info(f'send task_id: {task.id} to queue')
             task_list.append(app.send_task(
                 name='tasks.run_model_predict',
                 queue='model_predict_queue',
                 kwargs={'task_id': task.id},
-                # task_track_started=True,
                 ignore_result=False,
-                # countdown=100,
-                # timeout = 10000000,
                 ))
 
         if make_predict:
@@ -75,8 +90,8 @@ class CreateUpdateTask:
                 logger.info(f'len(job.tasks): {len(job.tasks)}')
                 cnt = 0
                 for j in job.tasks:
-                    logger.info(j)
-                    logger.info(j.successful())
+                    # logger.info(j)
+                    # logger.info(j.successful())
                     if j.successful():
                         logger.info(j.result)
                         task_id = j.result

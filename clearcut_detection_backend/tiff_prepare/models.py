@@ -9,6 +9,7 @@ class Prepared(models.Model):
     model_tiff_location = models.URLField(max_length=200, blank=True, null=True)
     cloud_tiff_location = models.URLField(max_length=200, blank=True, null=True)
     success = models.SmallIntegerField(default=0)
+    is_new = models.SmallIntegerField(default=1)
     prepare_date = models.DateTimeField(default=timezone.now)
 
     class Meta:

@@ -49,6 +49,7 @@ class ImgPreprocessing:
             source_b12_location__isnull=False,
             source_clouds_location__isnull=False,
             is_downloaded=7,
+            is_new=1,
         ).order_by('image_date')
 
         if convert_to_tiff:
@@ -75,6 +76,7 @@ class ImgPreprocessing:
                 )
                 if not created:
                     prepared.success = 0
+                    prepared.is_new = 1
                     prepared.save()
 
                 if output_tiffs['tiff_clouds_name'].is_file() and tiff_output_name.is_file() and not force_download_img:
@@ -187,6 +189,8 @@ class ImgPreprocessing:
                     prepared.success = 1
                     prepared.model_tiff_location = str(tiff_output_name)
                     prepared.save()
+                    tile_by_date.is_new = 0
+                    tile_by_date.save()
                     self.remove_temp_files(str(tiff_output_name))
                     continue
                 if prepared != -1:
@@ -203,7 +207,8 @@ class ImgPreprocessing:
                                              is_quiet=0,
                                              separate=1,
                                              frmt='GTiff',
-                                             prepared=prepared
+                                             prepared=prepared,
+                                             tile_by_date=tile_by_date
                                              )
                     future_merge_all_bands_list.append(future)
 

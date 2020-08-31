@@ -49,6 +49,7 @@ class SentinelDownload:
         self.bands_to_download = bands_to_download  # TODO to db
         self.bucket_name = 'gcp-public-data-sentinel-2'  # TODO to settings
         self.prefix = 'L2/tiles'
+        self.metadata_file = 'MTD_TL.xml'
         # self.tiles_and_uris_dict = {tile_name: self.get_tile_uri(tile_name) for tile_name in self.area_tile_set}
         self.storage_client = storage.Client()
         self.storage_bucket = self.get_storage_bucket()
@@ -67,8 +68,8 @@ class SentinelDownload:
         Requests metadata file to define if update is needed for tile
         Launches multi thread download
         """
-        self.request_google_cloud_storage_for_historical_data(self.tile_index)
-        self.launch_download_pool(self.tile_index)
+        self.request_google_cloud_storage_for_historical_data()
+        self.launch_download_pool()
 
     @staticmethod
     def get_tile_uri(tile_name):
@@ -100,16 +101,16 @@ class SentinelDownload:
         except TillNameError:
             logger.error('Error\n\n', exc_info=True)
 
-    def launch_download_pool(self, tile_name):
+    def launch_download_pool(self):
         """
         For each tile_date starts own thread processing
-        :param tile_name: str
         :return:
         """
         with ThreadPoolExecutor(max_workers=settings.MAX_WORKERS*4) as executor:
-            for source_jp2_images in Sjp.objects.select_related('tile').filter(tile__tile_index=tile_name).order_by(
-                    'image_date'
-            ):
+            for source_jp2_images in Sjp.objects.select_related('tile').filter(
+                    tile__tile_index=self.tile_index,
+                    is_new=1
+            ).order_by('image_date'):
                 executor.submit(self.download_images_from_tiles, source_jp2_images)
 
     def r_10m_download(self, source_jp2_images):
@@ -267,64 +268,41 @@ class SentinelDownload:
         :param source_jp2_images:
         :return:
         """
-
+        source_jp2_images.is_downloaded = 0
+        source_jp2_images.save()
         self.r_20m_download(source_jp2_images)
         self.r_10m_download(source_jp2_images)
         self.qi_data_download(source_jp2_images)
 
         logger.info(f'finish for {source_jp2_images.image_date}')
 
-    def request_google_cloud_storage_for_data(self, tile_name):
-        pass
-
-    def request_google_cloud_storage_for_update_data(self, tile_name):
+    def request_google_cloud_storage_for_new_data(self):
         """
-        Iterates over tile blobs.
-        Select tile uri by clouds coverage and nodata_pixel and store it to db.
-        :param tile_name: str
+        Iterates over tile blobs .
+        Select tile uri by:
+         date - it must be greater than tile.last_date stored in db,
+         clouds coverage and nodata_pixel and store it to db.
         :return:
         """
-        metadata_file = 'MTD_TL.xml'
+        prefixes = self.get_prefixes_list_by_tile_name(self.tile_index)
 
-        tile_path = self.get_tile_uri(tile_name)
-
-        tile_uri = f'L2/tiles/{tile_path}/'
-
-        blobs = self.storage_client.list_blobs(self.storage_bucket, prefix=tile_uri, delimiter='/')
-        blobs._next_page()
-
-        prefixes = list(blobs.prefixes)
-        if not prefixes:
-            raise NotFound(f'no such tile_uri: {tile_uri}')
-
-        tile = Tile.objects.get(tile_index=tile_name)
+        tile = Tile.objects.get(tile_index=self.tile_index)
         if tile.last_date is not None:
             granule_id_list = []
             prefixes.sort(key=self.get_granule_date, reverse=True)
             for prefix in prefixes:
                 if self.get_granule_date(prefix) > tile.last_date:
                     granule_id_list.append(prefix)
-            """create here for update"""
 
-    def request_google_cloud_storage_for_historical_data(self, tile_name):
+            self.granule_id_list_to_db(self.tile_index, granule_id_list)
+
+    def request_google_cloud_storage_for_historical_data(self):
         """
         Iterates over tile blobs.
         Select tile uri by clouds coverage and nodata_pixel and store it to db.
-        :param tile_name: str
         :return:
         """
-        metadata_file = 'MTD_TL.xml'
-
-        tile_path = self.get_tile_uri(tile_name)
-
-        tile_uri = f'L2/tiles/{tile_path}/'
-
-        blobs = self.storage_client.list_blobs(self.storage_bucket, prefix=tile_uri, delimiter='/')
-        blobs._next_page()
-
-        prefixes = list(blobs.prefixes)
-        if not prefixes:
-            raise NotFound(f'no such tile_uri: {tile_uri}')
+        prefixes = self.get_prefixes_list_by_tile_name(self.tile_index)
 
         prefixes.sort(key=self.get_granule_date)
         granule_id_list = []
@@ -332,6 +310,33 @@ class SentinelDownload:
             if str(self.get_granule_date(prefix)) > settings.START_DATE_FOR_SCAN:
                 granule_id_list.append(prefix)
 
+        self.granule_id_list_to_db(self.tile_index, granule_id_list)
+
+    def get_prefixes_list_by_tile_name(self, tile_name):
+        """
+        get prefix list for tile_name from bucket
+        :param tile_name: str
+        :return: list
+        """
+        tile_path = self.get_tile_uri(tile_name)
+
+        tile_uri = f'L2/tiles/{tile_path}/'
+
+        blobs = self.storage_client.list_blobs(self.storage_bucket, prefix=tile_uri, delimiter='/')
+        blobs._next_page()
+
+        prefixes = list(blobs.prefixes)
+        if not prefixes:
+            raise NotFound(f'no such tile_uri: {tile_uri}')
+        return prefixes
+
+    def granule_id_list_to_db(self, tile_name, granule_id_list):
+        """
+        Iterates over granule_id_list, fetch meta information and store it to db
+        :param tile_name: str
+        :param granule_id_list: list
+        :return:
+        """
         for granule_id in granule_id_list:
             granule_date = self.get_granule_date(granule_id)
             logger.info(f'granule_date: {granule_date}')
@@ -346,11 +351,11 @@ class SentinelDownload:
             nested_granule_id = nested_granule_id_list[0]
             updated_tile_uri = nested_granule_id[:-1] if nested_granule_id.endswith('/') else nested_granule_id
 
-            blob = self.storage_bucket.get_blob(f'{updated_tile_uri}/{metadata_file}')
+            blob = self.storage_bucket.get_blob(f'{updated_tile_uri}/{self.metadata_file}')
             if not blob:
-                raise NotFound(f'not found {updated_tile_uri}/{metadata_file}')
+                raise NotFound(f'not found {updated_tile_uri}/{self.metadata_file}')
 
-            self.add_source_to_db(blob, tile_name, metadata_file, updated_tile_uri)
+            self.add_source_to_db(blob, tile_name, self.metadata_file, updated_tile_uri)
 
     @staticmethod
     def get_date_from_uri(tile_uri):
@@ -394,6 +399,8 @@ class SentinelDownload:
         tile = Tile.objects.get(tile_index=tile_name)
         try:
             source_jp2_images = Sjp.objects.get(tile=tile, image_date=tile_date)
+            source_jp2_images.is_new = 1
+            source_jp2_images.save()
             logger.info(f'record for {tile_name}-{source_jp2_images.image_date} was already created')
         except ObjectDoesNotExist:
             source_jp2_images = Sjp.objects.create(
@@ -403,19 +410,8 @@ class SentinelDownload:
                 cloud_coverage=cloud_coverage_value,
                 nodata_pixel=nodata_pixel_value,
             )
-            # source_jp2_images.tile_date = datetime.datetime.strptime(blob.name.split('_')[-2][:8], '%Y%m%d')
-            # source_jp2_images.tile_location = None
-            # source_jp2_images.source_tci_location = None
-            # source_jp2_images.source_b04_location = None
-            # source_jp2_images.source_b08_location = None
-            # source_jp2_images.source_b8a_location = None
-            # source_jp2_images.source_b11_location = None
-            # source_jp2_images.source_b12_location = None
-            # source_jp2_images.source_clouds_location = None
-
             source_jp2_images.save()
             logger.info(f'record for {tile_name}-{source_jp2_images.image_date} is created')
-            # logger.info(f'Tile {tile_name}-{source_jp2_images.image_date} will be downloaded from {tile_uri}')
         return
 
     def get_granule_date(self, path):
