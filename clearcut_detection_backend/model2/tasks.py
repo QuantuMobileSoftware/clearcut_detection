@@ -1,5 +1,6 @@
 import time
 from celery import Celery, Task
+from celery.exceptions import TimeLimitExceeded
 from config import (POSTGRES_USER, POSTGRES_PASSWORD, POSTGRES_DB, DB_HOST)
 from db_engin import make_session_factory
 from run_predict_tasks.run_predict import run_predict
@@ -27,7 +28,7 @@ class CallbackTask(Task):
 
 
 # @app.task(remote_tracebacks='enable', base=CallbackTask) soft_time_limit=15 * 60, time_limit=15*60
-@app.task(remote_tracebacks='enable', )
+@app.task(remote_tracebacks='enable', autoretry_for=(TimeLimitExceeded,), max_retries=2)
 def run_model_predict(**kwargs):
     task_id = int(kwargs.get('task_id'))
     print(f'get task_id: {task_id}')

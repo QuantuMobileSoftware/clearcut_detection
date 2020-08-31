@@ -93,6 +93,7 @@ def get_ndvi(input1, input2, outfile, prepared=None):
 
 def merge_img_extra(*args, **kwargs):
     prepared = kwargs.pop('prepared')
+    tile_by_date = kwargs.pop('tile_by_date')
     try:
         merge_img(*args)
     except (IOError, ValueError, Exception):
@@ -106,4 +107,6 @@ def merge_img_extra(*args, **kwargs):
     prepared.success = 1
     prepared.model_tiff_location = args[0]
     prepared.save()
+    tile_by_date.is_new = 0
+    tile_by_date.save()
     return args[0]

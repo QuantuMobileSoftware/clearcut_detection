@@ -26,21 +26,12 @@ mapbox_upload = strtobool(os.environ.get('UPLOAD_TO_MAPBOX', 'true'))
 logger = logging.getLogger('update')
 
 
-if __name__ == '__main__':
-    # Tile.objects.exclude(tile_index__in=area_tile_set).update(is_tracked=0)
-    for tile_index in area_tile_set:
-        tile, created = Tile.objects.get_or_create(tile_index=tile_index)  # TODO
-        if created:
-            tile.is_tracked = 1
-            tile.first_date = None
-            tile.last_date = None
-            tile.save()
-
-    for tile in Tile.objects.filter(is_tracked=1, first_date__isnull=True).order_by('tile_index'):
+def fetch_new_data():
+    for tile in Tile.objects.filter(is_tracked=1, first_date__isnull=False).order_by('tile_index'):
 
         if sentinel_download:
             sentinel_downloader = SentinelDownload(tile.tile_index)
-            sentinel_downloader.request_google_cloud_storage_for_historical_data()
+            sentinel_downloader.request_google_cloud_storage_for_new_data()
             sentinel_downloader.launch_download_pool()
             logger.info(f'Sentinel pictures for {tile.tile_index} were downloaded')
 
@@ -50,7 +41,7 @@ if __name__ == '__main__':
 
         if add_tasks:
             update_task = CreateUpdateTask(tile.tile_index)
-            prepared = update_task.get_all_prepared
+            prepared = update_task.get_new_prepared
             update_task.run_from_prepared(prepared)
         continue
         # exit(0)
@@ -66,3 +57,7 @@ if __name__ == '__main__':
                 uploader = start_upload()
             except (IOError, ValueError, FileNotFoundError, FileExistsError, Exception):
                 logger.error('Error\n\n', exc_info=True)
+
+
+if __name__ == '__main__':
+    fetch_new_data()

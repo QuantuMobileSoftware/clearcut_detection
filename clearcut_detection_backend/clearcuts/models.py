@@ -33,11 +33,11 @@ class Clearcut(models.Model):
     def __str__(self):
         return f"Clearcut {self.id}"
 
-    class Meta:
-        permissions = (
-            ("can_set_status_as_right", "Set polygon as right predicted"),
-            ("can_set_status_as_wrong", "Set polygon as wrong predicted")
-        )
+    # class Meta:
+    #     permissions = (
+    #         ("can_set_status_as_right", "Set polygon as right predicted"),
+    #         ("can_set_status_as_wrong", "Set polygon as wrong predicted")
+    #     )
 
 
 class NotClearcut(models.Model):

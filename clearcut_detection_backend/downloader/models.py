@@ -18,6 +18,7 @@ class SourceJp2Images(models.Model):
     source_clouds_location = models.URLField(max_length=200, blank=True, null=True)
 
     is_downloaded = models.SmallIntegerField(default=0)
+    is_new = models.SmallIntegerField(default=1)
     check_date = models.DateTimeField(default=timezone.now)
 
     class Meta:
