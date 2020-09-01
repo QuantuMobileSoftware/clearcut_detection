@@ -291,7 +291,7 @@ class SentinelDownload:
             granule_id_list = []
             prefixes.sort(key=self.get_granule_date, reverse=True)
             for prefix in prefixes:
-                if self.get_granule_date(prefix) > tile.last_date:
+                if self.get_granule_date(prefix) > tile.last_date or self.get_granule_date(prefix) == tile.last_date:
                     granule_id_list.append(prefix)
 
             self.granule_id_list_to_db(self.tile_index, granule_id_list)
