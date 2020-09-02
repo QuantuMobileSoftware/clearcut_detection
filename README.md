@@ -4,28 +4,46 @@
  * `clearcut_detection_backend` - web-service for clearcut detection
  * `clearcut_research` - investigation about model approach, model training and model evaluation of clearcut detection
  
- ## Launch requirements:  
+## Launch requirements:  
 To start a web-service, do next:
 * `cd clearcut_detection_backend/`  
-* create peps_download_config.ini based on the peps_download_config.ini.example and setup secure params
-* update `gcp_config.ini`, `AREA_TILE_SET` value is responsible for region that should be fetched and processed.
- In order to use Google Cloud Storage you need to generate service account key and put this file inside /clercut_detection_backend folder, file name should be specified inside gcp_config file(key.json by default).
- Update it if needed. To get tiles Ids you can use https://mappingsupport.com/p2/gissurfer.php?center=14SQH05239974&zoom=4&basemap=USA_basemap   
-* create django.env file based on django.env.dist 
-* create model.env file based on model.env.dist should be inside /model folder, use same service account key generated earlier  
-* put unet_v4.pth in to  clearcut_detection_backend/model/unet_v4.pth (trained model can be obtained from maintainers)
-* Run `docker-compose -f docker-compose-dev.yml up` in order to run docker for backend and frontend development.  
+* create db.env based on the db.env.example
+        `AREA_TILE_SET` value is responsible for region that should be fetched and processedUpdate it if needed. 
+        To get tiles Ids you can use https://mappingsupport.com/p2/gissurfer.php?center=14SQH05239974&zoom=4&basemap=USA_basemap
+          
+* create key.json based on the key.json.example
+        In order to use Google Cloud Storage you need to generate service account key and put this file inside /clercut_detection_backend folder, 
+        file name should be specified inside gcp_config file(key.json by default).
+        for more information about creating key.json read https://flaviocopes.com/google-api-authentication/
+        
+* create django.env based on the django.env.dist
+* create rabbitmq.env based on the rabbitmq.env.dist
+
+* `cd model2/`
+* create model.env file based on model.env.dist,
+    RABBITMQ_DEFAULT_USER and RABBITMQ_DEFAULT_PASS copy from rabbitmq.env created earlier, 
+    POSTGRES_USER and POSTGRES_PASSWORD copy from db.env created earlier
+* put same key.json  generated earlier to clearcut_detection_backend/model2/key.json
+* put unet_v4.pth in to  clearcut_detection_backend/model2/unet_v4.pth (trained model can be obtained from maintainers)
+* Run `docker build -f model.Dockerfile -t clearcut_detection/model2 .` in order to build model2 docker image
+
+## At the first start:
+* `cd ..` now You should be in clearcut_detection_backend/
+* Run `docker build -f postgis.Dockerfile -t clearcut_detection/postgis .` in order to build postgis docker image
+* Run `docker build -f django.Dockerfile -t clearcut_detection/backend .` in order to build backend image
+* Run `docker-compose -f docker-compose-stage.yml up -d db_stage` in order to run docker for data base
+* Run `docker-compose -f ./docker-compose-stage.yml run --rm django_stage python /code/manage.py migrate --noinput`
+    in order to create all data base tables
+* Run `docker-compose -f ./docker-compose-stage.yml run --rm django_stage python /code/manage.py loaddata db.json`
+    in order to import data from db.json file to data base
+* Run `docker-compose -f ./docker-compose-stage.yml run --rm django_stage python /code/manage.py createsuperuser` in order to create django superuser
+    
+## Launch project
 * Run `docker-compose -f docker-compose-stage.yml up` for deployment.
 
-## Credential setup
-
-This project needs several secure credentials, for peps.cnes.fr and sentinel-hub. 
-For correct setup, you need to create peps_download_config.ini 
-(it could be done by example peps_download_config.ini.example) and feel auth, 
-password and sentinel_id parameters. 
-
 ## Swagger:  
-After the app has been launched, swagger for api can be used. Go to http://localhost/api/swagger to access swagger with full description of api endpoints.
+After the app has been launched, swagger for api can be used. Go to http://localhost/api/swagger to access swagger with full description of api endpoints. (not working now)
+
 
 ## Model Development Guide
 ### Data downloading
