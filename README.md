@@ -69,3 +69,6 @@ Use if You have already collected data, and now You want to update it by new inf
 ## Swagger:  
 After the app has been launched, swagger for api can be used. Go to http://localhost/api/swagger to access swagger with full description of api endpoints.
 You have to login as superuser to see all API description.
+
+## Whats new
+https://github.com/QuantuMobileSoftware/clearcut_detection/blob/master/clearcut_detection_backend/docs/Whats_new
