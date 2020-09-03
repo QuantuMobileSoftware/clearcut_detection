@@ -12,7 +12,7 @@ from google.cloud.exceptions import NotFound
 from xml.dom import minidom
 from xml.etree.ElementTree import ParseError
 from clearcuts.models import Tile
-from services.configuration import bands_to_download
+# from services.configuration import bands_to_download
 from downloader.models import SourceJp2Images as Sjp
 
 force_download_img = strtobool(os.environ.get('FORCE_DOWNLOAD_IMG', 'false'))
@@ -44,9 +44,9 @@ class SentinelDownload:
         settings.DOWNLOADED_IMAGES_DIR.mkdir(parents=True, exist_ok=True)
         os.environ['GOOGLE_APPLICATION_CREDENTIALS'] = './key.json'
         self.tile_index = tile_index
-        self.tile_dates_count = settings.MAXIMUM_DATES_REVIEWED_FOR_TILE
-        self.sequential_dates_count = settings.MAXIMUM_DATES_STORE_FOR_TILE
-        self.bands_to_download = bands_to_download  # TODO to db
+        # self.tile_dates_count = settings.MAXIMUM_DATES_REVIEWED_FOR_TILE
+        # self.sequential_dates_count = settings.MAXIMUM_DATES_STORE_FOR_TILE
+        # self.bands_to_download = bands_to_download  # TODO to db
         self.bucket_name = 'gcp-public-data-sentinel-2'  # TODO to settings
         self.prefix = 'L2/tiles'
         self.metadata_file = 'MTD_TL.xml'
@@ -55,7 +55,7 @@ class SentinelDownload:
         self.storage_bucket = self.get_storage_bucket()
 
         logger.info(f'area tile set for download: {self.tile_index}')
-        logger.info(f'bands to download:{self.bands_to_download}')
+        # logger.info(f'bands to download:{self.bands_to_download}')
 
     def get_storage_bucket(self):
         try:

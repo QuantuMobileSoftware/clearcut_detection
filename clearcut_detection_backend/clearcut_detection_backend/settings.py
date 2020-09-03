@@ -44,7 +44,6 @@ INSTALLED_APPS = [
     'rest_framework',
     'rest_framework_swagger',
     'corsheaders',
-    # 'django_celery_results',
     'downloader.apps.DownloaderConfig',
     'tiff_prepare.apps.TiffPrepareConfig',
 ]
@@ -131,8 +130,8 @@ START_DATE_FOR_SCAN = os.environ.get("START_DATE_FOR_SCAN", "2017-01-01")
 
 MAXIMUM_CLOUD_PERCENTAGE_ALLOWED = 50.0
 MAXIMUM_EMPTY_PIXEL_PERCENTAGE = 5.0
-MAXIMUM_DATES_REVIEWED_FOR_TILE = 100
-MAXIMUM_DATES_STORE_FOR_TILE = 2
+# MAXIMUM_DATES_REVIEWED_FOR_TILE = 100
+# MAXIMUM_DATES_STORE_FOR_TILE = 2
 
 MAPBOX_USER = 'quantum-inc'
 MAPBOX_ACCESS_TOKEN = os.environ.get('MAPBOX_SECRET_KEY')
