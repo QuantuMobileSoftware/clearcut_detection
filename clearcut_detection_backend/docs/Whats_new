@@ -1,0 +1,41 @@
+fix bugs in predict
+add mask erosion
+
+correct clearcuts merging procedure (union of polygons within the region)
+correct typo in polygons merging procedure
+correct typo in geojson_save
+change the structure of filtered clearcuts
+correct searching nearest polygons (use geometry instead of centroid) in geojson_save
+
+update django.Dockerfile
+update project structure
+add logging
+add email on any error
+
+fix Converts Tile Name to part of the URI in format [UTM_ZONE]/[LATITUDE_BAND]/[GRID_SQUARE]
+improve speed image preprocessing
+add constants to settings.py
+add skipping of some functions for dev purposes
+add function for removing temp files
+
+add docker-compose-stage and added nginx.conf for stage
+run gdal by pure python
+
+add separate table for storing information about tiles
+add separate table for storing polygons with clouds=1 or forest=0
+add separate table for storing information about updating tasks
+improve speed of polygons saving
+
+remove make migrations from init.db
+
+add celery
+add model2 running on celery, old style running model will be removed
+add gpu drivers into the model.Dockerfile
+add env variables
+update requirements
+update frontend
+add admin user
+
+add execution time to geojson_save.py
+update api logic
+add functions for collecting all historical data for tile

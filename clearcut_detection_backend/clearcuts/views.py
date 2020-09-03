@@ -199,9 +199,3 @@ def clearcut_area_chart(request, id, start_date, end_date):
         return JsonResponse(serializer.data, safe=False)
     except ObjectDoesNotExist:
         return HttpResponse(status=404)
-
-
-def update_clearcut_status(request):
-    pass
-    id = None
-    status = 0
