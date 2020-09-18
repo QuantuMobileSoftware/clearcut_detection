@@ -2,6 +2,9 @@ import os
 import re
 import datetime
 import logging
+import rasterio
+from rasterio.windows import from_bounds
+from pathlib import Path
 from enum import Enum
 from distutils.util import strtobool
 from django.conf import settings
@@ -42,7 +45,7 @@ class SentinelDownload:
 
     def __init__(self, tile_index):
         settings.DOWNLOADED_IMAGES_DIR.mkdir(parents=True, exist_ok=True)
-        os.environ['GOOGLE_APPLICATION_CREDENTIALS'] = './key.json'
+        os.environ['GOOGLE_APPLICATION_CREDENTIALS'] = f'{settings.BASE_DIR}/key.json'
         self.tile_index = tile_index
         # self.tile_dates_count = settings.MAXIMUM_DATES_REVIEWED_FOR_TILE
         # self.sequential_dates_count = settings.MAXIMUM_DATES_STORE_FOR_TILE
@@ -275,6 +278,138 @@ class SentinelDownload:
         self.qi_data_download(source_jp2_images)
 
         logger.info(f'finish for {source_jp2_images.image_date}')
+
+    def request_google_cloud_storage_for_band_image_uri_on_date(self, image_date, band='TCI'):
+        """
+
+        :param image_date: str image date to lookup
+        :param band: str band name, supported are 'TCI', 'B04', 'B08', 'B11', 'B12', 'B8A', 'MSK_CLDPRB'
+        return uri
+        """
+        prefixes = self.get_prefixes_list_by_tile_name(self.tile_index)
+        for prefix in prefixes:
+            if self.get_granule_date(prefix) == image_date:
+
+                prefix = f'{prefix}GRANULE/'
+                blobs = self.storage_client.list_blobs(self.storage_bucket, prefix=prefix, delimiter='/')
+                blobs._next_page()
+
+                nested_granule_id_list = list(blobs.prefixes)
+                if not nested_granule_id_list:
+                    raise NotFound(f'no such prefix: {prefix}')
+
+                nested_granule_id = nested_granule_id_list[0]
+                tile_uri = nested_granule_id[:-1] if nested_granule_id.endswith('/') else nested_granule_id
+
+                file_path = settings.DOWNLOADED_IMAGES_DIR / self.tile_index / str(image_date)
+                file_path.mkdir(parents=True, exist_ok=True)
+
+                if band in ('TCI', 'B04', 'B08', ):
+                    tile_prefix = f'{tile_uri}/IMG_DATA/R10m/'
+                    img_name_endswith = f'_{band}_10m.jp2'
+
+                elif band in ('B11', 'B12', 'B8A'):
+                    tile_prefix = f'{tile_uri}/IMG_DATA/R20m/'
+                    img_name_endswith = f'_{band}_20m.jp2'
+                else:
+                    tile_prefix = f'{tile_uri}/QI_DATA/'
+                    img_name_endswith = f'{band}_20m.jp2'
+
+                blobs = self.storage_bucket.list_blobs(prefix=tile_prefix)
+                is_blob = False
+                for blob in blobs:
+                    is_blob = True
+                    logger.info(blob.name)
+
+                    img_name = blob.name.split('/')[-1]
+                    logger.info(img_name)
+                    if img_name.endswith(img_name_endswith):
+                        return f'gs://{self.bucket_name}/{blob.name}'
+
+                if not is_blob:
+                    logger.error(
+                        f'{__name__}.{self.request_google_cloud_storage_for_band_image_uri_on_date.__qualname__} \
+                        Error in uri: {tile_prefix}')
+                    return
+
+    def download_polygon_preview_from_google_cloud_storage(self, url, max_coords):
+        print(f'settings.BASE_DIR: {settings.BASE_DIR}')
+        print(os.environ.get('GOOGLE_APPLICATION_CREDENTIALS'))
+
+        key_file = Path(os.environ.get('GOOGLE_APPLICATION_CREDENTIALS'))
+        print(key_file.is_file())
+        print(f'rasterio.__version__: {rasterio.__version__}')
+
+
+
+        with rasterio.open(url) as src:
+            src_crs = src.crs
+            print(f'src.width: {src.width}, src.height: {src.height}')
+            print(src.mode)
+            print(src.count)
+            # ds = src.read(1, window=from_bounds(left, bottom, right, top, src.transform))
+            ds = src.read(window=from_bounds(*max_coords, src.transform))
+            name = src.name
+
+            src_bounds = src.bounds
+            return src.width, src.height
+
+    def download_tci_images_on_date_from_google_cloud_storage(self, image_date):
+        """
+
+        """
+        file_path = settings.DOWNLOADED_IMAGES_DIR / self.tile_index / str(image_date)
+        file_path.mkdir(parents=True, exist_ok=True)
+        filename = file_path / 'TCI_10m.jp2'
+
+        if not filename.is_file():
+
+            prefixes = self.get_prefixes_list_by_tile_name(self.tile_index)
+            for prefix in prefixes:
+                if self.get_granule_date(prefix) == image_date:
+
+                    prefix = f'{prefix}GRANULE/'
+                    blobs = self.storage_client.list_blobs(self.storage_bucket, prefix=prefix, delimiter='/')
+                    blobs._next_page()
+
+                    nested_granule_id_list = list(blobs.prefixes)
+                    if not nested_granule_id_list:
+                        raise NotFound(f'no such prefix: {prefix}')
+
+                    nested_granule_id = nested_granule_id_list[0]
+                    tile_uri = nested_granule_id[:-1] if nested_granule_id.endswith('/') else nested_granule_id
+
+                    file_path = settings.DOWNLOADED_IMAGES_DIR / self.tile_index / str(image_date)
+                    file_path.mkdir(parents=True, exist_ok=True)
+
+                    tile_prefix = f'{tile_uri}/IMG_DATA/R10m/'
+                    blobs = self.storage_bucket.list_blobs(prefix=tile_prefix)
+                    is_blob = False
+                    for blob in blobs:
+                        is_blob = True
+                        logger.info(blob.name)
+
+                        img_name = blob.name.split('/')[-1]
+                        logger.info(img_name)
+
+                        if img_name.endswith('_TCI_10m.jp2'):
+
+                            try:
+                                self.download_file_from_storage(blob, filename)
+                                return filename
+                            except (ValueError, Exception):
+                                logger.error(
+                                    f'{__name__}.{self.download_images_from_tiles.__qualname__} \
+                                    Error in uri: {blob.name}')
+                                return
+                    if not is_blob:
+                        logger.error(
+                            f'{__name__}.{self.download_tci_images_on_date_from_google_cloud_storage.__qualname__} \
+                            Error in uri: {tile_prefix}')
+                        return
+
+        else:
+            return filename
 
     def request_google_cloud_storage_for_new_data(self):
         """

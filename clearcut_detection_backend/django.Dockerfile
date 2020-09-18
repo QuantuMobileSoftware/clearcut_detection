@@ -4,7 +4,7 @@ FROM python:3.6
 #ENV PYTHONDONTWRITEBYTECODE 1
 ENV PYTHONUNBUFFERED 1
 ENV ROOTDIR /usr/local/
-ENV GDAL_VERSION 2.2.4
+ENV GDAL_VERSION 2.3.1
 ENV OPENJPEG_VERSION 2.2.0
 
 WORKDIR $ROOTDIR/
@@ -66,6 +66,9 @@ RUN apt-get update -y \
     && apt-get install -y postgresql-client locales \
     && apt-get install -y gdal-bin python-gdal python3-gdal \
     && apt-get update && apt-get install -y gettext libgettextpo-dev \
+    # install rasterio
+    && pip3 install rasterio==1.1.5 --no-binary rasterio \
+    && export CURL_CA_BUNDLE=/etc/ssl/certs/ca-certificates.crt \
     # Cleanup
     && apt-get clean && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/* \
     # mkdir for app

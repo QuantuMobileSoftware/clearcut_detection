@@ -29,6 +29,8 @@ class Clearcut(models.Model):
     zone = models.ForeignKey(Zone, on_delete=models.CASCADE)
     mpoly = models.PolygonField(geography=True, srid=4326, spatial_index=True)
     status = models.SmallIntegerField(default=0)
+    preview_previous_path = models.URLField(max_length=200, blank=True, null=True, default=None)
+    preview_current_path = models.URLField(max_length=200, blank=True, null=True, default=None)
 
     def __str__(self):
         return f"Clearcut {self.id}"

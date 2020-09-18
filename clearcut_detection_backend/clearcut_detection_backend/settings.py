@@ -165,6 +165,7 @@ DATA_DIR = Path('data')
 DOWNLOADED_IMAGES_DIR = Path('./data/source_images/')
 MODEL_TIFFS_DIR = Path('./data/model_tiffs')
 MAPBOX_TIFFS_DIR = Path('./data/mapbox_tiffs')
+POLYGON_TIFFS_DIR = Path('./data/polygon_tiffs')
 
 PATH_TYPE = 'fs'
 
