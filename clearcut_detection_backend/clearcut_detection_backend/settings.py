@@ -161,11 +161,21 @@ LANDCOVER_URL = 'https://s3-eu-west-1.amazonaws.com\
 
 MAX_WORKERS = 6
 
-DATA_DIR = Path('data')
-DOWNLOADED_IMAGES_DIR = Path('./data/source_images/')
-MODEL_TIFFS_DIR = Path('./data/model_tiffs')
-MAPBOX_TIFFS_DIR = Path('./data/mapbox_tiffs')
-POLYGON_TIFFS_DIR = Path('./data/polygon_tiffs')
+DATA_DIR = Path('./data')
+FILE_STORAGE = os.environ.get("FILE_STORAGE", None)
+if FILE_STORAGE:
+    fs = Path(FILE_STORAGE)
+    if fs.exists():
+        DATA_DIR = fs
+
+# MEDIA_ROOT = DATA_DIR
+# MEDIA_URL = 'media/'
+
+DOWNLOADED_IMAGES_DIR = DATA_DIR / 'source_images'
+MODEL_TIFFS_DIR = DATA_DIR / 'model_tiffs'
+MAPBOX_TIFFS_DIR = DATA_DIR / 'mapbox_tiffs'
+POLYGON_TIFFS_DIR = DATA_DIR / 'polygon_tiffs'
+print(POLYGON_TIFFS_DIR)
 
 PATH_TYPE = 'fs'
 

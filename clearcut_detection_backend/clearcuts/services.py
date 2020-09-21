@@ -219,11 +219,11 @@ class Preview:
 
         file_path_previous = settings.POLYGON_TIFFS_DIR / tile_index / str(image_date_previous)
         file_path_previous.mkdir(parents=True, exist_ok=True)
-        preview_previous_path = file_path_previous / f'{clearcut.id}.tiff'
+        preview_previous_path = file_path_previous / f'{clearcut.id}.jp2'
 
         file_path_current = settings.POLYGON_TIFFS_DIR / tile_index / str(image_date_current)
         file_path_current.mkdir(parents=True, exist_ok=True)
-        preview_current_path = file_path_current / f'{clearcut.id}.tiff'
+        preview_current_path = file_path_current / f'{clearcut.id}.jp2'
 
         polygon = clearcut.mpoly
 
@@ -241,15 +241,13 @@ class Preview:
         geo.to_file(path, driver='GeoJSON')
 
     def create_preview_from_local_image(self, source_img_path, preview_path, polygon):
-        border = 100
-        padding = border / 2
         with rasterio.open(source_img_path) as src:
 
             mpoly = polygon.transform(str(src.crs), clone=True)
             x_min, y_min, x_max, y_max = mpoly.extent
-            polygon_path = Path(settings.POLYGON_TIFFS_DIR / 'polygon_orig_1.geojson')
 
-            self.save_polygon_to_file((x_min, y_min, x_max, y_max), src.crs, polygon_path)
+            # polygon_path = Path(settings.POLYGON_TIFFS_DIR / 'polygon_orig_1.geojson')
+            # self.save_polygon_to_file((x_min, y_min, x_max, y_max), src.crs, polygon_path)
 
             affine = Affine(src.transform[0],
                             src.transform[1],
@@ -259,23 +257,14 @@ class Preview:
                             y_max
                             )
 
-
-
-
-            # row_max, col_min = rasterio.transform.rowcol(src.transform, x_min, y_min)
             row_min, col_max = rasterio.transform.rowcol(src.transform, x_max, y_max)
-            col_max_1, row_min_1 = ~src.transform * (x_max, y_max)
-            import math
+            # col_max_1, row_min_1 = ~src.transform * (x_max, y_max)
+
             row_max, col_min = rasterio.transform.rowcol(src.transform, x_min, y_min, op=round, precision=6)
-            col_min_1, row_max_1 = ~src.transform * (x_min, y_min)
+            # col_min_1, row_max_1 = ~src.transform * (x_min, y_min)
 
             row_min = row_min + 1
             row_max = row_max + 1
-
-
-
-
-
 
             write_window = Window.from_slices([row_min, row_max, ], [col_min, col_max])
 
@@ -283,47 +272,35 @@ class Preview:
             kwargs.update({
                 'height': write_window.height,
                 'width': write_window.width,
-                # 'transform': rasterio.windows.transform(write_window, src.transform),
                 "transform": affine,
-                'driver': 'GTiff'}
-            )
+                # 'driver': 'GTiff',
+            })
 
-            parent_path = preview_path.parent
-            name = f'{preview_path.stem}_orig.tiff'
+            # parent_path = preview_path.parent
+            # name = f'{preview_path.stem}_orig.jp2'
+            #
+            # with rasterio.open(str(parent_path / name), 'w', **kwargs) as dst:
+            #     image = src.read(window=write_window)
+            #     dst.write(image)
+            #
+            #     results = (
+            #         {'properties': {'raster_val': v}, 'geometry': s}
+            #         for i, (s, v) in enumerate(shapes(image, mask=None, transform=dst.transform)))
+            #
+            #     geoms = list(results)
+            #
+            #     gpd_polygonized_raster = gpd.GeoDataFrame.from_features(geoms, crs=dst.crs)
+            #     x_min, y_min, x_max, y_max = gpd_polygonized_raster.total_bounds
+            #     polygon_path = Path(settings.POLYGON_TIFFS_DIR / 'polygon_orig_2.geojson')
+            #     self.save_polygon_to_file((x_min, y_min, x_max, y_max), src.crs, polygon_path)
 
-            with rasterio.open(str(parent_path / name), 'w', **kwargs) as dst:
-                image = src.read(window=write_window)
-                dst.write(image)
-
-                # shape = shapes(image, mask=None, transform=dst.transform)
-                # s, v = shape.__next__()
-                # geom = {'properties': {'raster_val': v}, 'geometry': s}
-                # gpd_polygonized_raster = gpd.GeoDataFrame.from_features(geom, crs=dst.crs)
-                # gpd_polygonized_raster.to_file(str(parent_path / 'poligon_from_image_1.geojson'), driver='GeoJSON')
-
-                results = (
-                    {'properties': {'raster_val': v}, 'geometry': s}
-                    for i, (s, v) in enumerate(shapes(image, mask=None, transform=dst.transform)))
-
-                geoms = list(results)
-
-                gpd_polygonized_raster = gpd.GeoDataFrame.from_features(geoms, crs=dst.crs)
-                x_min, y_min, x_max, y_max = gpd_polygonized_raster.total_bounds
-                polygon_path = Path(settings.POLYGON_TIFFS_DIR / 'polygon_orig_2.geojson')
-                self.save_polygon_to_file((x_min, y_min, x_max, y_max), src.crs, polygon_path)
-
-                gpd_polygonized_raster.to_file(str(parent_path / 'poligon_from_image_2.geojson'), driver='GeoJSON')
-
-
-
+                # gpd_polygonized_raster.to_file(str(parent_path / 'poligon_from_image_2.geojson'), driver='GeoJSON')
 
             mpoly = mpoly.buffer_with_style(100, quadsegs=8, end_cap_style=2, join_style=1, mitre_limit=5.0)
-
             x_min, y_min, x_max, y_max = mpoly.extent
-            polygon_path = Path(settings.POLYGON_TIFFS_DIR / 'polygon_buffered.geojson')
-            self.save_polygon_to_file((x_min, y_min, x_max, y_max), src.crs, polygon_path)
 
-            transform = src.transform
+            # polygon_path = Path(settings.POLYGON_TIFFS_DIR / 'polygon_buffered.geojson')
+            # self.save_polygon_to_file((x_min, y_min, x_max, y_max), src.crs, polygon_path)
 
             affine = Affine(src.transform[0],
                             src.transform[1],
@@ -333,35 +310,27 @@ class Preview:
                             y_max
                             )
 
-            # row_max, col_min = rasterio.transform.rowcol(src.transform, x_min, y_min)
-            # row_min, col_max = rasterio.transform.rowcol(src.transform, x_max, y_max)
-
             row_min, col_max = rasterio.transform.rowcol(src.transform, x_max, y_max)
-            col_max_1, row_min_1 = ~src.transform * (x_max, y_max)
-            import math
+            # col_max_1, row_min_1 = ~src.transform * (x_max, y_max)
+
             row_max, col_min = rasterio.transform.rowcol(src.transform, x_min, y_min, op=round, precision=6)
-            col_min_1, row_max_1 = ~src.transform * (x_min, y_min)
+            # col_min_1, row_max_1 = ~src.transform * (x_min, y_min)
 
             row_min = row_min + 1
             row_max = row_max + 1
 
             write_window = Window.from_slices([row_min, row_max, ], [col_min, col_max])
 
-
             kwargs = src.meta.copy()
             kwargs.update({
                 'height': write_window.height,
                 'width': write_window.width,
-                # 'transform': rasterio.windows.transform(write_window, src.transform),
                 "transform": affine,
-                'driver': 'GTiff'}
-            )
+                # 'driver': 'GTiff'
+            })
 
             with rasterio.open(str(preview_path), 'w', **kwargs) as dst:
                 dst.write(src.read(window=write_window))
-
-
-        # logger.info(f'coords:{coords}')
 
     def create_preview_from_local_image_2(self, source_img_path, preview_path, polygon):
         border = 100
@@ -408,12 +377,11 @@ class Preview:
 
 
 
-        out_meta.update({"driver": "GTiff",
-                         "height": out_img.shape[1],
+        out_meta.update({ "height": out_img.shape[1],
                          "width": out_img.shape[2],
                          "transform": out_transform,
                          # "transform": rasterio.windows.transform(out_img, data.transform),
-
+                         #  "driver": "GTiff",
                          "crs": pycrs.parse.from_epsg_code(epsg_code).to_proj4()
                          }
                         )
