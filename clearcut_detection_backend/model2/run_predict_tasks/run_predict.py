@@ -21,7 +21,7 @@ def run_predict(session, task_id):
     RpT.update_task_by_id(session, task_id, params)
     image_path = Path(params['path_img_0'])
     list_tif_path = list(image_path.parts)
-    filename = list_tif_path[2]
+    filename = list_tif_path[3]
     predicted_filename = f'predicted_{filename}_{params["image_date_0"]}_{params["image_date_1"]}.geojson'
     list_tif_path = list_tif_path[:1]
     list_tif_path.append('predicted')
