@@ -61,8 +61,11 @@ class LandcoverPolygons:
             bounding_polygon = sentinel_tiles['geometry'].values[0]
             logging.info(f'bounding_polygon: {bounding_polygon}')
             polygons = gpd.read_file(LANDCOVER_GEOJSON)
+            # logging.info(f'polygons: {polygons.info()}')
 
             polygons = polygons[polygons['geometry'].intersects(bounding_polygon)]
+
+            logging.info(f'polygons: {polygons.info()}')
             
             polygon_path = os.path.join(LANDCOVER_POLYGONS_PATH, f"{self.tile}.geojson")
             polygons.to_file(polygon_path, driver='GeoJSON')
