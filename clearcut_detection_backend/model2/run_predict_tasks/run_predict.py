@@ -19,23 +19,14 @@ def run_predict(session, task_id):
     params = RpT.get_task_by_id(session, task_id)
     params['date_started'] = str(datetime.now())
     RpT.update_task_by_id(session, task_id, params)
-    image_path = Path(params['path_img_0'])
-    list_tif_path = list(image_path.parts)
-    # filename = list_tif_path[4]
 
     filename = params['tile_index']
 
     predicted_filename = f'predicted_{filename}_{params["image_date_0"]}_{params["image_date_1"]}.geojson'
-    # list_tif_path = list_tif_path[:1]
-    # list_tif_path.append('predicted')
-    # list_tif_path.append(filename)
-    # result_directory_path = Path(*list_tif_path)
 
     result_directory_path = Path(MEDIA_PATH) / 'predicted' / filename
 
     result_directory_path.mkdir(parents=True, exist_ok=True)
-
-    # return str(result_directory_path / predicted_filename)
 
     if not (result_directory_path / predicted_filename).is_file():
 

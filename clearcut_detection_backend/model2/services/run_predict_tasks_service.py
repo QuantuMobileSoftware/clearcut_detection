@@ -6,11 +6,9 @@ class RunPredictTasks(DataBaseResponseMixin):
 
     @classmethod
     def get_task_by_id(cls, session, task_id):
-        # t = text("SELECT * FROM clearcuts_run_update_task WHERE id=:task_id").bindparams(
-        #     task_id=int(task_id)
-        # )
         t = text("""
-        SELECT rut.id, rut.path_img_0, rut.image_date_0, rut.image_date_1, rut.path_img_1, rut.path_clouds_0, rut.path_clouds_1, rut.result, rut.date_started, rut.date_finished, ct.tile_index 
+        SELECT rut.id, rut.path_img_0, rut.image_date_0, rut.image_date_1, rut.path_img_1, rut.path_clouds_0, 
+        rut.path_clouds_1, rut.result, rut.date_started, rut.date_finished, ct.tile_index 
         FROM clearcuts_run_update_task rut
         LEFT JOIN clearcuts_tile ct on rut.tile_id = ct.id
         WHERE rut.id=:task_id
