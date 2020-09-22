@@ -18,3 +18,5 @@ RABBITMQ_USER = os.environ.get('RABBITMQ_DEFAULT_USER', 'guest')
 RABBITMQ_PASS = os.environ.get('RABBITMQ_DEFAULT_PASS', 'guest')
 RABBITMQ_HOST = os.environ.get('RABBITMQ_HOST', 'rabbitmq_prod')
 RABBITMQ_PORT_NUMBER = os.environ.get('RABBITMQ_NODE_PORT_NUMBER', 5672)
+
+MEDIA_PATH = '/media/data'

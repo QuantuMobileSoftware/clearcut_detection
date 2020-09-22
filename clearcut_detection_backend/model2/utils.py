@@ -3,7 +3,7 @@ Model's helpers
 """
 import io
 import os.path
-from pathlib import Path
+# from pathlib import Path
 import logging
 
 from googleapiclient.discovery import build
@@ -11,12 +11,13 @@ from googleapiclient.http import MediaIoBaseDownload
 from google.oauth2 import service_account
 
 import geopandas as gpd
+from config import MEDIA_PATH
 
 logging.basicConfig(format='%(asctime)s %(message)s')
 
 SCOPES = ['https://www.googleapis.com/auth/drive.file']
 
-MEDIA_PATH = '/media/data'
+# MEDIA_PATH = '/media/data'
 
 LANDCOVER_POLYGONS_PATH = f'{MEDIA_PATH}/landcover'
 SENTINEL_TILES = f"{LANDCOVER_POLYGONS_PATH}/S2A_OPER_GIP_TILPAR_MPC__20151209T095117_V20150622T000000_21000101T000000_B00.kml"
@@ -57,18 +58,18 @@ class LandcoverPolygons:
     
     def create_polygon(self):
         polygons = []
-        logging.info(f'{SENTINEL_TILES} exists: {os.path.exists(SENTINEL_TILES)}')
+        # logging.info(f'{SENTINEL_TILES} exists: {os.path.exists(SENTINEL_TILES)}')
         if os.path.exists(SENTINEL_TILES):
             sentinel_tiles = gpd.read_file(SENTINEL_TILES, driver='KML')
             sentinel_tiles = sentinel_tiles[sentinel_tiles['Name'] == self.tile]
             bounding_polygon = sentinel_tiles['geometry'].values[0]
-            logging.info(f'bounding_polygon: {bounding_polygon}')
+            # logging.info(f'bounding_polygon: {bounding_polygon}')
             polygons = gpd.read_file(LANDCOVER_GEOJSON)
             # logging.info(f'polygons: {polygons.info()}')
 
             polygons = polygons[polygons['geometry'].intersects(bounding_polygon)]
 
-            logging.info(f'polygons: {polygons.info()}')
+            # logging.info(f'polygons: {polygons.info()}')
             
             polygon_path = os.path.join(LANDCOVER_POLYGONS_PATH, f"{self.tile}.geojson")
             polygons.to_file(polygon_path, driver='GeoJSON')

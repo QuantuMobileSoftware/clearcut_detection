@@ -1,7 +1,7 @@
 import os
 from distutils.util import strtobool
 from pathlib import Path
-from config import models, threshold, input_size
+from config import models, threshold, input_size, MEDIA_PATH
 from utils import weights_exists_or_download
 from predict_raster import predict_raster, polygonize, postprocessing, save_polygons
 from services.run_predict_tasks_service import RunPredictTasks as RpT
@@ -21,13 +21,22 @@ def run_predict(session, task_id):
     RpT.update_task_by_id(session, task_id, params)
     image_path = Path(params['path_img_0'])
     list_tif_path = list(image_path.parts)
-    filename = list_tif_path[4]
+    # filename = list_tif_path[4]
+
+    filename = params['tile_index']
+
     predicted_filename = f'predicted_{filename}_{params["image_date_0"]}_{params["image_date_1"]}.geojson'
-    list_tif_path = list_tif_path[:1]
-    list_tif_path.append('predicted')
-    list_tif_path.append(filename)
-    result_directory_path = Path(*list_tif_path)
+    # list_tif_path = list_tif_path[:1]
+    # list_tif_path.append('predicted')
+    # list_tif_path.append(filename)
+    # result_directory_path = Path(*list_tif_path)
+
+    result_directory_path = Path(MEDIA_PATH) / 'predicted' / filename
+
     result_directory_path.mkdir(parents=True, exist_ok=True)
+
+    # return str(result_directory_path / predicted_filename)
+
     if not (result_directory_path / predicted_filename).is_file():
 
         channels = models['deforestration_detection']['channels']
