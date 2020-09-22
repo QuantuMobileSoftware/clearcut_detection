@@ -162,7 +162,7 @@ LANDCOVER_URL = 'https://s3-eu-west-1.amazonaws.com\
 MAX_WORKERS = 6
 
 DATA_DIR = Path('./data')
-FILE_STORAGE = os.environ.get("FILE_STORAGE", None)
+FILE_STORAGE = os.environ.get("FILE_STORAGE", '/media/data')
 if FILE_STORAGE:
     fs = Path(FILE_STORAGE)
     if fs.exists():
@@ -175,7 +175,6 @@ DOWNLOADED_IMAGES_DIR = DATA_DIR / 'source_images'
 MODEL_TIFFS_DIR = DATA_DIR / 'model_tiffs'
 MAPBOX_TIFFS_DIR = DATA_DIR / 'mapbox_tiffs'
 POLYGON_TIFFS_DIR = DATA_DIR / 'polygon_tiffs'
-print(POLYGON_TIFFS_DIR)
 
 PATH_TYPE = 'fs'
 

@@ -15,7 +15,7 @@ logging.basicConfig(format='%(asctime)s %(message)s')
 
 SCOPES = ['https://www.googleapis.com/auth/drive.file']
 
-LANDCOVER_POLYGONS_PATH = 'data/landcover'
+LANDCOVER_POLYGONS_PATH = '/media/data/landcover'
 SENTINEL_TILES = f"{LANDCOVER_POLYGONS_PATH}/S2A_OPER_GIP_TILPAR_MPC__20151209T095117_V20150622T000000_21000101T000000_B00.kml"
 LANDCOVER_GEOJSON = f'{LANDCOVER_POLYGONS_PATH}/landcover_polygons.geojson'
 

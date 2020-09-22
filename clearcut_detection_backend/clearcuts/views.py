@@ -66,7 +66,9 @@ class ClearcutPreviewEndpointFromCloud(APIView):
             'tile_index': tile.tile_index,
             # 'image_previous_path': image_previous_path,
             'preview_previous_path': request.build_absolute_uri(preview_previous_path),
-            'preview_current_path': request.build_absolute_uri(preview_current_path)
+            'preview_current_path': request.build_absolute_uri(preview_current_path),
+            'preview_previous_path_2': str(preview_previous_path),
+            'preview_current_path_2': str(preview_current_path)
         })
 
 
