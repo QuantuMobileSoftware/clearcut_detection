@@ -332,28 +332,6 @@ class SentinelDownload:
                         Error in uri: {tile_prefix}')
                     return
 
-    def download_polygon_preview_from_google_cloud_storage(self, url, max_coords):
-        print(f'settings.BASE_DIR: {settings.BASE_DIR}')
-        print(os.environ.get('GOOGLE_APPLICATION_CREDENTIALS'))
-
-        key_file = Path(os.environ.get('GOOGLE_APPLICATION_CREDENTIALS'))
-        print(key_file.is_file())
-        print(f'rasterio.__version__: {rasterio.__version__}')
-
-
-
-        with rasterio.open(url) as src:
-            src_crs = src.crs
-            print(f'src.width: {src.width}, src.height: {src.height}')
-            print(src.mode)
-            print(src.count)
-            # ds = src.read(1, window=from_bounds(left, bottom, right, top, src.transform))
-            ds = src.read(window=from_bounds(*max_coords, src.transform))
-            name = src.name
-
-            src_bounds = src.bounds
-            return src.width, src.height
-
     def download_tci_images_on_date_from_google_cloud_storage(self, image_date):
         """
 

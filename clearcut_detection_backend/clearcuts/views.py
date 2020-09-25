@@ -60,15 +60,13 @@ class ClearcutPreviewEndpointFromCloud(APIView):
         clearcut = self.get_object(pk)
         tile = clearcut.zone.tile
 
-        preview_previous_path, preview_current_path = Preview().get_or_create_preview(clearcut)
+        # preview_previous_path, preview_current_path = Preview().get_or_create_preview(clearcut)
+        preview_previous_path, preview_current_path = Preview().get_or_create_preview_on_fly(clearcut)
 
         return Response({
             'tile_index': tile.tile_index,
-            # 'image_previous_path': image_previous_path,
             'preview_previous_path': request.build_absolute_uri(preview_previous_path),
             'preview_current_path': request.build_absolute_uri(preview_current_path),
-            'preview_previous_path_2': str(preview_previous_path),
-            'preview_current_path_2': str(preview_current_path)
         })
 
 

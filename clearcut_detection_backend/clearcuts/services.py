@@ -1,34 +1,21 @@
 import os
 import logging
 import time
-import geopandas
-from datetime import datetime, timedelta
 from celery import group
 from pathlib import Path
 import rasterio
-from rasterio.mask import mask
 from rasterio.windows import Window
 from rasterio import Affine
-from rasterio.features import shapes
 import geopandas as gpd
-from fiona.crs import from_epsg
 from shapely.geometry import box
-import pycrs
-
 from distutils.util import strtobool
 from django.conf import settings
-from django.http import JsonResponse, HttpResponse, Http404
-from django.contrib.gis.gdal import GDALRaster
 from clearcut_detection_backend import app
-from clearcuts.models import RunUpdateTask, TileInformation, Tile, Clearcut
+from clearcuts.models import RunUpdateTask, Tile
 from tiff_prepare.models import Prepared
 from downloader.models import SourceJp2Images
 from clearcuts.geojson_save import save_from_task
 from downloader.services import SentinelDownload
-
-from django.contrib.gis.geos import Point, Polygon
-import shapely.geometry
-
 
 make_predict = strtobool(os.environ.get('MAKE_PREDICT', 'true'))
 logger = logging.getLogger('create_update_task')
@@ -140,13 +127,48 @@ class CreateUpdateTask:
 
 class Preview:
 
+    def create_previews_on_fly(self, clearcut):
+        """
+        create previews without downloading of source images
+        :return : preview_previous_path, preview_current_path
+        """
+        image_previous_uri, image_current_uri = self.get_or_download_tci_url(clearcut)
+
+        preview_previous_path, preview_current_path = self.create_preview_path_for_clearcut(clearcut)
+
+        polygon = clearcut.mpoly
+
+        if image_previous_uri:
+            self.create_preview_from_image(image_previous_uri, preview_previous_path, polygon)
+            clearcut.preview_previous_path = preview_previous_path
+            clearcut.save()
+
+        if image_current_uri:
+            self.create_preview_from_image(image_current_uri, preview_current_path, polygon)
+            clearcut.preview_current_path = preview_current_path
+            clearcut.save()
+
+        return preview_previous_path, preview_current_path
+
+    def get_or_create_preview_on_fly(self,  clearcut):
+        preview_previous_path = Path(clearcut.preview_previous_path) if clearcut.preview_previous_path else None
+        preview_current_path = Path(clearcut.preview_current_path) if clearcut.preview_current_path else None
+
+        if not preview_previous_path or not preview_current_path:
+            preview_previous_path, preview_current_path = self.create_previews_on_fly(clearcut)
+
+        if not preview_previous_path.is_file() or not preview_current_path.is_file():
+            preview_previous_path, preview_current_path = self.create_previews_on_fly(clearcut)
+
+        return preview_previous_path, preview_current_path
+
     def get_or_create_preview(self, clearcut):
         preview_previous_path = Path(clearcut.preview_previous_path) if clearcut.preview_previous_path else None
         preview_current_path = Path(clearcut.preview_current_path) if clearcut.preview_current_path else None
 
         if not preview_previous_path:
             source_img_previous_path, source_img_current_path = self.get_or_download_tci_images(clearcut)
-            preview_previous_path, preview_current_path = self.get_preview_from_local_images(
+            preview_previous_path, preview_current_path = self.get_preview_from_images(
                 source_img_previous_path,
                 source_img_current_path,
                 clearcut
@@ -157,12 +179,47 @@ class Preview:
 
         if not preview_previous_path.is_file() or not preview_current_path.is_file():
             source_img_previous_path, source_img_current_path = self.get_or_download_tci_images(clearcut)
-            preview_previous_path, preview_current_path = self.get_preview_from_local_images(
+            preview_previous_path, preview_current_path = self.get_preview_from_images(
                 source_img_previous_path,
                 source_img_current_path,
                 clearcut
             )
         return preview_previous_path, preview_current_path
+
+    def get_or_download_tci_url(self, clearcut):
+        """
+        Try to get record with unique combination of tile_index and image_date from downloader_sourcejp2images table
+        If record not exists try to get url of image from network and save it to db
+        """
+        source_img_previous, source_img_current = self.get_images_info_from_db(clearcut)
+
+        if source_img_previous.source_tci_url is None:
+            tile_index = clearcut.zone.tile.tile_index
+            downloader = SentinelDownload(tile_index)
+            source_img_previous_url = downloader.request_google_cloud_storage_for_band_image_uri_on_date(
+                clearcut.image_date_previous
+            )
+            source_img_previous_url = '' if source_img_previous_url is None else source_img_previous_url
+            source_img_previous.source_tci_url = source_img_previous_url
+            source_img_previous.save()
+
+        else:
+            source_img_previous_url = source_img_previous.source_tci_url
+
+        if source_img_current.source_tci_url is None:
+            tile_index = clearcut.zone.tile.tile_index
+            downloader = SentinelDownload(tile_index)
+            source_img_current_url = downloader.request_google_cloud_storage_for_band_image_uri_on_date(
+                clearcut.image_date_current
+            )
+            source_img_current_url = '' if source_img_current_url is None else source_img_current_url
+            source_img_current.source_tci_url = source_img_current_url
+            source_img_current.save()
+
+        else:
+            source_img_current_url = source_img_current.source_tci_url
+
+        return source_img_previous_url, source_img_current_url
 
     def get_or_download_tci_images(self, clearcut):
         """
@@ -171,48 +228,43 @@ class Preview:
         than download file from Google cloud storage.
         :param clearcut: Clearcuts obj
         """
-        source_img_previous_path, source_img_current_path = self.get_info_from_db(clearcut)
-        source_img_previous_path = Path(source_img_previous_path) if source_img_previous_path is not None else None
-        source_img_current_path = Path(source_img_current_path) if source_img_current_path is not None else None
+        source_img_previous, source_img_current = self.get_images_info_from_db(clearcut)
 
-        if not source_img_previous_path:
+        source_img_previous_path = source_img_previous.source_tci_location
+        source_img_current_path = source_img_current.source_tci_location
 
+        previous_need_download = True
+        current_download = True
+
+        if source_img_previous_path:
+            source_img_previous_path = Path(source_img_previous_path)
+            if source_img_previous_path.is_file():
+                previous_need_download = False
+
+        if source_img_current_path:
+            source_img_current_path = Path(source_img_current_path)
+            if source_img_current_path.is_file():
+                current_download = False
+
+        if previous_need_download:
             sentinel_downloader = SentinelDownload(clearcut.zone.tile.tile_index)
             source_img_previous_path = sentinel_downloader.download_tci_images_on_date_from_google_cloud_storage(
                 clearcut.image_date_previous
             )
+            source_img_previous.source_tci_location = str(source_img_previous_path)
+            source_img_previous.save()
 
-            self.set_source_tci_location_to_db(
-                clearcut.zone.tile,
-                clearcut.image_date_previous,
-                source_img_previous_path)
-
-        elif not source_img_previous_path.is_file():
-            sentinel_downloader = SentinelDownload(clearcut.zone.tile.tile_index)
-            source_img_previous_path = sentinel_downloader.download_tci_images_on_date_from_google_cloud_storage(
-                clearcut.image_date_previous
-            )
-
-        if not source_img_current_path:
+        if current_download:
             sentinel_downloader = SentinelDownload(clearcut.zone.tile.tile_index)
             source_img_current_path = sentinel_downloader.download_tci_images_on_date_from_google_cloud_storage(
                 clearcut.image_date_current
             )
-
-            self.set_source_tci_location_to_db(
-                clearcut.zone.tile,
-                clearcut.image_date_current,
-                source_img_current_path)
-
-        elif not source_img_current_path.is_file():
-            sentinel_downloader = SentinelDownload(clearcut.zone.tile.tile_index)
-            source_img_current_path = sentinel_downloader.download_tci_images_on_date_from_google_cloud_storage(
-                clearcut.image_date_current
-            )
+            source_img_current.source_tci_location = source_img_current_path
 
         return source_img_previous_path, source_img_current_path
 
-    def get_preview_from_local_images(self, source_img_previous, source_img_current, clearcut):
+    @staticmethod
+    def create_preview_path_for_clearcut(clearcut):
         image_date_previous = clearcut.image_date_previous
         image_date_current = clearcut.image_date_current
         tile_index = clearcut.zone.tile.tile_index
@@ -225,10 +277,16 @@ class Preview:
         file_path_current.mkdir(parents=True, exist_ok=True)
         preview_current_path = file_path_current / f'{clearcut.id}.jp2'
 
+        return preview_previous_path, preview_current_path
+
+    def get_preview_from_images(self, source_img_previous, source_img_current, clearcut):
+
+        preview_previous_path, preview_current_path = self.create_preview_path_for_clearcut(clearcut)
+
         polygon = clearcut.mpoly
 
-        self.create_preview_from_local_image(source_img_previous, preview_previous_path, polygon)
-        self.create_preview_from_local_image(source_img_current, preview_current_path, polygon)
+        self.create_preview_from_image(source_img_previous, preview_previous_path, polygon)
+        self.create_preview_from_image(source_img_current, preview_current_path, polygon)
 
         return preview_previous_path, preview_current_path
 
@@ -240,41 +298,42 @@ class Preview:
         # geo = geo.to_crs(crs=crs.data)
         geo.to_file(path, driver='GeoJSON')
 
-    def create_preview_from_local_image(self, source_img_path, preview_path, polygon):
+    def create_preview_from_image(self, source_img_path, preview_path, polygon):
+        os.environ['GOOGLE_APPLICATION_CREDENTIALS'] = f'{settings.BASE_DIR}/key.json'
         with rasterio.open(source_img_path) as src:
 
             mpoly = polygon.transform(str(src.crs), clone=True)
-            x_min, y_min, x_max, y_max = mpoly.extent
+            # x_min, y_min, x_max, y_max = mpoly.extent
 
             # polygon_path = Path(settings.POLYGON_TIFFS_DIR / 'polygon_orig_1.geojson')
             # self.save_polygon_to_file((x_min, y_min, x_max, y_max), src.crs, polygon_path)
 
-            affine = Affine(src.transform[0],
-                            src.transform[1],
-                            x_min,
-                            src.transform[3],
-                            src.transform[4],
-                            y_max
-                            )
-
-            row_min, col_max = rasterio.transform.rowcol(src.transform, x_max, y_max)
-            # col_max_1, row_min_1 = ~src.transform * (x_max, y_max)
-
-            row_max, col_min = rasterio.transform.rowcol(src.transform, x_min, y_min, op=round, precision=6)
-            # col_min_1, row_max_1 = ~src.transform * (x_min, y_min)
-
-            row_min = row_min + 1
-            row_max = row_max + 1
-
-            write_window = Window.from_slices([row_min, row_max, ], [col_min, col_max])
-
-            kwargs = src.meta.copy()
-            kwargs.update({
-                'height': write_window.height,
-                'width': write_window.width,
-                "transform": affine,
-                # 'driver': 'GTiff',
-            })
+            # affine = Affine(src.transform[0],
+            #                 src.transform[1],
+            #                 x_min,
+            #                 src.transform[3],
+            #                 src.transform[4],
+            #                 y_max
+            #                 )
+            #
+            # row_min, col_max = rasterio.transform.rowcol(src.transform, x_max, y_max)
+            # # col_max_1, row_min_1 = ~src.transform * (x_max, y_max)
+            #
+            # row_max, col_min = rasterio.transform.rowcol(src.transform, x_min, y_min, op=round, precision=6)
+            # # col_min_1, row_max_1 = ~src.transform * (x_min, y_min)
+            #
+            # row_min = row_min + 1
+            # row_max = row_max + 1
+            #
+            # write_window = Window.from_slices([row_min, row_max, ], [col_min, col_max])
+            #
+            # kwargs = src.meta.copy()
+            # kwargs.update({
+            #     'height': write_window.height,
+            #     'width': write_window.width,
+            #     "transform": affine,
+            #     # 'driver': 'GTiff',
+            # })
 
             # parent_path = preview_path.parent
             # name = f'{preview_path.stem}_orig.jp2'
@@ -332,62 +391,6 @@ class Preview:
             with rasterio.open(str(preview_path), 'w', **kwargs) as dst:
                 dst.write(src.read(window=write_window))
 
-    def create_preview_from_local_image_2(self, source_img_path, preview_path, polygon):
-        border = 100
-        padding = border / 2
-
-        data = rasterio.open(source_img_path)
-        x_min, y_min, x_max, y_max = polygon.extent
-
-        # x_min = x_min - padding if x_min >= padding else 0
-        # y_min = y_min - padding if y_min >= padding else 0
-        # x_max = x_max + padding
-        # y_max = y_max + padding
-
-
-
-        geom = box(x_min, y_min, x_max, y_max)
-
-        geo = gpd.GeoDataFrame({'geometry': geom}, index=[0], crs=from_epsg(4326))
-        geo = geo.to_crs(crs=data.crs.data)
-        p = Path(settings.POLYGON_TIFFS_DIR / 'aaaa.geojson')
-        geo.to_file(p, driver='GeoJSON')
-
-
-        if p.is_file():
-            logger.info('rrrrrrrrrrrrrrrrrr')
-        coords = self.get_features(geo)
-        coords_2 = geo['geometry'].values[0]
-
-        from shapely.geometry import mapping
-        coords_3 = mapping(coords_2)
-
-        out_img, out_transform = mask(data,
-                                      shapes=[coords_3, ],
-                                      crop=True,
-                                      # all_touched=True,
-                                      # filled=False,
-                                      # pad=True,
-                                      # pad_width=0
-                                      )
-        out_meta = data.meta.copy()
-        logger.info(f'out_meta: {out_meta}')
-        epsg_code = int(data.crs.data['init'][5:])
-        logger.info(f'epsg_code: {epsg_code}')
-
-
-
-        out_meta.update({ "height": out_img.shape[1],
-                         "width": out_img.shape[2],
-                         "transform": out_transform,
-                         # "transform": rasterio.windows.transform(out_img, data.transform),
-                         #  "driver": "GTiff",
-                         "crs": pycrs.parse.from_epsg_code(epsg_code).to_proj4()
-                         }
-                        )
-        with rasterio.open(preview_path, "w", **out_meta) as dest:
-            dest.write(out_img)
-
     @staticmethod
     def get_features(gdf):
         """Function to parse features from GeoDataFrame in such a manner that rasterio wants them"""
@@ -395,7 +398,7 @@ class Preview:
         return [json.loads(gdf.to_json())['features'][0]['geometry']]
 
     @staticmethod
-    def get_info_from_db(clearcut):
+    def get_source_img_url_from_db(clearcut):
         source_img_previous = None
         source_img_current = None
         try:
@@ -413,6 +416,27 @@ class Preview:
             logger.info(f'No record for {clearcut.zone.tile.tile_index} - {clearcut.image_date_current}')
 
         return source_img_previous.source_tci_location, source_img_current.source_tci_location
+
+    @staticmethod
+    def get_images_info_from_db(clearcut):
+        source_img_previous, created = SourceJp2Images.objects.get_or_create(
+            tile=clearcut.zone.tile,
+            image_date=clearcut.image_date_previous
+        )
+        if created:
+            logger.info(f'created: {source_img_previous}')
+
+        image_date = clearcut.image_date_current
+        tile = clearcut.zone.tile
+
+        source_img_current, created = SourceJp2Images.objects.get_or_create(
+                tile=tile,
+                image_date=image_date
+        )
+        if created:
+            logger.info(f'created: {source_img_current}')
+
+        return source_img_previous, source_img_current
 
     @staticmethod
     def set_source_tci_location_to_db(tile, image_date, source_tci_location):

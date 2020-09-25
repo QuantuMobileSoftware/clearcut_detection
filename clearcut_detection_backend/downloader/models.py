@@ -6,7 +6,7 @@ from django.utils import timezone
 class SourceJp2Images(models.Model):
     tile = models.ForeignKey(Tile, on_delete=models.CASCADE, related_name='jp2_images')
     image_date = models.DateField(null=False)
-    tile_uri = models.URLField(max_length=200, unique=True)
+    tile_uri = models.URLField(max_length=200, null=True)
     cloud_coverage = models.FloatField(default=0)
     nodata_pixel = models.FloatField(default=0)
     source_tci_location = models.URLField(max_length=200, blank=True, null=True)
@@ -20,6 +20,8 @@ class SourceJp2Images(models.Model):
     is_downloaded = models.SmallIntegerField(default=0)
     is_new = models.SmallIntegerField(default=1)
     check_date = models.DateTimeField(default=timezone.now)
+
+    source_tci_url = models.URLField(max_length=250, blank=True, null=True)
 
     class Meta:
         unique_together = [['tile', 'image_date']]
