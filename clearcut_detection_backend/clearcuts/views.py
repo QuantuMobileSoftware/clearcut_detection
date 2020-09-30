@@ -1,6 +1,5 @@
 import json
 import re
-from shapely.geometry import Polygon, box
 from django.db.models import Max, Subquery, Sum, Min, F, OuterRef
 from django.core.exceptions import ObjectDoesNotExist
 from django.http import JsonResponse, HttpResponse, Http404
@@ -16,8 +15,6 @@ from rest_framework import generics
 from clearcuts.models import Clearcut, Zone, RunUpdateTask
 from clearcuts.services import Preview
 from clearcuts.serializers import ClearcutChartSerializer, ClearcutSerializer, RunUpdateTaskSerializer
-from downloader.models import SourceJp2Images
-from downloader.services import SentinelDownload
 
 
 class ClearcutDetail(APIView):
@@ -46,9 +43,32 @@ class ClearcutDetail(APIView):
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
+class ClearcutPreviewEndpointWithCoords(APIView):
+    """
+    Get images with coordinates from which the polygon was predicted
+    """
+    def get_object(self, pk):
+        try:
+            return Clearcut.objects.select_related('zone').get(pk=pk)
+        except Clearcut.DoesNotExist:
+            raise Http404
+
+    def get(self, request, pk, format=None):
+        clearcut = self.get_object(pk)
+        tile = clearcut.zone.tile
+        preview_previous_path, preview_current_path, polygon = Preview().get_or_create_preview_and_polygon(clearcut)
+        coords = polygon.coords
+
+        return Response({
+            'tile_index': tile.tile_index,
+            'preview_previous_path': request.build_absolute_uri(preview_previous_path),
+            'preview_current_path': request.build_absolute_uri(preview_current_path),
+            'coords': coords
+        })
+
 class ClearcutPreviewEndpointFromCloud(APIView):
     """
-    Gets the images from which the polygon was predicted
+    Get images from which the polygon was predicted
     """
     def get_object(self, pk):
         try:

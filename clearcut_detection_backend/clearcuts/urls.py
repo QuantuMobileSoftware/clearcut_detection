@@ -7,7 +7,8 @@ urlpatterns = [
     path('area_chart/<int:id>/<start_date>/<end_date>', views.clearcut_area_chart),
     path('<int:pk>', views.ClearcutDetail.as_view()),
     path('run_update_task', views.RunUpdateTaskList.as_view()),
-    path('preview/<int:pk>', views.ClearcutPreviewEndpointFromCloud.as_view())
+    path('preview/<int:pk>', views.ClearcutPreviewEndpointFromCloud.as_view()),
+    path('preview_with_coords/<int:pk>', views.ClearcutPreviewEndpointWithCoords.as_view())
 ]
 
 urlpatterns = format_suffix_patterns(urlpatterns)

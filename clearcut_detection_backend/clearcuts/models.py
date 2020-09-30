@@ -7,6 +7,7 @@ class Tile(models.Model):
     is_tracked = models.SmallIntegerField(default=0, null=False)
     first_date = models.DateField(default=None, null=True)
     last_date = models.DateField(default=None, null=True)
+    crs = models.CharField(max_length=10, null=True)
 
     def __str__(self):
         return self.tile_index

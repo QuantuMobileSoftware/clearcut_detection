@@ -2,9 +2,9 @@ import os
 import re
 import datetime
 import logging
-import rasterio
-from rasterio.windows import from_bounds
-from pathlib import Path
+# import rasterio
+# from rasterio.windows import from_bounds
+# from pathlib import Path
 from enum import Enum
 from distutils.util import strtobool
 from django.conf import settings
@@ -145,6 +145,7 @@ class SentinelDownload:
             if img_name.endswith('_TCI_10m.jp2'):
                 filename = file_path / 'TCI_10m.jp2'
                 source_jp2_images.source_tci_location = filename
+                source_jp2_images.source_tci_url = f'gs://{self.bucket_name}/{blob.name}'
                 source_jp2_images.save()
 
             logger.info(f'filename: {filename}')

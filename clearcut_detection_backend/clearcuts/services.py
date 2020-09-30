@@ -127,6 +127,55 @@ class CreateUpdateTask:
 
 class Preview:
 
+    def create_buffered_polygon(self, polygon, crs):
+        mpoly = polygon.transform(crs, clone=True)
+        mpoly = mpoly.buffer_with_style(settings.POLYGON_BUFFER, quadsegs=8, end_cap_style=2, join_style=1, mitre_limit=5.0)
+        return mpoly
+
+    def get_or_create_preview_and_polygon(self, clearcut):
+        previous_path = clearcut.preview_previous_path
+        current_path = clearcut.preview_current_path
+        polygon = clearcut.mpoly
+        crs = clearcut.zone.tile.crs
+
+        buffered_polygon = self.create_buffered_polygon(polygon, crs)
+        create = False
+
+        if not previous_path or not current_path:
+            create =True
+        if previous_path and current_path:
+            previous_path = Path(previous_path)
+            current_path = Path(current_path)
+            if not current_path.is_file() or not previous_path.is_file():
+                create = True
+
+        if create:
+            previous_path, current_path = self.create_previews_on_fly_2(clearcut, buffered_polygon)
+
+        polygon = buffered_polygon.transform(4326, clone=True)
+        return previous_path, current_path, polygon
+
+    def create_previews_on_fly_2(self, clearcut, polygon):
+        """
+        create previews without downloading of source images
+        :return : preview_previous_path, preview_current_path
+        """
+        image_previous_uri, image_current_uri = self.get_or_download_tci_url(clearcut)
+
+        preview_previous_path, preview_current_path = self.create_preview_path_for_clearcut(clearcut)
+
+        if image_previous_uri:
+            self.create_preview(image_previous_uri, preview_previous_path, polygon)
+            clearcut.preview_previous_path = preview_previous_path
+            clearcut.save()
+
+        if image_current_uri:
+            self.create_preview(image_current_uri, preview_current_path, polygon)
+            clearcut.preview_current_path = preview_current_path
+            clearcut.save()
+
+        return preview_previous_path, preview_current_path
+
     def create_previews_on_fly(self, clearcut):
         """
         create previews without downloading of source images
@@ -271,11 +320,11 @@ class Preview:
 
         file_path_previous = settings.POLYGON_TIFFS_DIR / tile_index / str(image_date_previous)
         file_path_previous.mkdir(parents=True, exist_ok=True)
-        preview_previous_path = file_path_previous / f'{clearcut.id}.jp2'
+        preview_previous_path = file_path_previous / f'{clearcut.id}.{settings.POLYGON_FORMAT}'
 
         file_path_current = settings.POLYGON_TIFFS_DIR / tile_index / str(image_date_current)
         file_path_current.mkdir(parents=True, exist_ok=True)
-        preview_current_path = file_path_current / f'{clearcut.id}.jp2'
+        preview_current_path = file_path_current / f'{clearcut.id}.{settings.POLYGON_FORMAT}'
 
         return preview_previous_path, preview_current_path
 
@@ -302,7 +351,7 @@ class Preview:
         os.environ['GOOGLE_APPLICATION_CREDENTIALS'] = f'{settings.BASE_DIR}/key.json'
         with rasterio.open(source_img_path) as src:
 
-            mpoly = polygon.transform(str(src.crs), clone=True)
+            # mpoly = polygon.transform(str(src.crs), clone=True)
             # x_min, y_min, x_max, y_max = mpoly.extent
 
             # polygon_path = Path(settings.POLYGON_TIFFS_DIR / 'polygon_orig_1.geojson')
@@ -355,7 +404,11 @@ class Preview:
 
                 # gpd_polygonized_raster.to_file(str(parent_path / 'poligon_from_image_2.geojson'), driver='GeoJSON')
 
-            mpoly = mpoly.buffer_with_style(100, quadsegs=8, end_cap_style=2, join_style=1, mitre_limit=5.0)
+            # mpoly = mpoly.buffer_with_style(100, quadsegs=8, end_cap_style=2, join_style=1, mitre_limit=5.0)
+
+
+            mpoly = self.create_buffered_polygon(polygon, str(src.crs))
+
             x_min, y_min, x_max, y_max = mpoly.extent
 
             # polygon_path = Path(settings.POLYGON_TIFFS_DIR / 'polygon_buffered.geojson')
@@ -379,6 +432,7 @@ class Preview:
             row_max = row_max + 1
 
             write_window = Window.from_slices([row_min, row_max, ], [col_min, col_max])
+            raster = src.read(window=write_window)
 
             kwargs = src.meta.copy()
             kwargs.update({
@@ -389,7 +443,43 @@ class Preview:
             })
 
             with rasterio.open(str(preview_path), 'w', **kwargs) as dst:
-                dst.write(src.read(window=write_window))
+                dst.write(raster)
+
+    def create_preview(self, source_img_path, preview_path, polygon, format='PNG'):
+        """
+        create preview from image and polygon
+        """
+        os.environ['GOOGLE_APPLICATION_CREDENTIALS'] = f'{settings.BASE_DIR}/key.json'
+        with rasterio.open(source_img_path) as src:
+            x_min, y_min, x_max, y_max = polygon.extent
+            affine = Affine(src.transform[0],
+                            src.transform[1],
+                            x_min,
+                            src.transform[3],
+                            src.transform[4],
+                            y_max
+                            )
+
+            row_min, col_max = rasterio.transform.rowcol(src.transform, x_max, y_max)
+
+            row_max, col_min = rasterio.transform.rowcol(src.transform, x_min, y_min, op=round, precision=6)
+
+            row_min = row_min + 1
+            row_max = row_max + 1
+
+            write_window = Window.from_slices([row_min, row_max, ], [col_min, col_max])
+            raster = src.read(window=write_window)
+
+            kwargs = src.meta.copy()
+            kwargs.update({
+                'height': write_window.height,
+                'width': write_window.width,
+                'transform': affine,
+                'driver': 'PNG'
+            })
+
+            with rasterio.open(preview_path.with_suffix('.png'), 'w', **kwargs) as dst:
+                dst.write(raster)
 
     @staticmethod
     def get_features(gdf):

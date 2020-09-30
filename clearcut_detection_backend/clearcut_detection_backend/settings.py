@@ -175,6 +175,8 @@ DOWNLOADED_IMAGES_DIR = DATA_DIR / 'source_images'
 MODEL_TIFFS_DIR = DATA_DIR / 'model_tiffs'
 MAPBOX_TIFFS_DIR = DATA_DIR / 'mapbox_tiffs'
 POLYGON_TIFFS_DIR = DATA_DIR / 'polygon_tiffs'
+POLYGON_FORMAT = 'png'
+POLYGON_BUFFER = 100
 
 PATH_TYPE = 'fs'
 

@@ -19,6 +19,7 @@ class SourceJp2Images(models.Model):
 
     is_downloaded = models.SmallIntegerField(default=0)
     is_new = models.SmallIntegerField(default=1)
+    is_converted = models.SmallIntegerField(default=0)
     check_date = models.DateTimeField(default=timezone.now)
 
     source_tci_url = models.URLField(max_length=250, blank=True, null=True)

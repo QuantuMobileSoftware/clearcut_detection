@@ -1,12 +1,92 @@
 import logging
 import os
 import subprocess
-
-from clearcuts.models import TileInformation
+import rasterio
+import time
+from clearcuts.models import TileInformation, Tile
 from django.conf import settings
+from downloader.models import SourceJp2Images
+from concurrent.futures import ProcessPoolExecutor
 
 logger = logging.getLogger('jp2_to_tiff_conversion')
-settings.MAPBOX_TIFFS_DIR.mkdir(parents=True, exist_ok=True)
+tiff_dir = settings.MAPBOX_TIFFS_DIR
+tiff_dir.mkdir(parents=True, exist_ok=True)
+
+
+class Converter:
+    """
+    Convert jp2 images
+    """
+    def __init__(self, tile_index):
+        self.tile_index = tile_index
+        self.tile = Tile.objects.get(tile_index=self.tile_index)
+        os.environ['GOOGLE_APPLICATION_CREDENTIALS'] = f'{settings.BASE_DIR}/key.json'
+
+    def convert_all_unconverted_to_tif(self):
+        start_time = time.time()
+        with ProcessPoolExecutor(max_workers=int(settings.MAX_WORKERS/2)) as executor:
+            unconverted_list = SourceJp2Images.objects.prefetch_related('tile').filter(
+                is_converted=0,
+                tile__tile_index=self.tile_index
+            )
+            for uconv in unconverted_list:
+                logger.info(f'tile_index: {self.tile_index}, image_date: {uconv.image_date}')
+                output_filename = self.get_output_filename(self.tile_index, uconv.image_date)
+
+                if not output_filename.is_file():
+                    executor.submit(self.convert_image, uconv, output_filename)
+
+        logger.info(f'{time.time() - start_time} seconds for for converting to tiff images for all')
+
+    @staticmethod
+    def get_output_filename(tile_index, tile_date):
+        parent = tiff_dir / tile_index / str(tile_date)
+        parent.mkdir(parents=True, exist_ok=True)
+
+        return parent / f'{tile_index}.tif'
+
+    def convert_image(self, unconverted, output_file, format='GTiff'):
+        file_suffix = self.get_suffix_from_driver(format)
+        if file_suffix:
+            logger.info(f'file_suffix: {file_suffix}')
+            with rasterio.open(unconverted.source_tci_location) as src:
+                profile = src.profile
+                profile['driver'] = format
+                raster = src.read()
+
+
+                crs = str(src.crs)
+                self.tile.crs = crs
+                self.tile.save()
+                logger.info(f'crs: {crs}')
+
+                kwargs = src.meta.copy()
+                kwargs.update({
+                    'driver': format
+                })
+
+                filename = output_file.with_suffix(file_suffix)
+                logger.info(f'filename: {filename}')
+
+                with rasterio.open(str(filename), 'w', **kwargs) as dst:
+                    logger.info(f'dst: {dst}')
+                    dst.write(raster)
+
+
+            unconverted.is_converted = 1
+            unconverted.save()
+
+    def get_suffix_from_driver(self, driver):
+        if driver == 'GTiff':
+            return '.tif'
+        if driver == 'JPEG':
+            return '.jpeg'
+        if driver == 'PNG':
+            return '.png'
+
+        logger.info(f'Unknown driver: {driver}')
+        return
+
 
 
 def jp2_to_tiff(tile_info_id=None):
