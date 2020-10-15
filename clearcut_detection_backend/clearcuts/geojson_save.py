@@ -5,8 +5,7 @@ import numpy as np
 from django.contrib.gis.geos import GEOSGeometry
 from django.contrib.gis.measure import D
 from .models import Clearcut, Zone, RunUpdateTask, NotClearcut
-
-from django.contrib.gis.db.models.functions import Distance
+from clearcuts.services import Preview
 
 SEARCH_WINDOW = 50
 
@@ -62,6 +61,7 @@ def save_clearcut(
         create_new_zone=False,
         area_threshold=0.2,
         tile=None,
+        preview=None,
         ):
     if area_in_meters > avg_area * area_threshold and poly.geom_type == 'Polygon':
         if create_new_zone:
@@ -71,11 +71,17 @@ def save_clearcut(
         clearcut = Clearcut(
             image_date_previous=detection_date[0],
             image_date_current=detection_date[1],
-            mpoly=poly, area=area_in_meters, zone=zone,
+            mpoly=poly,
+            area=area_in_meters,
+            zone=zone,
             forest=forest,
             clouds=cloud,
-            centroid=poly.centroid
+            centroid=poly.centroid,
         )
+        clearcut.save()
+        preview_previous_path, preview_current_path = preview.create_previews_for_clearcut(clearcut)
+        clearcut.preview_previous_path = preview_previous_path
+        clearcut.preview_current_path = preview_current_path
         clearcut.save()
         logger.info(f'clearcut saved with id={clearcut.id}')
 
@@ -83,9 +89,12 @@ def save_clearcut(
 def save_from_task(task_id):
     logger.info(f'task_id: {task_id}')
     start_time = time.time()
-    task = RunUpdateTask.objects.get(id=task_id)
+    task = RunUpdateTask.objects.prefetch_related('tile').get(id=task_id)
     detection_date = [task.image_date_0, task.image_date_1]
     logger.info(f'detection_date: {detection_date}')
+
+    preview = Preview(task)
+
     predicted_clearcuts = gp.read_file(task.result)
     logger.info(f'opened: {task.result}')
     area_geodataframe = predicted_clearcuts['geometry'].area
@@ -115,12 +124,12 @@ def save_from_task(task_id):
             continue
 
         intersecting_polys = list(Clearcut.objects.filter(
-            zone__tile_id=task.tile_id,
+            # zone__tile_id=task.tile_id,
             mpoly__dwithin=(geopoly, D(m=SEARCH_WINDOW), 'spheroid'),
             ))
         if len(intersecting_polys) == 0:
             save_clearcut(geopoly,
-                          avg_area,
+                          avg_area,  # TODO
                           detection_date,
                           forest,
                           cloud,

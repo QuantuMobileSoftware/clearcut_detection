@@ -16,6 +16,7 @@ from tiff_prepare.models import Prepared
 from downloader.models import SourceJp2Images
 from clearcuts.geojson_save import save_from_task
 from downloader.services import SentinelDownload
+from services.jp2_to_tiff_conversion import Converter
 
 make_predict = strtobool(os.environ.get('MAKE_PREDICT', 'true'))
 logger = logging.getLogger('create_update_task')
@@ -126,6 +127,82 @@ class CreateUpdateTask:
 
 
 class Preview:
+    def __init__(self, task):
+        os.environ['GOOGLE_APPLICATION_CREDENTIALS'] = f'{settings.BASE_DIR}/key.json'
+        self.tile = task.tile
+        self.tile_index = self.tile.tile_index
+        self.crs = self.tile.crs
+        self.image_date_previous = task.image_date_0
+        self.image_date_current = task.image_date_1
+
+        self.source_img_previous = Converter.get_output_filename(self.tile_index, self.image_date_previous)
+        self.source_img_current = Converter.get_output_filename(self.tile_index, self.image_date_current)
+
+        self.src_previous = rasterio.open(self.source_img_previous)
+        self.src_current = rasterio.open(self.source_img_current)
+
+    def srs_close(self):
+        self.src_previous.close()
+        self.src_current.close()
+
+    def create_previews_for_clearcut(self, clearcut):
+        polygon = clearcut.mpoly
+        buffered_polygon = self.create_buffered_polygon(polygon)
+        preview_previous_path, preview_current_path = self.create_preview_path_for_clearcut(clearcut)
+        self.create_preview_from_src(self.src_previous, preview_previous_path, buffered_polygon)
+        self.create_preview_from_src(self.src_current, preview_current_path, buffered_polygon)
+        return preview_previous_path, preview_current_path
+
+    @staticmethod
+    def create_preview_from_src(src, preview_path, polygon):
+        x_min, y_min, x_max, y_max = polygon.extent
+        affine = Affine(src.transform[0],
+                        src.transform[1],
+                        x_min,
+                        src.transform[3],
+                        src.transform[4],
+                        y_max
+                        )
+
+        row_min, col_max = rasterio.transform.rowcol(src.transform, x_max, y_max)
+        row_max, col_min = rasterio.transform.rowcol(src.transform, x_min, y_min, op=round, precision=6)
+        row_min = row_min + 1
+        row_max = row_max + 1
+        write_window = Window.from_slices([row_min, row_max, ], [col_min, col_max])
+        raster = src.read(window=write_window)
+        kwargs = src.meta.copy()
+        kwargs.update({
+            'height': write_window.height,
+            'width': write_window.width,
+            "transform": affine,
+            'driver': 'GTiff'
+        })
+
+        with rasterio.open(str(preview_path), 'w', **kwargs) as dst:
+            dst.write(raster)
+
+        kwargs.update({'driver': 'PNG'})
+        with rasterio.open(preview_path.with_suffix('.png'), 'w', **kwargs) as dst:
+            dst.write(raster)
+
+    def create_preview_path_for_clearcut(self, clearcut):
+        file_path_previous = settings.POLYGON_TIFFS_DIR / self.tile_index / str(self.image_date_previous)
+        file_path_previous.mkdir(parents=True, exist_ok=True)
+        preview_previous_path = file_path_previous / f'{clearcut.id}.{settings.POLYGON_FORMAT}'
+
+        file_path_current = settings.POLYGON_TIFFS_DIR / self.tile_index / str(self.image_date_current)
+        file_path_current.mkdir(parents=True, exist_ok=True)
+        preview_current_path = file_path_current / f'{clearcut.id}.{settings.POLYGON_FORMAT}'
+
+        return preview_previous_path, preview_current_path
+
+    def create_buffered_polygon(self, polygon):
+        mpoly = polygon.transform(self.crs, clone=True)
+        mpoly = mpoly.buffer_with_style(settings.POLYGON_BUFFER, quadsegs=8, end_cap_style=2, join_style=1,
+                                        mitre_limit=5.0)
+        return mpoly
+
+class Preview_old:
 
     def create_buffered_polygon(self, polygon, crs):
         mpoly = polygon.transform(crs, clone=True)
