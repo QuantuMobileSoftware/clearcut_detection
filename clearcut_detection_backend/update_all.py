@@ -10,9 +10,9 @@ django.setup()
 from clearcuts.models import Tile
 from clearcuts.services import CreateUpdateTask
 from services.configuration import area_tile_set
-from services.jp2_to_tiff_conversion import jp2_to_tiff
+from services.jp2_to_tiff_conversion import Converter
 from tiff_prepare.services import ImgPreprocessing
-from services.upload_to_mapbox import start_upload
+# from services.upload_to_mapbox import start_upload
 from downloader.services import SentinelDownload
 
 sentinel_download = strtobool(os.environ.get('SENTINEL_DOWNLOAD', 'true'))
@@ -44,6 +44,12 @@ if __name__ == '__main__':
             sentinel_downloader.launch_download_pool()
             logger.info(f'Sentinel pictures for {tile.tile_index} were downloaded')
 
+        if convert_to_tiff:
+            logger.info(f'start convert for {tile.tile_index}')
+            converter = Converter(tile.tile_index)
+            converter.convert_all_unconverted_to_tif()
+            logger.info(f'finish convert for {tile.tile_index}')
+
         if prepare_tif:
             img_preprocessing = ImgPreprocessing(tile.tile_index)
             img_preprocessing.start()
@@ -55,14 +61,14 @@ if __name__ == '__main__':
         continue
         # exit(0)
 
-        if convert_to_tiff:
-            logger.info('Start convert jp2_to_tiff')
-            jp2_to_tiff()
-            logger.info('Convert jp2_to_tiff finished')
+        # if convert_to_tiff:
+        #     logger.info('Start convert jp2_to_tiff')
+        #     jp2_to_tiff()
+        #     logger.info('Convert jp2_to_tiff finished')
 
-        if mapbox_upload:
-            try:
-                logger.info('Start uploading to mapbox')
-                uploader = start_upload()
-            except (IOError, ValueError, FileNotFoundError, FileExistsError, Exception):
-                logger.error('Error\n\n', exc_info=True)
+        # if mapbox_upload:
+        #     try:
+        #         logger.info('Start uploading to mapbox')
+        #         uploader = start_upload()
+        #     except (IOError, ValueError, FileNotFoundError, FileExistsError, Exception):
+        #         logger.error('Error\n\n', exc_info=True)
