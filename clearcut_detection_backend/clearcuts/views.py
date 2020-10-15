@@ -13,7 +13,7 @@ from rest_framework import mixins
 from rest_framework import generics
 
 from clearcuts.models import Clearcut, Zone, RunUpdateTask
-from clearcuts.services import Preview
+# from clearcuts.services import Preview
 from clearcuts.serializers import ClearcutChartSerializer, ClearcutSerializer, RunUpdateTaskSerializer
 
 
@@ -56,14 +56,14 @@ class ClearcutPreviewEndpointWithCoords(APIView):
     def get(self, request, pk, format=None):
         clearcut = self.get_object(pk)
         tile = clearcut.zone.tile
-        preview_previous_path, preview_current_path, polygon = Preview().get_or_create_preview_and_polygon(clearcut)
-        coords = polygon.coords
+        # preview_previous_path, preview_current_path, polygon = Preview().get_or_create_preview_and_polygon(clearcut)
+        # coords = polygon.coords
 
         return Response({
             'tile_index': tile.tile_index,
-            'preview_previous_path': request.build_absolute_uri(preview_previous_path),
-            'preview_current_path': request.build_absolute_uri(preview_current_path),
-            'coords': coords
+            # 'preview_previous_path': request.build_absolute_uri(preview_previous_path),
+            # 'preview_current_path': request.build_absolute_uri(preview_current_path),
+            # 'coords': coords
         })
 
 class ClearcutPreviewEndpointFromCloud(APIView):
@@ -81,12 +81,12 @@ class ClearcutPreviewEndpointFromCloud(APIView):
         tile = clearcut.zone.tile
 
         # preview_previous_path, preview_current_path = Preview().get_or_create_preview(clearcut)
-        preview_previous_path, preview_current_path = Preview().get_or_create_preview_on_fly(clearcut)
+        # preview_previous_path, preview_current_path = Preview().get_or_create_preview_on_fly(clearcut)
 
         return Response({
             'tile_index': tile.tile_index,
-            'preview_previous_path': request.build_absolute_uri(preview_previous_path),
-            'preview_current_path': request.build_absolute_uri(preview_current_path),
+            # 'preview_previous_path': request.build_absolute_uri(preview_previous_path),
+            # 'preview_current_path': request.build_absolute_uri(preview_current_path),
         })
 
 
