@@ -9,11 +9,11 @@ import django
 django.setup()
 from clearcuts.models import Tile
 from clearcuts.services import CreateUpdateTask
-# from services.configuration import area_tile_set
 from services.jp2_to_tiff_conversion import jp2_to_tiff, Converter
 from tiff_prepare.services import ImgPreprocessing
 from services.upload_to_mapbox import start_upload
 from downloader.services import SentinelDownload
+
 
 sentinel_download = strtobool(os.environ.get('SENTINEL_DOWNLOAD', 'true'))
 prepare_tif = strtobool(os.environ.get('PREPARE_TIF', 'true'))
