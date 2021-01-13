@@ -35,8 +35,8 @@ react_prod:
   volumes:
     - ./frontend:/frontend
   working_dir: /frontend
-  ports:
-    - "3001:3000"
+  expose:
+    - "3001"
   links:
     - "django_prod"
   command: /bin/bash -c "npm install && npm run-script build"
