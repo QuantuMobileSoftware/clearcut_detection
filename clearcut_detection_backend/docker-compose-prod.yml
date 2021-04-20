@@ -7,7 +7,7 @@ db_prod:
   env_file:
     - db.env
   volumes:
-    - ./db-data_prod/data:/var/lib/postgresql/data
+    - /home/clearcut/prod/db-data_prod/data:/var/lib/postgresql/data
     - ./:/code
 
 model_prod_2:
@@ -35,10 +35,10 @@ react_prod:
   volumes:
     - ./frontend:/frontend
   working_dir: /frontend
-  expose:
-    - "3001"
-  links:
-    - "django_prod"
+#  expose:
+#    - "3001"
+#  links:
+#    - "django_prod"
   command: /bin/bash -c "npm install && npm run-script build"
 
 django_prod:
