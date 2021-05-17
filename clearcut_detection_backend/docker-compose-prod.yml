@@ -2,20 +2,18 @@ db_prod:
   image: clearcut_detection/postgis_prod
   expose:
     - 5432
-#  ports:
-#    - "5433:5432"
+  ports:
+    - "5433:5432"
   env_file:
     - db.env
   volumes:
-    - ./db-data_prod/data:/var/lib/postgresql/data
+    - /home/clearcut/prod/db-data_prod/data:/var/lib/postgresql/data
     - ./:/code
 
 model_prod_2:
   image: clearcut_detection/model2_prod
   env_file:
     - ./model2/model.env
-#    - ./model2/db.env
-#    - ./model2/rabbitmq.env
   volumes:
     - ./model2/:/model
     - ./data/:/model/data
@@ -35,10 +33,6 @@ react_prod:
   volumes:
     - ./frontend:/frontend
   working_dir: /frontend
-  expose:
-    - "3001"
-  links:
-    - "django_prod"
   command: /bin/bash -c "npm install && npm run-script build"
 
 django_prod:
@@ -59,15 +53,13 @@ django_prod:
 #    - UPLOAD_TO_MAPBOX=1  # skip uploading to mapbox server
   volumes:
     - ./:/code
+    - /home/clearcut/prod/data_prod:/data
   working_dir: /code
   links:
     - "db_prod"
-#    - "model_prod_2"
     - "rabbitmq_prod"
   expose:
     - 9000
-#  ports:
-#    - "9001:9000"
   command: /bin/bash -c "exec invoke runbackend"
 
 nginx_prod:
@@ -76,8 +68,8 @@ nginx_prod:
     - "django_prod"
   expose:
     - "8080"
-#  ports:
-#    - "8082:8082"
+  ports:
+    - "8080:8080"
   environment:
     - VIRTUAL_HOST=clearcut.quantumobile.com
     - VIRTUAL_PORT=8080
