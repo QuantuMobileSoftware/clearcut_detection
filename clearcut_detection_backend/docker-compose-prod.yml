@@ -16,7 +16,7 @@ model_prod_2:
     - ./model2/model.env
   volumes:
     - ./model2/:/model
-    - ./data/:/model/data
+    - /home/clearcut/prod/data_prod:/data
   working_dir: /model
   environment:
     - DB_HOST=db_prod
