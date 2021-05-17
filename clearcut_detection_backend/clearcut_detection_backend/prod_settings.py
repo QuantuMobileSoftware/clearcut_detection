@@ -10,6 +10,6 @@ EMAIL_HOST_USER = 'SET_ME_PLEASE_SMTP_USERNAME'
 EMAIL_HOST_PASSWORD = 'SET_ME_PLEASE_SMTP_PASSWORD'
 EMAIL_ADMIN_MAIL = ['SET_ME_PLEASE_SMTP_ADMIN_MAIL']
 
-# DOWNLOADED_IMAGES_DIR = Path('/data/source_images/')
-# MODEL_TIFFS_DIR = Path('/data/model_tiffs')
-# MAPBOX_TIFFS_DIR = Path('/data/mapbox_tiffs')
+DOWNLOADED_IMAGES_DIR = Path('/data/source_images/')
+MODEL_TIFFS_DIR = Path('/data/model_tiffs')
+MAPBOX_TIFFS_DIR = Path('/data/mapbox_tiffs')
