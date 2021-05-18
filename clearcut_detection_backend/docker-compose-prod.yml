@@ -26,6 +26,14 @@ model_prod_2:
   links:
     - "rabbitmq_prod"
     - "db_prod"
+  deploy:
+    resources:
+      reservations:
+        devices:
+          - capabilities: ["gpu"]
+            driver: nvidia
+            device_ids: ["GPU-b51efca2-01e2-2215-9434-5cc94ec7716e"]
+
   command: /bin/bash -c "./run_predict.sh"  # todo
 
 react_prod:
