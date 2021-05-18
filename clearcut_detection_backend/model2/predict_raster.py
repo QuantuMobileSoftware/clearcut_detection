@@ -264,8 +264,6 @@ def postprocessing(tile, cloud_files, clearcuts, src_crs):
         polygons[mask_column_name] = masked_values
         return polygons
 
-    # tile = os.path.basename(img_path)
-
     landcover = LandcoverPolygons(tile, src_crs)
     forest_polygons = landcover.get_polygon()
 

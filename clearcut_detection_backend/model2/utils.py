@@ -39,6 +39,7 @@ class LandcoverPolygons:
 
     def get_polygon(self):
         polygon_path = LANDCOVER_POLYGONS_PATH / f'{self.tile}.geojson'
+        logging.info(f'LANDCOVER_POLYGONS_PATH: {polygon_path}')
         if polygon_path.is_file():
             logging.info(f'{self.tile} forest polygons file exists.')
             polygons = gpd.read_file(polygon_path)
@@ -62,7 +63,11 @@ class LandcoverPolygons:
             polygons = gpd.read_file(LANDCOVER_GEOJSON)
             polygons = polygons[polygons['geometry'].intersects(bounding_polygon)]
             polygon_path = LANDCOVER_POLYGONS_PATH / f'{self.tile}.geojson'
+            logging.info(f'forests_polygons_file_path: {polygon_path}')
             polygons.to_file(polygon_path, driver='GeoJSON')
+        else:
+            logging.error(f'{SENTINEL_TILES} doth not exists')
+            raise FileNotFoundError
         return polygons
 
 
