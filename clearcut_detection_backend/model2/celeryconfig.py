@@ -11,7 +11,7 @@ result_backend = f'db+postgresql://{POSTGRES_USER}:{POSTGRES_PASSWORD}@{DB_HOST}
 worker_prefetch_multiplier = 1
 worker_max_tasks_per_child = 1
 task_acks_late = True
-task_time_limit = 60 * 20
+task_time_limit = 60 * 60
 # database_table_names = {
 #     'task': 'django_celery_results_taskresult',
 #     'group': 'myapp_groupmeta',
