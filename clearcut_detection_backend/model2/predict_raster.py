@@ -8,29 +8,23 @@ import argparse
 import geopandas
 import numpy as np
 import segmentation_models_pytorch as smp
-
 from catalyst.dl.utils import UtilsFactory
-from geopandas import GeoSeries
 from scipy import spatial
 from shapely.geometry import Polygon
-from shapely.ops import unary_union
 from torchvision import transforms
 from torch import nn
 from tqdm import tqdm
 from rasterio.windows import Window
 from rasterio.plot import reshape_as_image
 from skimage.transform import match_histograms
-
 from utils import LandcoverPolygons
-
-CLOUDS_PROBABILITY_THRESHOLD = 15
-NEAREST_POLYGONS_NUMBER = 10
-DATES_FOR_TILE = 2
-
 import warnings
+from config import CLOUDS_PROBABILITY_THRESHOLD, NEAREST_POLYGONS_NUMBER, DATES_FOR_TILE
+
+
 warnings.filterwarnings('ignore')
 
-os.environ.get('CUDA_VISIBLE_DEVICES', '0')
+
 
 logging.basicConfig(format='%(asctime)s %(message)s')
 

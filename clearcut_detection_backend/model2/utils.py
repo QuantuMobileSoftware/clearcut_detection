@@ -8,17 +8,11 @@ from pathlib import Path
 from googleapiclient.discovery import build
 from googleapiclient.http import MediaIoBaseDownload
 from google.oauth2 import service_account
-
 import geopandas as gpd
+from config import SCOPES, LANDCOVER_POLYGONS_PATH, SENTINEL_TILES, LANDCOVER_GEOJSON
 
 logging.basicConfig(format='%(asctime)s %(message)s')
 
-SCOPES = ['https://www.googleapis.com/auth/drive.file']
-
-LANDCOVER_POLYGONS_PATH = Path('/data/landcover')
-SENTINEL_TILES = LANDCOVER_POLYGONS_PATH / \
-                 'S2A_OPER_GIP_TILPAR_MPC__20151209T095117_V20150622T000000_21000101T000000_B00.kml'
-LANDCOVER_GEOJSON = LANDCOVER_POLYGONS_PATH / 'landcover_polygons.geojson'
 
 class LandcoverPolygons:
     """
