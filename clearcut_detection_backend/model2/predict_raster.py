@@ -3,7 +3,6 @@ import re
 import cv2
 import torch
 import logging
-import imageio
 import rasterio
 import argparse
 import geopandas
@@ -89,13 +88,13 @@ def predict_raster(img_current, img_previous, channels, network, model_weights_p
                 left_column = i * input_size
                 right_column = (i + 1) * input_size
 
-                corners=[
-                    source_current.xy(bottom_row, left_column),
-                    source_current.xy(bottom_row, right_column),
-                    source_current.xy(upper_row, right_column),
-                    source_current.xy(upper_row, left_column),
-                    source_current.xy(bottom_row, left_column)
-                    ]
+                corners = [
+                           source_current.xy(bottom_row, left_column),
+                           source_current.xy(bottom_row, right_column),
+                           source_current.xy(upper_row, right_column),
+                           source_current.xy(upper_row, left_column),
+                           source_current.xy(bottom_row, left_column)
+                ]
 
                 window = Window(bottom_row, left_column, input_size, input_size)
                 image_current = reshape_as_image(source_current.read(window=window))
@@ -263,8 +262,6 @@ def postprocessing(tile, cloud_files, clearcuts, src_crs):
                 masked_values.append(masked_value)
         polygons[mask_column_name] = masked_values
         return polygons
-
-    # tile = os.path.basename(img_path)
 
     landcover = LandcoverPolygons(tile, src_crs)
     forest_polygons = landcover.get_polygon()

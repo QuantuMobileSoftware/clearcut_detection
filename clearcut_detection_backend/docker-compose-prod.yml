@@ -1,93 +1,102 @@
-db_prod:
-  image: clearcut_detection/postgis_prod
-  expose:
-    - 5432
-  ports:
-    - "5433:5432"
-  env_file:
-    - db.env
-  volumes:
-    - /home/clearcut/prod/db-data_prod/data:/var/lib/postgresql/data
-    - ./:/code
+services:
+  db_prod:
+    image: clearcut_detection/postgis_prod
+    expose:
+      - 5432
+    ports:
+      - "5433:5432"
+    env_file:
+      - db.env
+    volumes:
+      - /home/clearcut/prod/db-data_prod/data:/var/lib/postgresql/data
+      - ./:/code
 
-model_prod_2:
-  image: clearcut_detection/model2_prod
-  env_file:
-    - ./model2/model.env
-  volumes:
-    - ./model2/:/model
-    - /home/clearcut/prod/data_prod:/data
-  working_dir: /model
-  environment:
-    - DB_HOST=db_prod
-    - RABBITMQ_HOST=rabbitmq_prod
-    - CUDA_VISIBLE_DEVICES=0
-    - PREDICT=1
-  links:
-    - "rabbitmq_prod"
-    - "db_prod"
-  command: /bin/bash -c "./run_predict.sh"  # todo
+  model_prod_2:
+    image: clearcut_detection/model2_prod
+    env_file:
+      - ./model2/model.env
+    volumes:
+      - ./model2/:/model
+      - /home/clearcut/prod/data_prod:/data
+    working_dir: /model
+    environment:
+      - DB_HOST=db_prod
+      - RABBITMQ_HOST=rabbitmq_prod
+      - CUDA_VISIBLE_DEVICES=0
+      - PREDICT=1
+    links:
+      - "rabbitmq_prod"
+      - "db_prod"
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - capabilities: ["gpu"]
+              driver: "nvidia"
+              device_ids: ["GPU-b51efca2-01e2-2215-9434-5cc94ec7716e"]
 
-react_prod:
-  image: node:10.15.0
-  volumes:
-    - ./frontend:/frontend
-  working_dir: /frontend
-  command: /bin/bash -c "npm install && npm run-script build"
+    command: /bin/bash -c "./run_predict.sh"  # todo
 
-django_prod:
-  image: clearcut_detection/backend_prod
-  env_file:
-    - db.env
-    - django.env
-    - rabbitmq.env
-  environment:
-    - DJANGO_SETTINGS_MODULE=clearcut_detection_backend.prod_settings
-    - DB_HOST=db_prod
-    - RABBITMQ_HOST=rabbitmq_prod
-#    - SENTINEL_DOWNLOAD=1  # prevent requesting to sentinel
-#    - DOWNLOAD_IMG=0  # skip downloading images if SENTINEL_DOWNLOAD=true
-#    - PREPARE_TIF=1  # skip preprocessing images
-#    - MAKE_PREDICT=0  # skip predicting of clearcuts
-#    - CONVERT_TO_TIFF=0  # skip converting to tiff for uploading
-#    - UPLOAD_TO_MAPBOX=1  # skip uploading to mapbox server
-  volumes:
-    - ./:/code
-    - /home/clearcut/prod/data_prod:/data
-  working_dir: /code
-  links:
-    - "db_prod"
-    - "rabbitmq_prod"
-  expose:
-    - 9000
-  command: /bin/bash -c "exec invoke runbackend"
+  react_prod:
+    image: node:10.15.0
+    volumes:
+      - ./frontend:/frontend
+    working_dir: /frontend
+    command: /bin/bash -c "npm install && npm run-script build"
 
-nginx_prod:
-  image: nginx:1.15.8
-  links:
-    - "django_prod"
-  expose:
-    - "8080"
-  ports:
-    - "8080:8080"
-  environment:
-    - VIRTUAL_HOST=clearcut.quantumobile.com
-    - VIRTUAL_PORT=8080
-    - LETSENCRYPT_HOST=clearcut.quantumobile.com
-    - LETSENCRYPT_EMAIL=o.tsiapa@quantumobile.com
-  volumes:
-    - ./nginx/nginx_prod.conf:/etc/nginx/conf.d/default.conf
-    - ./frontend/build:/frontend/build
+  django_prod:
+    image: clearcut_detection/backend_prod
+    env_file:
+      - db.env
+      - django.env
+      - rabbitmq.env
+    environment:
+      - DJANGO_SETTINGS_MODULE=clearcut_detection_backend.prod_settings
+      - DB_HOST=db_prod
+      - RABBITMQ_HOST=rabbitmq_prod
+  #    - SENTINEL_DOWNLOAD=1  # prevent requesting to sentinel
+  #    - DOWNLOAD_IMG=0  # skip downloading images if SENTINEL_DOWNLOAD=true
+  #    - PREPARE_TIF=1  # skip preprocessing images
+  #    - MAKE_PREDICT=0  # skip predicting of clearcuts
+  #    - CONVERT_TO_TIFF=0  # skip converting to tiff for uploading
+  #    - UPLOAD_TO_MAPBOX=1  # skip uploading to mapbox server
+    volumes:
+      - ./:/code
+      - /home/clearcut/prod/data_prod:/data
+    working_dir: /code
+    links:
+      - "db_prod"
+      - "rabbitmq_prod"
+    expose:
+      - 9000
+    command: /bin/bash -c "exec invoke runbackend"
 
-rabbitmq_prod:
-  hostname: "rabbitmq_prod"
-  labels:
-    NAME: "rabbitmq_prod"
-  image: "rabbitmq"
-  env_file:
-    - rabbitmq.env
-  expose:
-    - 15672
-    - 5672
-  restart: always
+  nginx_prod:
+    image: nginx:1.15.8
+    links:
+      - "django_prod"
+    expose:
+      - "8080"
+    ports:
+      - "8080:8080"
+    environment:
+      - VIRTUAL_HOST=clearcut.quantumobile.com
+      - VIRTUAL_PORT=8080
+      - LETSENCRYPT_HOST=clearcut.quantumobile.com
+      - LETSENCRYPT_EMAIL=o.tsiapa@quantumobile.com
+    volumes:
+      - ./nginx/nginx_prod.conf:/etc/nginx/conf.d/default.conf
+      - ./frontend/build:/frontend/build
+
+  rabbitmq_prod:
+    hostname: "rabbitmq_prod"
+    labels:
+      NAME: "rabbitmq_prod"
+    image: "rabbitmq"
+    env_file:
+      - rabbitmq.env
+    expose:
+      - 15672
+      - 5672
+    restart: always
 
