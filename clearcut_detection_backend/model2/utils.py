@@ -35,17 +35,17 @@ class LandcoverPolygons:
         polygon_path = LANDCOVER_POLYGONS_PATH / f'{self.tile}.geojson'
         logging.info(f'LANDCOVER_POLYGONS_PATH: {polygon_path}')
         if polygon_path.is_file():
-            logging.info(f'{self.tile} forest polygons file exists.')
+            logging.info(f'{self.tile} forests polygons file exists.')
             polygons = gpd.read_file(polygon_path)
         else:
-            logging.info(f'{self.tile} forest polygons file does not exist. Creating polygons...')
+            logging.info(f'{self.tile} forests polygons file does not exist. Creating polygons...')
             polygons = self.create_polygon()
 
         if len(polygons) > 0:
             polygons = polygons.to_crs(self.crs)
             polygons = list(polygons['geometry'])
         else:
-            logging.info('No forest polygons.')
+            logging.info('No forests polygons.')
         return polygons
     
     def create_polygon(self):

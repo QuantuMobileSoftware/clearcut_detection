@@ -63,10 +63,10 @@ def mask_postprocess(mask):
 
 
 def predict_raster(img_current, img_previous, channels, network, model_weights_path, input_size=56, neighbours=3):
-    print(f'network:{network}')
-    print(f'model_weights_path: {model_weights_path}')
-    print(f'channels: {channels}')
-    print(f'neighbours: {neighbours}')
+    logging.info(f'network:{network}')
+    logging.info(f'model_weights_path: {model_weights_path}')
+    logging.info(f'channels: {channels}')
+    logging.info(f'neighbours: {neighbours}')
     model, device = load_model(network, model_weights_path, channels, neighbours)
 
     with rasterio.open(img_current) as source_current, \
