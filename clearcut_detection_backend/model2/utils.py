@@ -57,8 +57,10 @@ class LandcoverPolygons:
     def create_polygon(self):
         polygons = []
         if SENTINEL_TILES.is_file():
+            logging.info(f'read forests_polygons_file: {SENTINEL_TILES}, for tile {self.tile}')
             sentinel_tiles = gpd.read_file(SENTINEL_TILES, driver='KML')
             sentinel_tiles = sentinel_tiles[sentinel_tiles['Name'] == self.tile]
+            logging.info(f'sentinel_tiles for {self.tile}: {sentinel_tiles}')
             bounding_polygon = sentinel_tiles['geometry'].values[0]
             polygons = gpd.read_file(LANDCOVER_GEOJSON)
             polygons = polygons[polygons['geometry'].intersects(bounding_polygon)]

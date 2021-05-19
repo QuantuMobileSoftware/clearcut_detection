@@ -21,13 +21,12 @@ def run_predict(session, task_id):
     RpT.update_task_by_id(session, task_id, params)
     image_path = Path(params['path_img_0'])
     list_tif_path = list(image_path.parts)
-    filename = list_tif_path[2]
+    filename = list_tif_path[3]
     predicted_filename = f'predicted_{filename}_{params["image_date_0"]}_{params["image_date_1"]}.geojson'
-    list_tif_path = list_tif_path[:1]
+    list_tif_path = list_tif_path[:2]
     list_tif_path.append('predicted')
     list_tif_path.append(filename)
     result_directory_path = Path(*list_tif_path)
-    # print(result_directory_path)
     result_directory_path.mkdir(parents=True, exist_ok=True)
     if not (result_directory_path / predicted_filename).is_file():
 
@@ -63,7 +62,6 @@ def run_predict(session, task_id):
         params['date_finished'] = str(datetime.now())
 
         RpT.update_task_by_id(session, task_id, params)
-        # RpT.update_tileinformation(session, params['tile_id'])
         return params['result']
     else:
         params['result'] = str(result_directory_path / predicted_filename)
