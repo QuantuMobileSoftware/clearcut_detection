@@ -19,8 +19,6 @@ RUN apt-get update -y && apt-get install -y \
     build-essential \
     python-dev \
     python3-dev \
-    python-numpy \
-    python3-numpy \
     libspatialite-dev \
     sqlite3 \
     libpq-dev \
@@ -36,7 +34,7 @@ RUN apt-get update -y && apt-get install -y \
     bash-completion \
     cmake
 
-RUN /bin/bash -c "pip install numpy==1.16.4"
+RUN /bin/bash -c "pip3 install numpy==1.16.4"
 
 # Compile and install OpenJPEG
 RUN cd src && tar -xvf openjpeg-${OPENJPEG_VERSION}.tar.gz && cd openjpeg-${OPENJPEG_VERSION}/ \
