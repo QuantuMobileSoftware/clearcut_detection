@@ -19,6 +19,8 @@ RUN apt-get update -y && apt-get install -y \
     build-essential \
     python-dev \
     python3-dev \
+    python-numpy \
+    python3-numpy \
     libspatialite-dev \
     sqlite3 \
     libpq-dev \
@@ -34,7 +36,7 @@ RUN apt-get update -y && apt-get install -y \
     bash-completion \
     cmake
 
-RUN /bin/bash -c "pip3 install numpy==1.16.4"
+RUN /bin/bash -c "pip install numpy==1.16.4"
 
 # Compile and install OpenJPEG
 RUN cd src && tar -xvf openjpeg-${OPENJPEG_VERSION}.tar.gz && cd openjpeg-${OPENJPEG_VERSION}/ \
@@ -45,7 +47,7 @@ RUN cd src && tar -xvf openjpeg-${OPENJPEG_VERSION}.tar.gz && cd openjpeg-${OPEN
 
 # Compile and install GDAL
 RUN cd src && tar -xvf gdal-${GDAL_VERSION}.tar.gz && cd gdal-${GDAL_VERSION} \
-    && ./configure --with-python=python3 --with-proj=/usr/local --with-spatialite --with-pg --with-curl --with-openjpeg=$ROOTDIR \
+    && ./configure --with-python --with-spatialite --with-pg --with-curl --with-openjpeg=$ROOTDIR \
     && make && make install && ldconfig \
     && apt-get update -y \
     && apt-get remove -y --purge build-essential wget \
@@ -62,7 +64,7 @@ RUN apt-get install -y libgdal-dev
 RUN apt-get update -y \
     && apt-get upgrade -y \
     && apt-get install -y postgresql-client locales \
-    && apt-get install -y gdal-bin python3-gdal \
+    && apt-get install -y gdal-bin python-gdal python3-gdal \
     && apt-get update && apt-get install -y gettext libgettextpo-dev \
     # Cleanup
     && apt-get clean && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/* \
