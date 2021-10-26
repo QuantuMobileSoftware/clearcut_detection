@@ -1,4 +1,5 @@
 import os
+import logging
 from distutils.util import strtobool
 from pathlib import Path
 from config import models, threshold, input_size, PREDICTED_PATH
@@ -9,6 +10,7 @@ from datetime import datetime
 
 predict = strtobool(os.environ.get('PREDICT', 'true'))
 
+logging.basicConfig(format='%(asctime)s %(message)s')
 
 def run_predict(session, task_id):
     """
@@ -64,5 +66,5 @@ def run_predict(session, task_id):
         params['result'] = str(result_directory_path / predicted_filename)
         params['date_finished'] = str(datetime.now())
         RpT.update_task_by_id(session, task_id, params)
-        print(f'file {str(result_directory_path / predicted_filename)} exist. Skip')
+        logging.info(f'file {str(result_directory_path / predicted_filename)} exist. Skip')
         return str(result_directory_path / predicted_filename)
