@@ -1,7 +1,8 @@
 import os
+import logging
 from distutils.util import strtobool
 from pathlib import Path
-from config import models, threshold, input_size
+from config import models, threshold, input_size, PREDICTED_PATH
 from utils import weights_exists_or_download
 from predict_raster import predict_raster, polygonize, postprocessing, save_polygons
 from services.run_predict_tasks_service import RunPredictTasks as RpT
@@ -9,6 +10,7 @@ from datetime import datetime
 
 predict = strtobool(os.environ.get('PREDICT', 'true'))
 
+logging.basicConfig(format='%(asctime)s %(message)s')
 
 def run_predict(session, task_id):
     """
@@ -21,13 +23,9 @@ def run_predict(session, task_id):
     RpT.update_task_by_id(session, task_id, params)
     image_path = Path(params['path_img_0'])
     list_tif_path = list(image_path.parts)
-    filename = list_tif_path[2]
+    filename = list_tif_path[3]
     predicted_filename = f'predicted_{filename}_{params["image_date_0"]}_{params["image_date_1"]}.geojson'
-    list_tif_path = list_tif_path[:1]
-    list_tif_path.append('predicted')
-    list_tif_path.append(filename)
-    result_directory_path = Path(*list_tif_path)
-    # print(result_directory_path)
+    result_directory_path = PREDICTED_PATH / filename
     result_directory_path.mkdir(parents=True, exist_ok=True)
     if not (result_directory_path / predicted_filename).is_file():
 
@@ -63,11 +61,10 @@ def run_predict(session, task_id):
         params['date_finished'] = str(datetime.now())
 
         RpT.update_task_by_id(session, task_id, params)
-        # RpT.update_tileinformation(session, params['tile_id'])
         return params['result']
     else:
         params['result'] = str(result_directory_path / predicted_filename)
         params['date_finished'] = str(datetime.now())
         RpT.update_task_by_id(session, task_id, params)
-        print(f'file {str(result_directory_path / predicted_filename)} exist. Skip')
+        logging.info(f'file {str(result_directory_path / predicted_filename)} exist. Skip')
         return str(result_directory_path / predicted_filename)

@@ -3,35 +3,28 @@ import re
 import cv2
 import torch
 import logging
-import imageio
 import rasterio
 import argparse
 import geopandas
 import numpy as np
 import segmentation_models_pytorch as smp
-
 from catalyst.dl.utils import UtilsFactory
-from geopandas import GeoSeries
 from scipy import spatial
 from shapely.geometry import Polygon
-from shapely.ops import unary_union
 from torchvision import transforms
 from torch import nn
 from tqdm import tqdm
 from rasterio.windows import Window
 from rasterio.plot import reshape_as_image
 from skimage.transform import match_histograms
-
 from utils import LandcoverPolygons
-
-CLOUDS_PROBABILITY_THRESHOLD = 15
-NEAREST_POLYGONS_NUMBER = 10
-DATES_FOR_TILE = 2
-
 import warnings
+from config import CLOUDS_PROBABILITY_THRESHOLD, NEAREST_POLYGONS_NUMBER, DATES_FOR_TILE
+
+
 warnings.filterwarnings('ignore')
 
-os.environ.get('CUDA_VISIBLE_DEVICES', '0')
+
 
 logging.basicConfig(format='%(asctime)s %(message)s')
 
@@ -70,10 +63,10 @@ def mask_postprocess(mask):
 
 
 def predict_raster(img_current, img_previous, channels, network, model_weights_path, input_size=56, neighbours=3):
-    print(f'network:{network}')
-    print(f'model_weights_path: {model_weights_path}')
-    print(f'channels: {channels}')
-    print(f'neighbours: {neighbours}')
+    logging.info(f'network:{network}')
+    logging.info(f'model_weights_path: {model_weights_path}')
+    logging.info(f'channels: {channels}')
+    logging.info(f'neighbours: {neighbours}')
     model, device = load_model(network, model_weights_path, channels, neighbours)
 
     with rasterio.open(img_current) as source_current, \
@@ -89,13 +82,13 @@ def predict_raster(img_current, img_previous, channels, network, model_weights_p
                 left_column = i * input_size
                 right_column = (i + 1) * input_size
 
-                corners=[
-                    source_current.xy(bottom_row, left_column),
-                    source_current.xy(bottom_row, right_column),
-                    source_current.xy(upper_row, right_column),
-                    source_current.xy(upper_row, left_column),
-                    source_current.xy(bottom_row, left_column)
-                    ]
+                corners = [
+                           source_current.xy(bottom_row, left_column),
+                           source_current.xy(bottom_row, right_column),
+                           source_current.xy(upper_row, right_column),
+                           source_current.xy(upper_row, left_column),
+                           source_current.xy(bottom_row, left_column)
+                ]
 
                 window = Window(bottom_row, left_column, input_size, input_size)
                 image_current = reshape_as_image(source_current.read(window=window))
@@ -263,8 +256,6 @@ def postprocessing(tile, cloud_files, clearcuts, src_crs):
                 masked_values.append(masked_value)
         polygons[mask_column_name] = masked_values
         return polygons
-
-    # tile = os.path.basename(img_path)
 
     landcover = LandcoverPolygons(tile, src_crs)
     forest_polygons = landcover.get_polygon()
